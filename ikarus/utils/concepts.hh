@@ -180,10 +180,10 @@ namespace Concepts {
    * \tparam SA Type representing the subsidiary arguments.
    */
   template <typename PF, typename NLO, typename SA>
-  concept PathFollowingStrategy = requires(PF pft, NLO nop, SA args, typename NLO::Domain d, double lambda) {
+  concept PathFollowingStrategy = requires(PF pft, NLO nop, SA args, typename NLO::Domain req) {
     { pft(args) } -> std::same_as<void>;
-    { pft.initialPrediction(nop, args, d, lambda) } -> std::same_as<void>;
-    { pft.intermediatePrediction(nop, args, d, lambda) } -> std::same_as<void>;
+    { pft.initialPrediction(req, nop, args) } -> std::same_as<void>;
+    { pft.intermediatePrediction(req, nop, args) } -> std::same_as<void>;
   };
 
   /**
@@ -210,7 +210,7 @@ namespace Concepts {
    * \tparam V The vector type.
    */
   template <typename LS, typename M, typename V>
-  concept LinearSolverCheck = requires(LS& linearSolver, M& A, V& vec) {
+  concept LinearSolverCheck = requires(LS linearSolver, M A, V vec) {
     linearSolver.analyzePattern(A);
     linearSolver.factorize(A);
     linearSolver.solve(vec, vec);
@@ -227,9 +227,9 @@ namespace Concepts {
   concept NonLinearSolverCheckForPathFollowing = requires {
     not(std::is_same_v<typename NLS::NonLinearOperator::Domain, double> and
         ((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix,
-                                                  typename NLS::NonLinearOperator::Traits::template Range<0>>::value) or
+                                                  typename NLS::NonLinearOperator::Traits::template Range<1>>::value) or
          (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix,
-                                                     typename NLS::NonLinearOperator::Traits::template Range<0>>::value)));
+                                                     typename NLS::NonLinearOperator::Traits::template Range<1>>::value)));
   };
 
   /**

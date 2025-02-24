@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <type_traits>
 #include <dune/common/float_cmp.hh>
 #include <dune/functions/common/signature.hh>
 #include <ikarus/utils/defaultfunctions.hh>
@@ -122,7 +123,7 @@ bool checkJacobian(
   auto gradF = derivative(nonLinOp);
   const auto e = nonLinOp(x);
   decltype(auto) g = gradF(x);
-  using UpdateType =std::remove_cvref_t<decltype(g.col(0).transpose().eval().transpose().eval())>;
+  using UpdateType =std::conditional_t<NLO::nDerivatives==2, std::remove_cvref_t<decltype(g)>, std::remove_cvref_t<decltype(e)>>;
 
   UpdateType b;
   b.resizeLike(g.col(0));

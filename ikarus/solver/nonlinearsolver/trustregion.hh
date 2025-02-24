@@ -96,8 +96,8 @@ requires traits::isSpecializationNonTypeAndTypes<TrustRegionConfig, std::remove_
 auto createNonlinearSolver(TRConfig&& config, NLO&& nonLinearOperator) {
   static constexpr PreConditioner preConditioner = std::remove_cvref_t<TRConfig>::preConditionerType;
   using UF                                       = std::remove_cvref_t<TRConfig>::UpdateFunction;
-  // assert(std::remove_cvref_t<NLO>::nDerivatives == 3,
-  //               "The number of derivatives in the nonlinear operator have to be exactly 3.");
+   static_assert(std::remove_cvref_t<NLO>::nDerivatives == 2,
+                 "The number of derivatives in the nonlinear operator have to be exactly 2.");
   auto solver = std::make_shared<TrustRegion<NLO, preConditioner, UF>>(nonLinearOperator,
                                                                        std::forward<TRConfig>(config).updateFunction);
 
@@ -223,7 +223,7 @@ public:
     eta_.resizeLike(gradient());
     Heta_.resizeLike(gradient());
         truncatedConjugateGradient_.analyzePattern(hessian());
-    stats_.energy   = energy();
+    stats_.energy   = energyValue();
     xOld           = x;
     stats_.gradNorm = norm(gradient());
     truncatedConjugateGradient_.analyzePattern(hessian());
@@ -285,7 +285,7 @@ public:
 
       // Calculate energy of our proposed update step
       updateEnergy(x);
-      stats_.energyProposal = energy();
+      stats_.energyProposal = energyValue();
 
       // Will we accept the proposal or not?
       // Check the performance of the quadratic model against the actual energy.
@@ -397,10 +397,16 @@ public:
     return solverInformation;
   }
   /**
-   * \brief Access the nonlinear operator.
-   * \return Reference to the nonlinear operator.
+   * \brief Access the energy function.
+   * \return Reference to the energy function.
    */
-  auto& nonLinearOperator() { return energyFunction_; }
+  auto& energy() { return energyFunction_; }
+
+    /**
+   * \brief Access the residual.
+   * \return The residual by value.
+   */
+   auto residual() { return derivative(energyFunction_); }
 
 private:
 
@@ -460,7 +466,7 @@ void updateEnergy(const Domain& x)
     /** Gradient correction tolerance reached  */
     if (stats_.gradNorm < settings_.grad_tol && stats_.outerIter != 0) {
       logFinalState();
-      spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(gradient): {:1.16e}", energy(),
+      spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(gradient): {:1.16e}", energyValue(),
                    stats_.gradNorm);
       stream << "Gradient norm tolerance reached; options.tolerance = " << settings_.grad_tol;
 
@@ -470,7 +476,7 @@ void updateEnergy(const Domain& x)
       return true;
     } else if (stats_.etaNorm < settings_.corr_tol && stats_.outerIter != 0) {
       logFinalState();
-      spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(correction): {:1.16e}", energy(),
+      spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(correction): {:1.16e}", energyValue(),
                    stats_.etaNorm);
       stream << "Displacement norm tolerance reached;  = " << settings_.corr_tol << "." << std::endl;
 
@@ -542,8 +548,8 @@ static constexpr T& resolveOptRef(const std::optional<std::reference_wrapper<T>>
 }
 
 
-   auto& energy() const noexcept { return resolveOptRef(energy_); }
-   auto& energy() noexcept { return resolveOptRef(energy_); }
+   auto& energyValue() const noexcept { return resolveOptRef(energy_); }
+   auto& energyValue() noexcept { return resolveOptRef(energy_); }
    auto& gradient() const noexcept { return resolveOptRef(grad_); }
    auto& gradient() noexcept  { return resolveOptRef(grad_); }
    auto& hessian() const noexcept { return resolveOptRef(hess_); }

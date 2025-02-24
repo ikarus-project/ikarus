@@ -159,8 +159,8 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   auto pathFollowingObserver   = std::make_shared<ControlLogger>();
-  crWSS.nonlinearSolver().subscribeAll(nonLinearSolverObserver);
-  crWoSS.nonlinearSolver().subscribeAll(nonLinearSolverObserver);
+  crWSS.nonLinearSolver().subscribeAll(nonLinearSolverObserver);
+  crWoSS.nonLinearSolver().subscribeAll(nonLinearSolverObserver);
 
   t.checkThrow<Dune::InvalidStateException>(
       [&]() { nonLinearSolverObserver->update(Ikarus::NonLinearSolverMessages::BEGIN); },

@@ -37,7 +37,7 @@ struct NonLinearOperatorFactory
     };
 
     [[maybe_unused]] auto residualFunction = [dbcOption, assembler = assemblerPtr,
-                                              affordances](const Parameter& p) -> auto& {
+                                              affordances](const Parameter& p)  -> auto& {
       return assembler->vector(p, affordances.vectorAffordance(), dbcOption);
     };
 

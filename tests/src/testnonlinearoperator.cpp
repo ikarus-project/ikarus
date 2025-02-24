@@ -158,14 +158,14 @@ static auto vectorValuedOperatorNewtonRaphsonTest() {
   return checkNewtonRaphson(nr, x, eps, maxIter, 1, (-A.ldlt().solve(b)).eval());
 }
 
-static double f2v(Eigen::VectorXd& x, Eigen::MatrixXd& A, Eigen::VectorXd& b) { return x.dot(b + A * x); }
-static Eigen::VectorXd df2v([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A,
-                            [[maybe_unused]] Eigen::VectorXd& b) {
+static double f2v(const Eigen::VectorXd& x, const Eigen::MatrixXd& A, const Eigen::VectorXd& b) { return x.dot(b + A * x); }
+static Eigen::VectorXd df2v([[maybe_unused]] const Eigen::VectorXd& x, const Eigen::MatrixXd& A,
+                            [[maybe_unused]] const Eigen::VectorXd& b) {
   return 2 * A * x + b;
 }
 
-static Eigen::MatrixXd ddf2v([[maybe_unused]] Eigen::VectorXd& x, Eigen::MatrixXd& A,
-                             [[maybe_unused]] Eigen::VectorXd& b) {
+static Eigen::MatrixXd ddf2v([[maybe_unused]] const Eigen::VectorXd& x, const Eigen::MatrixXd& A,
+                             [[maybe_unused]] const Eigen::VectorXd& b) {
   return 2 * A;
 }
 

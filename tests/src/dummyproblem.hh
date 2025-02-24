@@ -96,8 +96,8 @@ struct DummyProblem
         sparseAssembler_,
         Ikarus::AffordanceCollection(Ikarus::VectorAffordance::forces, Ikarus::MatrixAffordance::stiffness));
 
-    const auto& K    = nonLinOp.derivative();
-    const auto& Fext = nonLinOp.value();
+    const auto& K    = derivative(nonLinOp)(requirement_);
+    const auto& Fext = nonLinOp(requirement_);
 
     auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
     linSolver.compute(K);

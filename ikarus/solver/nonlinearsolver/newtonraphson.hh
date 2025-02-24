@@ -78,7 +78,7 @@ auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
     solver->setup(config.parameters);
     return solver;
   } else {
-    static_assert(std::remove_cvref_t<NLO>::nDerivatives > 0,
+    static_assert(std::remove_cvref_t<NLO>::nDerivatives >= 1,
                   "The number of derivatives in the nonlinear operator have to be more than 0");
     auto solver = solverFactory(nonLinearOperator, std::forward<NRConfig>(config).linearSolver,
                                 std::forward<NRConfig>(config).updateFunction);
@@ -104,12 +104,11 @@ class NewtonRaphson : public IObservable<NonLinearSolverMessages>
 public:
   using Settings = NRSettings;
       using SignatureTraits= typename NLO::Traits;
-    using DerivativeSignatureTraits = Dune::Functions::SignatureTraits<typename NLO::Derivative>;
   using CorrectionType = typename SignatureTraits::template Range<0>;        ///< Type of the correction of x += deltaX.
   using JacobianType = typename SignatureTraits::template Range<1>;
   ///< Compile-time boolean indicating if the linear solver satisfies the non-linear solver concept
   static constexpr bool isLinearSolver =
-      Ikarus::Concepts::LinearSolverCheck<LinearSolver, JacobianType, CorrectionType>;
+      Ikarus::Concepts::LinearSolverCheck<LS, JacobianType, CorrectionType>;
 
   ///< Type representing the parameter vector of the nonlinear operator.
   using Domain = typename SignatureTraits::Domain;
@@ -199,12 +198,12 @@ public:
    * \brief Access the nonlinear operator.
    * \return Reference to the nonlinear operator.
    */
-  auto& nonLinearOperator() { return residualFunction_; }
+  auto& residual() { return residualFunction_; }
 
 private:
   NonLinearOperator residualFunction_;
   typename NonLinearOperator::Derivative jacobianFunction_;
-  CorrectionType correction_;
+  std::remove_cvref_t<CorrectionType> correction_;
   LS linearSolver_;
   UpdateFunction updateFunction_;
   Settings settings_;

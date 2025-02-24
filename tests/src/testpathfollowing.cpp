@@ -63,8 +63,8 @@ static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp,typename N
   TestSuite t("Arc Length with Subsidiary function");
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
-    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + pft.name());
-  checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + pft.name());
+    checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + pft.name());
+  checkScalars(t, req.parameter(), expectedLambda, " --> " + pft.name());
   checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
   return t;
 }
@@ -90,8 +90,8 @@ static auto simple2DOperatorArcLengthTestAsDefault(NonLinearOperator& nonLinOp,t
   TestSuite t("Arc Length as Default Test");
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
-    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i]);
-  checkScalars(t, nonLinOp.lastParameter(), expectedLambda);
+    checkScalars(t, req.globalSolution()[i], expectedDisplacement[i]);
+  checkScalars(t, req.parameter(), expectedLambda);
   checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
   return t;
 }
@@ -119,8 +119,8 @@ static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp,typename
   TestSuite t("Load Control with Subsidiary function");
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
-    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + pft.name());
-  checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + pft.name());
+    checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + pft.name());
+  checkScalars(t, req.parameter(), expectedLambda, " --> " + pft.name());
   checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
   return t;
 }
@@ -150,8 +150,8 @@ static auto simple2DOperatorDisplacementControlTest(NonLinearOperator& nonLinOp,
   TestSuite t("Displacement Control with Subsidiary function");
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
-    checkScalars(t, nonLinOp.firstParameter()[i], expectedDisplacement[i], " --> " + pft.name());
-  checkScalars(t, nonLinOp.lastParameter(), expectedLambda, " --> " + pft.name());
+    checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + pft.name());
+  checkScalars(t, req.parameter(), expectedLambda, " --> " + pft.name());
   checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
   return t;
 }
@@ -166,15 +166,14 @@ int main(int argc, char** argv) {
 
   auto fvLambda  = [&](auto&& req_) { return residual(req_.globalSolution(), lambda); };
   auto dfvLambda = [&](auto&& req_) { return stiffnessMatrix(req_.globalSolution(), lambda); };
+  DummyFERequirements req;
+  req.insertGlobalSolution(D);
+  req.insertParameter(lambda);
 
   auto nonLinOp = Ikarus::makeNonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), req);
 
   double stepSize = 0.1;
   int loadSteps   = 5;
-
-  DummyFERequirements req;
-  req.insertGlobalSolution(D);
-  req.insertParameter(lambda);
 
   t.subTest(simple2DOperatorArcLengthTest(nonLinOp,req, stepSize, loadSteps));
   t.subTest(simple2DOperatorArcLengthTestAsDefault(nonLinOp,req, stepSize, loadSteps));

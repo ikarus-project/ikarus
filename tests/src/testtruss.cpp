@@ -123,9 +123,9 @@ static auto vonMisesTrussTest() {
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   auto nonLinOp                = Ikarus::NonLinearOperatorFactory::op(denseFlatAssembler);
 
-  t.check(utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkGradient(nonLinOp,req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkHessian(nonLinOp,req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check Hessian failed";
 
   constexpr int loadSteps = 10;
@@ -148,11 +148,11 @@ static auto vonMisesTrussTest() {
 
   /// Create loadcontrol
   auto lc = LoadControl(nr, loadSteps, {0, 0.5});
-  lc.nonlinearSolver().subscribeAll(nonLinearSolverObserver);
+  lc.nonLinearSolver().subscribeAll(nonLinearSolverObserver);
   lc.subscribeAll({vtkWriter, lvkObserver});
 
   /// Execute!
-  auto controlInfo = lc.run();
+  auto controlInfo = lc.run(req);
   t.check(controlInfo.success == true) << "Load control failed to converge";
 
   Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);

@@ -57,7 +57,7 @@ public:
   ControlInformation run(Domain& x);
 
   /* \brief returns the nonlinear solver */
-  NLS& nonlinearSolver() { return *nonLinearSolver_; }
+  NLS& nonLinearSolver() { return *nonLinearSolver_; }
 
 private:
   std::shared_ptr<NLS> nonLinearSolver_;

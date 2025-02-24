@@ -8,11 +8,9 @@
 
 #pragma once
 
-#include <iosfwd>
 #include <type_traits>
 #include <utility>
 
-#include "ikarus/assembler/dirichletbcenforcement.hh"
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 #include <ikarus/utils/concepts.hh>
@@ -73,15 +71,15 @@ auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
                                                                                            std::forward<UF2>(uf));
   };
 
-  if constexpr (std::remove_cvref_t<NLO>::nDerivatives == 3) {
+  if constexpr (std::remove_cvref_t<NLO>::nDerivatives == 2) {
     auto solver =
         solverFactory(derivative(nonLinearOperator), std::forward<NRConfig>(config).linearSolver,
                       std::forward<NRConfig>(config).updateFunction);
     solver->setup(config.parameters);
     return solver;
   } else {
-    static_assert(std::remove_cvref_t<NLO>::nDerivatives > 1,
-                  "The number of derivatives in the nonlinear operator have to be more than 1");
+    static_assert(std::remove_cvref_t<NLO>::nDerivatives >= 1,
+                  "The number of derivatives in the nonlinear operator have to be more than 0");
     auto solver = solverFactory(nonLinearOperator, std::forward<NRConfig>(config).linearSolver,
                                 std::forward<NRConfig>(config).updateFunction);
     ;
@@ -109,17 +107,16 @@ public:
    using SignatureTraits= typename NLO::Traits;
      ///< Type representing the parameter vector of the nonlinear operator.
   using Domain = typename SignatureTraits::Domain;
-  using CorrectionType = std::remove_cvref_t<typename SignatureTraits::template Range<0>>;        ///< Type of the correction of x += deltaX.
+  using CorrectionType = typename SignatureTraits::template Range<0>;        ///< Type of the correction of x += deltaX.
+  using JacobianType = typename SignatureTraits::template Range<1>;
   ///< Compile-time boolean indicating if the linear solver satisfies the non-linear solver concept
   static constexpr bool isLinearSolver =
-      Ikarus::Concepts::LinearSolverCheck<LS, CorrectionType, Domain>;
+      Ikarus::Concepts::LinearSolverCheck<LS, JacobianType, CorrectionType>;
 
 
   ///< Type representing the update function.
   using UpdateFunctionType = UF;
   using NonLinearOperator  = NLO; ///< Type of the non-linear operator
-
-  using JacobianType = typename SignatureTraits::template Range<1>;
 
   /**
    * \brief Constructor for NewtonRaphsonWithSubsidiaryFunction.
@@ -145,7 +142,7 @@ public:
    *
    * \tparam SubsidiaryType Type of the subsidiary function.
    * \param subsidiaryFunction Subsidiary function to be solved.
-      * \param x Where the solution should be stored.
+      * \param req Where the solution should be stored.
    * \param subsidiaryArgs Additional arguments for the subsidiary function.
    * \param dxPredictor Predictor for the solution increment (default is NoPredictor).
    * \return Information about the solution process.
@@ -154,14 +151,15 @@ public:
   [[nodiscard(
       "The solve method returns information of the solution process. You should store this information and check if "
       "it was successful")]] NonLinearSolverInformation
-  solve(Domain& x,SubsidiaryType&& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs) {
+  solve(Domain& req,SubsidiaryType&& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs) {
     this->notify(NonLinearSolverMessages::INIT);
 
     /// Initializations
     Ikarus::NonLinearSolverInformation solverInformation;
     solverInformation.success = true;
 
-    auto& lambda = x.parameter();
+    auto& lambda = req.parameter();
+    auto& x = req.globalSolution();
 
     /// Determine Fext0
     /// It is assumed that Fext = Fext0 * lambda such that dRdlambda = Fext0
@@ -171,13 +169,13 @@ public:
     auto DDummy      = x;
     x.setZero();
     lambda = 1.0;
-    decltype(auto) rx = residualFunction_(x);
+    decltype(auto) rx = residualFunction_(req);
     const auto Fext0 = (-rx).eval(); // dRdlambda(lambda)
     lambda           = lambdaDummy;
     x                = DDummy;
 
-    rx = residualFunction_(x);
-    decltype(auto) Ax = jacobianFunction_(x);
+    rx = residualFunction_(req);
+    decltype(auto) Ax = jacobianFunction_(req);
 
     Eigen::VectorXd deltaD;
     deltaD.resizeLike(rx);
@@ -207,7 +205,7 @@ public:
         linearSolver_.factorize(Ax);
         linearSolver_.solve(sol2d, residual2d);
       } else {
-        sol2d = linearSolver(residual2d, Ax);
+        sol2d = linearSolver_(residual2d, Ax);
       }
 
       subsidiaryFunction(subsidiaryArgs);
@@ -223,8 +221,8 @@ public:
       subsidiaryArgs.Dlambda += deltalambda;
 
       dNorm = sqrt(deltaD.dot(deltaD) + deltalambda * deltalambda);
-      rx = residualFunction_(x);
-      Ax = jacobianFunction_(x);
+      rx = residualFunction_(req);
+      Ax = jacobianFunction_(req);
       rNorm = sqrt(rx.dot(rx) + subsidiaryArgs.f * subsidiaryArgs.f);
 
       this->notify(NonLinearSolverMessages::SOLUTION_CHANGED, static_cast<double>(lambda));
@@ -255,7 +253,7 @@ public:
 private:
   NonLinearOperator residualFunction_;
   typename NonLinearOperator::Derivative jacobianFunction_;
-  CorrectionType correction_;
+  std::remove_cvref_t<CorrectionType> correction_;
   LS linearSolver_;
   UF updateFunction_;
   Settings settings_;

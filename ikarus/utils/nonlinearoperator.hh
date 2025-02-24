@@ -59,7 +59,7 @@ class NonLinearOperator<Range(D), DerivativeTraits, F>
 
   using Base = Dune::Functions::DifferentiableFunctionFromCallables<Range(D), DerivativeTraits, F>;
   public:
-  using Domain = D;
+  using Domain = std::remove_cvref_t<D>;
     static constexpr auto nDerivatives = 0;
 
   template<class FFF, Dune::disableCopyMove<NonLinearOperator, FFF> = 0>
@@ -68,7 +68,7 @@ class NonLinearOperator<Range(D), DerivativeTraits, F>
   {}
   using Traits = DerivativeTraitsFromCallables<Impl::Functions<F>, Domain>;
 
-  using Derivative = NonLinearOperator<typename Traits::template Signature<1>, DerivativeTraits>;
+  using Derivative = NonLinearOperator<typename Traits::template Range<1>(D), DerivativeTraits>;
 
   Range operator() (const D& x) const
   {
@@ -109,7 +109,7 @@ class NonLinearOperator<Range(D), DerivativeTraits, F,FF...>
   using Traits = DerivativeTraitsFromCallables<Impl::Functions<F,FF...>, D>;
 
 
-  using Derivative = NonLinearOperator<typename Traits::template Signature<1>, DerivativeTraits, FF...>;
+  using Derivative = NonLinearOperator<typename Traits::template Range<1>(D), DerivativeTraits, FF...>;
 
   Range operator() (const D& x) const
   {
@@ -129,11 +129,11 @@ class NonLinearOperator<Range(D), DerivativeTraits, F,FF...>
 
 template <typename... DerivativeArgs, typename Arg>
 auto makeNonLinearOperator(const Impl::Functions<DerivativeArgs...>& derivativesFunctions,
-                            Arg&& parameter) {
-  DerivativeTraitsFromCallables t(derivativesFunctions, std::forward<Arg>(parameter));
+                            const Arg& parameter) {
+  DerivativeTraitsFromCallables t(derivativesFunctions, parameter);
   using DerivTraits = decltype(t);
   auto la           = []<typename... F>(F&&... f) {
-    return Ikarus::NonLinearOperator<typename DerivTraits::template Signature<0>,
+    return Ikarus::NonLinearOperator<typename DerivTraits::template Range<0>(typename DerivTraits::Domain),
                                                DerivTraits::template DerivativeTraits, std::remove_cvref_t<F>...>(std::forward<F>(f)...);
   };
   return std::apply(la, derivativesFunctions.args);

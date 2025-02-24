@@ -43,17 +43,17 @@ static auto trustRegion1() {
   Eigen::Vector<double, 1> x;
   x << 2;
 
-  auto fvLambda   = [](auto&& xL) { return f(xL); };
-  auto dfvLambda  = [](auto&& xL) { return df(xL); };
-  auto ddfvLambda = [](auto&& xL) { return ddf(xL); };
-  NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda, ddfvLambda), x);
+  auto fvLambda   = [](const auto& xL) { return f(xL); };
+  auto dfvLambda  = [](const auto& xL) { return df(xL); };
+  auto ddfvLambda = [](const auto& xL) { return ddf(xL); };
+  auto nonLinOp= makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), x);
 
   Eigen::Vector<double, 1> xExpected;
   xExpected << 0;
 
   auto tr = makeTrustRegion(nonLinOp);
   tr->setup({.verbosity = 1, .Delta0 = 1});
-  const auto solverInfo = tr->solve();
+  const auto solverInfo = tr->solve(x);
 
   t.check(true == solverInfo.success);
 
@@ -95,7 +95,7 @@ static auto trustRegion2() {
   auto fvLambda   = [](auto&& xL) { return rosenbrock(xL); };
   auto dfvLambda  = [](auto&& xL) { return rosenbrockdx(xL); };
   auto ddfvLambda = [](auto&& xL) { return rosenbrockddx(xL); };
-  Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda, ddfvLambda), x);
+  auto nonLinOp= makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), x);
   const double eps   = 1e-10;
   const int maxIter_ = 30;
   Eigen::Vector2d xExpected;
@@ -103,14 +103,14 @@ static auto trustRegion2() {
 
   Ikarus::TrustRegion tr(nonLinOp);
   tr.setup({.verbosity = 1, .maxIter = maxIter_, .grad_tol = eps, .Delta0 = 1});
-  const auto solverInfo = tr.solve();
+  const auto solverInfo = tr.solve(x);
 
   t.check(true == solverInfo.success);
   t.check(25 == solverInfo.iterations);
   t.check(eps > solverInfo.residualNorm);
   t.check(isApproxSame(x, xExpected, eps));
-  nonLinOp.update<0>();
-  t.check(Dune::FloatCmp::eq(offset_, nonLinOp.value()));
+
+  t.check(Dune::FloatCmp::eq(offset_, nonLinOp(x)));
   return t;
 }
 
@@ -151,7 +151,7 @@ static auto trustRegion3() {
     auto xR = xL.template cast<autodiff::dual2nd>().eval();
     return ddf3(xR);
   };
-  Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda, ddfvLambda), x);
+  auto nonLinOp= makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), x);
   const double eps   = 1e-12;
   const int maxIter_ = 30;
   Eigen::Vector2d xExpected;
@@ -159,35 +159,35 @@ static auto trustRegion3() {
 
   Ikarus::TrustRegion tr(nonLinOp);
   tr.setup({.verbosity = 1, .maxIter = maxIter_, .grad_tol = eps, .corr_tol = eps, .Delta0 = 1});
-  const auto solverInfo = tr.solve();
+  const auto solverInfo = tr.solve(x);
   t.check(true == solverInfo.success);
   t.check(11 == solverInfo.iterations);
   t.check(eps > solverInfo.residualNorm);
   t.check(isApproxSame(x, xExpected, eps));
-  nonLinOp.update<0>();
-  t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp.value()));
+  
+  t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp(x)));
 
   x << 0.7, -3.3;
   Ikarus::TrustRegion<decltype(nonLinOp), Ikarus::PreConditioner::IdentityPreconditioner> tr2(nonLinOp);
   tr2.setup({.verbosity = 1, .maxIter = maxIter_, .grad_tol = eps, .corr_tol = eps, .Delta0 = 1});
-  const auto solverInfo2 = tr2.solve();
+  const auto solverInfo2 = tr2.solve(x);
   t.check(true == solverInfo2.success);
   t.check(11 == solverInfo2.iterations);
   t.check(eps > solverInfo2.residualNorm);
   t.check(isApproxSame(x, xExpected, eps));
-  nonLinOp.update<0>();
-  t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp.value()));
+
+  t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp(x)));
 
   x << 0.7, -3.3;
   Ikarus::TrustRegion<decltype(nonLinOp), Ikarus::PreConditioner::DiagonalPreconditioner> tr3(nonLinOp);
   tr3.setup({.verbosity = 1, .maxIter = maxIter_, .grad_tol = eps, .corr_tol = eps, .Delta0 = 1});
-  const auto solverInfo3 = tr3.solve();
+  const auto solverInfo3 = tr3.solve(x);
   t.check(true == solverInfo3.success);
   t.check(8 == solverInfo3.iterations);
   t.check(eps > solverInfo3.residualNorm);
   t.check(isApproxSame(x, xExpected, eps));
-  nonLinOp.update<0>();
-  t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp.value()));
+  
+  t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp(x)));
   return t;
 }
 
@@ -233,12 +233,12 @@ static auto trustRegion4_RiemanianUnitSphere() {
   auto dfvLambda  = [](auto&& xL) { return df3R(xL); };
   auto ddfvLambda = [](auto&& xL) { return ddf3R(xL); };
 
-  Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda, ddfvLambda), d);
-  t.check(Dune::FloatCmp::eq(nonLinOp.value(), fvLambda(d))) << "Nonlinear operator and lambda have different value";
+  auto nonLinOp= makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), d);
+  t.check(Dune::FloatCmp::eq(nonLinOp(d), fvLambda(d))) << "Nonlinear operator and lambda have different value";
 
-  t.check(isApproxSame(dfvLambda(d), nonLinOp.derivative(), 1e-15))
+  t.check(isApproxSame(dfvLambda(d), derivative(nonLinOp)(d), 1e-15))
       << "Nonlinear operator derivative and lambda have different value";
-  t.check(isApproxSame(ddfvLambda(d), nonLinOp.secondDerivative(), 1e-15))
+  t.check(isApproxSame(ddfvLambda(d), derivative(derivative(nonLinOp))(d), 1e-15))
       << "Nonlinear operator second derivative and lambda have different value";
 
   Ikarus::TrustRegion tr3(nonLinOp,
@@ -246,13 +246,13 @@ static auto trustRegion4_RiemanianUnitSphere() {
                                            const Dune::UnitVector<double, 2>::CorrectionType& d_) { x += d_; }));
   constexpr double tol = 1e-12;
   tr3.setup({.verbosity = 1, .maxIter = 1000, .grad_tol = tol, .corr_tol = tol, .Delta0 = 0.1});
-  const auto solverInfo3 = tr3.solve();
+  const auto solverInfo3 = tr3.solve(d);
   t.check(true == solverInfo3.success) << "Trust region was unsuccessful.";
   t.check(6 == solverInfo3.iterations) << "Trust region has not the expected numbers of iterations.";
   t.check(tol > solverInfo3.residualNorm) << "Trust region didn't reach the correct norm";
-  nonLinOp.update<0>();
-  t.check(1e-17 >= nonLinOp.value()) << "Trust region energy is not zero";
-  t.check(isApproxSame(nonLinOp.firstParameter().getValue(), -Eigen::Vector2d::UnitY(), 1e-15))
+
+  t.check(1e-17 >= nonLinOp(d)) << "Trust region energy is not zero";
+  t.check(isApproxSame(d.getValue(), -Eigen::Vector2d::UnitY(), 1e-15))
       << "Trust region solution is wrong";
   return t;
 }
@@ -411,21 +411,20 @@ static auto trustRegion5_RiemanianUnitSphereAndDispBlocked() {
   t.check(10 == h.rows());
   t.check(10 == h.cols());
 
-  Ikarus::NonLinearOperator nonLinOp(functions(fvLambda, dfvLambda, ddfvLambda), parameter(mT));
-  t.check(Dune::FloatCmp::eq(nonLinOp.value(), fvLambda(mT)));
+  auto nonLinOp= makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), mT);
+  t.check(Dune::FloatCmp::eq(nonLinOp(mT), fvLambda(mT)));
 
-  t.check(isApproxSame(dfvLambda(mT), nonLinOp.derivative(), 1e-15));
-  t.check(isApproxSame(ddfvLambda(mT), nonLinOp.secondDerivative(), 1e-15));
+  t.check(isApproxSame(dfvLambda(mT), derivative(nonLinOp)(mT), 1e-15));
+  t.check(isApproxSame(ddfvLambda(mT), derivative(derivative(nonLinOp))(mT), 1e-15));
 
   TrustRegion tr3(nonLinOp);
   constexpr double tol = 1e-12;
   tr3.setup({.verbosity = 1, .maxIter = 1000, .grad_tol = tol, .corr_tol = tol, .Delta0 = 0.1});
-  const auto solverInfo3 = tr3.solve();
+  const auto solverInfo3 = tr3.solve(mT);
   t.check(true == solverInfo3.success);
   t.check(9 == solverInfo3.iterations);
   t.check(tol > solverInfo3.residualNorm);
-  nonLinOp.update<0>();
-  t.check(Dune::FloatCmp::eq(-0.5, nonLinOp.value()));
+  t.check(Dune::FloatCmp::eq(-0.5, nonLinOp(mT)));
 
   for (auto& director : mT[_1])
     t.check(isApproxSame(director.getValue(), Eigen::Vector3d::UnitZ(), 1e-15));

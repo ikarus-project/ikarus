@@ -57,12 +57,19 @@ struct NonlinearSolverFactory
 
     using CorrectionType           = typename NonLinOpTraits::template Range<1>;
     using Domain           = typename NonLinOpTraits::Domain;
-    std::function updateF = [assembler, setting = settings](Domain& a,
+    auto updateF = [assembler, setting = settings]<typename D>(D& a,
                                                             const CorrectionType& b) {
+      decltype(auto) x = [&]() ->auto&{
+        if constexpr( requires {a.globalSolution();})
+        return a.globalSolution();
+        else
+        return a;
+      }();
+                                                  
       if (assembler->dBCOption() == DBCOption::Reduced) {
-        setting.updateFunction(a.globalSolution(), assembler->createFullVector(b));
+        setting.updateFunction(x, assembler->createFullVector(b));
       } else
-        setting.updateFunction(a.globalSolution(), b);
+        setting.updateFunction(x, b);
     };
     auto settingsNew = settings.rebindUpdateFunction(std::move(updateF));
     return createNonlinearSolver(std::move(settingsNew), std::move(nonLinOp));
