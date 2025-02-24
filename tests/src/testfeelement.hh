@@ -143,11 +143,12 @@ inline auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe,
   return checkJacobianOfElement(subOperator,req);
 };
 
-template <template <typename, int, int> class RT, typename ResultEvaluator = Ikarus::Impl::DefaultUserFunction>
-auto checkResultFunctionFunctorFactory(const auto& resultCollectionFunction, ResultEvaluator&& resultEvaluator = {}) {
+template <template <typename, int, int> class RT, typename ResultEvaluator = Ikarus::Impl::DefaultUserFunction,typename RCF>
+auto checkResultFunctionFunctorFactory(const RCF& resultCollectionFunction, ResultEvaluator&& resultEvaluator = {}) {
   return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req, [[maybe_unused]] auto& affordance) {
-    auto [feRequirements, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
-    return checkResultFunction<RT, ResultEvaluator>(nonLinOp, fe, feRequirements, expectedStress, positions,
+    auto [sol, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe,req);
+    req.globalSolution()=sol;
+    return checkResultFunction<RT, ResultEvaluator>(nonLinOp, fe, req, expectedStress, positions,
                                                     std::forward<ResultEvaluator>(resultEvaluator), "");
   };
 }
@@ -156,14 +157,15 @@ inline auto checkFEByAutoDiffFunctor = [](auto& nonLinOp, auto& fe, auto& req, a
   return checkFEByAutoDiff(nonLinOp, fe, req, affordance);
 };
 
-template <template <typename, int, int> class RT, bool voigt = true>
-auto checkCalculateAtFunctorFactory(const auto& resultCollectionFunction) {
+template <template <typename, int, int> class RT, bool voigt = true,typename RCF>
+auto checkCalculateAtFunctorFactory(const RCF& resultCollectionFunction) {
   return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req, [[maybe_unused]] auto& affordance) {
-    auto [feRequirements, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
+    auto [sol, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe,req);
+    req.globalSolution()=sol;
     if constexpr (voigt)
-      return checkCalculateAt<RT>(nonLinOp, fe, feRequirements, expectedStress, positions);
+      return checkCalculateAt<RT>(nonLinOp, fe, req, expectedStress, positions);
     else
-      return checkCalculateAt<RT, voigt>(nonLinOp, fe, feRequirements, stressResultsToMatrix(expectedStress),
+      return checkCalculateAt<RT, voigt>(nonLinOp, fe, req, stressResultsToMatrix(expectedStress),
                                          positions);
   };
 }

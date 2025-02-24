@@ -81,7 +81,7 @@ bool checkGradient(
     p_updateFunction(x, t * b);
     const auto ept = nonLinOp(x);
     auto value = std::abs(ept - e - t * gradfv);
-    x          = p;
+    p_updateFunction(x, -t * b);
     return value;
   };
 
@@ -136,7 +136,7 @@ bool checkJacobian(
     p_updateFunction(x, t * b);
     const auto etb = nonLinOp(x);
     auto value = (etb - e - t * jacofv).norm();
-    x          = p;
+    p_updateFunction(x, -t * b);
     return value;
   };
 
@@ -203,7 +203,7 @@ bool checkHessian(
     p_updateFunction(x, t * b);
     const auto etb = nonLinOp(x);
     auto value = std::abs(etb - e - t * gradfv - 0.5 * t * t * vhessv);
-    x          = p;
+    p_updateFunction(x, -t * b);
     return value;
   };
 

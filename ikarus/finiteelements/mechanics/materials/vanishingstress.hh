@@ -11,6 +11,7 @@
 
 #include "materialhelpers.hh"
 
+#include "ikarus/utils/tensorutils.hh"
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
@@ -177,23 +178,34 @@ private:
         fixedDiagonalVoigtIndices[ri++] = i;
     }
 
-    auto f = [&](auto&) {
+    auto f = [&](const auto& dEr) {
+     //auto ELocal= E;
+      //ELocal(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices) += fromVoigt(dEr)(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices);
       auto S = matImpl_.template stresses<Underlying::strainTag, true>(E);
       return S(fixedDiagonalVoigtIndices).eval();
     };
-    auto df = [&](auto&) {
+    auto df = [&](const auto& dEr) {
+      //auto ELocal= E;
+      //ELocal(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices)  += fromVoigt(dEr)(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices);
       auto moduli = (matImpl_.template tangentModuli<Underlying::strainTag, true>(E)).eval();
       return (moduli(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices) / Underlying::derivativeFactor).eval();
     };
 
+    //auto Er    = toVoigt(E);
     auto Er    = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
+
+    Er.setZero();
     auto nonOp = Ikarus::makeNonLinearOperator(functions(f, df), Er);
 
     auto linearSolver   = [](auto& r, auto& A) { return (A.inverse() * r).eval(); };
-    auto updateFunction = [&](auto& /* Ex33 */, auto& ecomps) {
+    auto updateFunction = [&](auto& dEr, auto& ecomps) {
+      //dEr+=ecomps;
       for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
+        //auto indexPair = fromVoigt(i);
         auto indexPair = fromVoigt(i);
         E(indexPair[0], indexPair[1]) += ecomps(ri++);
+
+       // dEr(i) += ecomps(ri++);
       }
     };
 
@@ -211,6 +223,7 @@ private:
                                                                       << "The strains are\n"
                                                                       << E << "\n The stresses are\n"
                                                                       << f(Er));
+    //E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices)  += fromVoigt(Er)(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices);
     return std::make_pair(nonOp, E);
   }
 

@@ -187,7 +187,7 @@ public:
                   isSameResultType<RT, ResultTypes::linearStressFull>) {
       const auto eps     = strainFunction(req);
       auto epsVoigt      = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
-      decltype(auto) mat = [&]() {
+      decltype(auto) mat = [&]() -> decltype(auto){
         if constexpr (isSameResultType<RT, ResultTypes::linearStressFull> and requires { mat_.underlying(); })
           return mat_.underlying();
         else

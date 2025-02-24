@@ -99,8 +99,7 @@ public:
    *
    * \tparam RT The type representing the requested result.
    */
-  template <template <typename, int, int> class RT> requires (isSameResultType<RT, ResultTypes::linearStress> or 
-    requires (const EnhancedAssumedStrains& eas,const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local) { eas.underlying().template calculateAtImpl<RT>(req, local); })
+  template <template <typename, int, int> class RT>
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<2>) const  {
     if (isDisplacementBased())
@@ -128,6 +127,7 @@ public:
       easVariant_(calculateAtContribution);
       return resultWrapper;
     }
+    DUNE_THROW(Dune::NotImplemented, "The requested result type is not supported");
   }
 
   /**
