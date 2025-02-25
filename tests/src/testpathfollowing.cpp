@@ -39,11 +39,12 @@ static auto stiffnessMatrix(const Eigen::VectorXd& D, [[maybe_unused]] double la
 }
 
 template <typename NonLinearOperator>
-static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp,typename NonLinearOperator::Domain& req, double stepSize, int loadSteps) {
+static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp, typename NonLinearOperator::Domain& req,
+                                          double stepSize, int loadSteps) {
   req.globalSolution().setZero();
   req.parameter() = 0.0;
-  auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
-  auto pft       = Ikarus::ArcLength{}; // Type of path following technique
+  auto linSolver  = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
+  auto pft        = Ikarus::ArcLength{}; // Type of path following technique
 
   auto nrSettings = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.linearSolver = linSolver};
   auto nr         = Ikarus::createNonlinearSolver(nrSettings, nonLinOp);
@@ -70,7 +71,8 @@ static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp,typename N
 }
 
 template <typename NonLinearOperator>
-static auto simple2DOperatorArcLengthTestAsDefault(NonLinearOperator& nonLinOp,typename NonLinearOperator::Domain& req, double stepSize, int loadSteps) {
+static auto simple2DOperatorArcLengthTestAsDefault(NonLinearOperator& nonLinOp, typename NonLinearOperator::Domain& req,
+                                                   double stepSize, int loadSteps) {
   req.globalSolution().setZero();
   req.parameter() = 0.0;
   auto linSolver  = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
@@ -97,11 +99,12 @@ static auto simple2DOperatorArcLengthTestAsDefault(NonLinearOperator& nonLinOp,t
 }
 
 template <typename NonLinearOperator>
-static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp,typename NonLinearOperator::Domain& req, double stepSize, int loadSteps) {
+static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp, typename NonLinearOperator::Domain& req,
+                                            double stepSize, int loadSteps) {
   req.globalSolution().setZero();
   req.parameter() = 0.0;
-  auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
-  auto pft       = Ikarus::LoadControlSubsidiaryFunction{}; // Type of path following technique
+  auto linSolver  = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
+  auto pft        = Ikarus::LoadControlSubsidiaryFunction{}; // Type of path following technique
 
   auto nrSettings = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.linearSolver = linSolver};
   auto nr         = Ikarus::createNonlinearSolver(nrSettings, nonLinOp);
@@ -126,9 +129,11 @@ static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp,typename
 }
 
 template <typename NonLinearOperator>
-static auto simple2DOperatorDisplacementControlTest(NonLinearOperator& nonLinOp,typename NonLinearOperator::Domain& req, double stepSize, int loadSteps) {
+static auto simple2DOperatorDisplacementControlTest(NonLinearOperator& nonLinOp,
+                                                    typename NonLinearOperator::Domain& req, double stepSize,
+                                                    int loadSteps) {
   req.globalSolution().setZero();
-  req.parameter() = 0.0;
+  req.parameter()                    = 0.0;
   auto linSolver                     = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
   std::vector<int> controlledIndices = {0};
 
@@ -164,8 +169,8 @@ int main(int argc, char** argv) {
   Eigen::VectorXd D;
   D.setZero(2);
 
-  auto fvLambda  = [&](auto&& req_) { return residual(req_.globalSolution(), lambda); };
-  auto dfvLambda = [&](auto&& req_) { return stiffnessMatrix(req_.globalSolution(), lambda); };
+  auto fvLambda  = [&](auto&& req_) { return residual(req_.globalSolution(), req_.parameter()); };
+  auto dfvLambda = [&](auto&& req_) { return stiffnessMatrix(req_.globalSolution(), req_.parameter()); };
   DummyFERequirements req;
   req.insertGlobalSolution(D);
   req.insertParameter(lambda);
@@ -175,10 +180,10 @@ int main(int argc, char** argv) {
   double stepSize = 0.1;
   int loadSteps   = 5;
 
-  t.subTest(simple2DOperatorArcLengthTest(nonLinOp,req, stepSize, loadSteps));
-  t.subTest(simple2DOperatorArcLengthTestAsDefault(nonLinOp,req, stepSize, loadSteps));
-  t.subTest(simple2DOperatorLoadControlTest(nonLinOp,req, stepSize, loadSteps));
-  t.subTest(simple2DOperatorDisplacementControlTest(nonLinOp,req, stepSize, loadSteps));
+  t.subTest(simple2DOperatorArcLengthTest(nonLinOp, req, stepSize, loadSteps));
+  t.subTest(simple2DOperatorArcLengthTestAsDefault(nonLinOp, req, stepSize, loadSteps));
+  t.subTest(simple2DOperatorLoadControlTest(nonLinOp, req, stepSize, loadSteps));
+  t.subTest(simple2DOperatorDisplacementControlTest(nonLinOp, req, stepSize, loadSteps));
 
   return t.exit();
 }

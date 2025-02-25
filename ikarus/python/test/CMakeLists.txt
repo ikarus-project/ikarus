@@ -58,7 +58,7 @@ dune_python_add_test(
 
 dune_python_add_test(
   NAME
-  vtkwritertest
+  pyvtkwritertest
   SCRIPT
   vtkwritertest.py
   WORKING_DIRECTORY
