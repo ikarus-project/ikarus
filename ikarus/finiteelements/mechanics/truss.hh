@@ -49,13 +49,12 @@ public:
   using Traits       = PreFE::Traits;
   using BasisHandler = typename Traits::BasisHandler;
   using FlatBasis    = typename Traits::FlatBasis;
-  using Requirement =
-      FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor, Traits::useEigenRef>::type;
-  using LocalView = typename Traits::LocalView;
-  using Geometry  = typename Traits::Geometry;
-  using GridView  = typename Traits::GridView;
-  using Element   = typename Traits::Element;
-  using Pre       = TrussPre;
+  using Requirement  = FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
+  using LocalView    = typename Traits::LocalView;
+  using Geometry     = typename Traits::Geometry;
+  using GridView     = typename Traits::GridView;
+  using Element      = typename Traits::Element;
+  using Pre          = TrussPre;
 
   static constexpr int myDim    = Traits::mydim;
   static constexpr int worldDim = Traits::worlddim;

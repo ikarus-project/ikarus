@@ -115,11 +115,8 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     // AssemblerManipulator<VectorAssembler> vectorFlatAssemblerAM(fes, dirichletValues);
     // AssemblerManipulator<DenseAssembler> denseFlatAssemblerAM(fes, dirichletValues);
 
-    Eigen::VectorXd d(basis.flat().size());
-    d.setRandom();
-    double load = 0.0;
-
-    auto req = typename FEType::Requirement(d, load);
+    auto req = typename FEType::Requirement(basis);
+    req.globalSolution().setRandom();
 
     const auto& KRawDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Raw);
     const auto& KRaw      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Raw);

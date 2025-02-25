@@ -46,7 +46,7 @@ class Traction
 public:
   using Traits = PreFE::Traits;
   using Requirement =
-      FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor, Traits::useEigenRef>::type;
+      FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
   using LocalView               = typename Traits::LocalView;
   using GridView                = typename Traits::GridView;
   static constexpr int myDim    = Traits::mydim;

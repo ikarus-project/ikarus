@@ -52,7 +52,7 @@ class EnhancedAssumedStrains
 public:
   using Traits = PreFE::Traits;
   using Requirement =
-      FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor, Traits::useEigenRef>::type;
+      FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
   using LocalView = typename Traits::LocalView;
   using Geometry  = typename Traits::Geometry;
   using GridView  = typename Traits::GridView;

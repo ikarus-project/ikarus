@@ -215,7 +215,7 @@ public:
    * \param x the solutin.
    * \return NonLinearSolverInformation containing information about the solver result.
    */
-  NonLinearSolverInformation solve( Domain& x) {
+  [[nodiscard]] NonLinearSolverInformation solve( Domain& x) {
     Domain xOld = x;
     init(x);
 

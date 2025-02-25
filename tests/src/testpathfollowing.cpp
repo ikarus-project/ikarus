@@ -19,7 +19,7 @@
 using namespace Ikarus::Concepts;
 using Dune::TestSuite;
 
-using DummyFERequirements = Ikarus::FERequirementsFactory<Ikarus::FESolutions::displacement, Ikarus::FEParameter::loadfactor>::type;
+using DummyFERequirements = Ikarus::FERequirements<Ikarus::FESolutions::displacement, Ikarus::FEParameter::loadfactor>;
 
 static auto residual(const Eigen::VectorXd& D, double lambda) {
   Eigen::VectorXd vec;

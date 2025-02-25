@@ -107,21 +107,14 @@ static auto NonLinearKLShellLoadControlTR() {
 
   auto sparseAssembler = makeSparseFlatAssembler(fes, dirichletValues);
 
-  Eigen::VectorXd d;
-  d.setZero(basis.flat().size());
-  double lambda = 0.0;
-
-  auto req = FEType::Requirement();
-  req.insertGlobalSolution(d).insertParameter(lambda);
-
-  [[maybe_unused]] auto req2 = FEType::Requirement(d, lambda);
+  auto req = typename FEType::Requirement(basis);
 
   sparseAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics);
   auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseAssembler);
 
-  t.check(utils::checkGradient(nonLinOp,req, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkGradient(nonLinOp, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp,req, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkHessian(nonLinOp, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check Hessian failed";
 
   const double gradTol = 1e-14;
@@ -136,7 +129,7 @@ static auto NonLinearKLShellLoadControlTR() {
              .Delta0    = 1});
 
   auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
-      basis.flat(), d, 2);
+      basis.flat(), req.globalSolution(), 2);
   vtkWriter->setFileNamePrefix("TestKLShell");
   vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
 
@@ -146,7 +139,7 @@ static auto NonLinearKLShellLoadControlTR() {
 
   t.check(controlInfo.success);
 
-  const auto maxDisp = std::ranges::max(d);
+  const auto maxDisp = std::ranges::max(req.globalSolution());
   std::cout << std::setprecision(16) << maxDisp << std::endl;
   t.check(Dune::FloatCmp::eq(0.2087577577946809, maxDisp, 1e-6))
       << std::setprecision(16) << "The maximum displacement is " << maxDisp << "but it should be " << 0.2087577577946809

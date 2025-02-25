@@ -81,12 +81,9 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   auto sparseAssembler = makeSparseFlatAssembler(fes, dirichletValues);
 
-  Eigen::VectorXd d;
-  d.setZero(basis.flat().size());
-  double lambda = 0.0;
-
-  auto req = typename FEType::Requirement(d, lambda);
-
+  auto req           = typename FEType::Requirement(basis);
+  const auto& d      = req.globalSolution();
+  const auto& lambda = req.parameter();
   sparseAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics);
   auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseAssembler, DBCOption::Reduced);
 
@@ -113,8 +110,8 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   auto lc = Ikarus::LoadControl(tr, 1, {0, 50});
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run(req);
-  auto actualEnergy= nonLinOp(req);
-  const auto maxDisp = std::ranges::max(d);
+  auto actualEnergy      = nonLinOp(req);
+  const auto maxDisp     = std::ranges::max(d);
   double energyExpected;
   if (std::is_same_v<Grid, Grids::Yasp>)
     energyExpected = -2.9605187645668578078;
@@ -182,7 +179,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
       << "Test resultName: " << resultFunction5->name() << "should be PK2StressFull";
   t.check(resultFunction5->ncomps() == 6) << "Test result comps: " << resultFunction5->ncomps() << "should be 6";
 
-  auto grad= derivative(nonLinOp)(req);
+  auto grad = derivative(nonLinOp)(req);
   t.check(controlInfo.success, "Successful result");
   t.check(gradTol >= grad.norm(), "Gradient Tolerance should be larger than actual tolerance");
   return t;

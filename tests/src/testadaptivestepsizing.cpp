@@ -131,12 +131,10 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   auto sparseAssembler = makeSparseFlatAssembler(fes, dirichletValues);
 
-  Eigen::VectorXd d;
-  d.setZero(basis.flat().size());
-  double lambda = 0.0;
+  auto req     = typename FEType::Requirement(basis);
+  auto& d      = req.globalSolution();
+  auto& lambda = req.parameter();
 
-  auto req = fes[0].createRequirement();
-  req.insertGlobalSolution(d).insertParameter(lambda);
   sparseAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics);
 
   auto linSolver = LinearSolver(SolverTypeTag::sd_SimplicialLDLT);
@@ -195,7 +193,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
       "IterationBased should fail for targetIterations being 0");
 
   d.setZero();
-  lambda = 0.0;
+  lambda                    = 0.0;
   const auto controlInfoWSS = crWSS.run(req);
   const double tolDisp      = 1e-13;
   const double tolLoad      = 1e-12;
@@ -230,8 +228,8 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   checkSolverInfos(t, expectedIterations[1], controlInfoWoSS, loadSteps, message2);
 
   auto nonLinOp = NonLinearOperatorFactory::op(sparseAssembler);
-  t.check(utils::checkGradient(nonLinOp,req, {.draw = false})) << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp,req, {.draw = false})) << "Check hessian failed";
+  t.check(utils::checkGradient(nonLinOp, req, {.draw = false})) << "Check gradient failed";
+  t.check(utils::checkHessian(nonLinOp, req, {.draw = false})) << "Check hessian failed";
 
   return t;
 }
