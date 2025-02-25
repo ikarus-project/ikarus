@@ -109,8 +109,8 @@ static auto NonLinearKLShellLoadControlTR() {
 
   auto req = typename FEType::Requirement(basis);
 
-  sparseAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics);
-  auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseAssembler);
+  sparseAssembler->bind(Ikarus::AffordanceCollections::elastoStatics);
+  auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseAssembler, DBCOption::Full);
 
   t.check(utils::checkGradient(nonLinOp, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check gradient failed";

@@ -45,7 +45,7 @@ public:
   }
 };
 
-template <typename... DerivativeArgs, typename  Arg>
+template <typename... DerivativeArgs, typename Arg>
 struct DerivativeTraitsFromCallables<Impl::Functions<DerivativeArgs...>, Arg>
 {
   /**
@@ -54,18 +54,22 @@ struct DerivativeTraitsFromCallables<Impl::Functions<DerivativeArgs...>, Arg>
    * \param derivativesFunctions The Functions object for derivative arguments.
    * \param parameterI The Parameter object for parameter arguments.
    */
-  DerivativeTraitsFromCallables(const Impl::Functions<DerivativeArgs...>& derivativesFunctions,
-                                 const Arg& parameterI) {}
+  DerivativeTraitsFromCallables(const Impl::Functions<DerivativeArgs...>& derivativesFunctions, const Arg& parameterI) {
+  }
 
-  using Ranges = std::tuple<std::invoke_result_t<DerivativeArgs, const Arg&>...,Dune::Functions::InvalidRange>;
-  using RawRanges = std::tuple<std::remove_cvref_t<std::invoke_result_t<DerivativeArgs, const Arg&>>...,Dune::Functions::InvalidRange>;
+  using Ranges    = std::tuple<std::invoke_result_t<DerivativeArgs, const Arg&>..., Dune::Functions::InvalidRange>;
+  using RawRanges = std::tuple<std::remove_cvref_t<std::invoke_result_t<DerivativeArgs, const Arg&>>...,
+                               Dune::Functions::InvalidRange>;
 
-  using Domain = std::remove_cvref_t<Arg>;
-  using Signatures = std::tuple<std::invoke_result_t<DerivativeArgs, const Arg&>(const Arg&)...,Dune::Functions::InvalidRange(const Arg&)>;
-  using RawSignatures = std::tuple<std::remove_cvref_t<std::invoke_result_t<DerivativeArgs, const Arg&>>(std::remove_cvref_t<Arg>)...,Dune::Functions::InvalidRange(std::remove_cvref_t<Arg>)>;
+  using Domain     = std::remove_cvref_t<Arg>;
+  using Signatures = std::tuple<std::invoke_result_t<DerivativeArgs, const Arg&>(const Arg&)...,
+                                Dune::Functions::InvalidRange(const Arg&)>;
+  using RawSignatures =
+      std::tuple<std::remove_cvref_t<std::invoke_result_t<DerivativeArgs, const Arg&>>(std::remove_cvref_t<Arg>)...,
+                 Dune::Functions::InvalidRange(std::remove_cvref_t<Arg>)>;
 
   template <int I>
-  using Signature = std::tuple_element_t<I/*(I <std::tuple_size_v<Signatures> ? I : std::tuple_size_v<Signatures>-1)*/, Signatures>;
+  using Signature = std::tuple_element_t<I, Signatures>;
 
   template <int I>
   using Range = std::tuple_element_t<I, Ranges>;
@@ -77,14 +81,14 @@ struct DerivativeTraitsFromCallables<Impl::Functions<DerivativeArgs...>, Arg>
   struct DerivativeTraits
   {
   private:
-    static constexpr int indexOfSignatureImpl = traits::Index<Signature, RawSignatures>::value+1;
-    static constexpr int indexOfSignature = indexOfSignatureImpl;//<std::tuple_size_v<Ranges>? indexOfSignatureImpl: std::tuple_size_v<Ranges>-1;
+    static constexpr int indexOfSignatureImpl = traits::Index<Signature, RawSignatures>::value + 1;
+    static constexpr int indexOfSignature     = indexOfSignatureImpl;
 
   public:
     using Range = std::tuple_element_t<indexOfSignature, Ranges>;
   };
 };
-template <typename... DerivativeArgs, typename  Arg>
-  DerivativeTraitsFromCallables(const Impl::Functions<DerivativeArgs...>& derivativesFunctions,
-                                 Arg&& parameterI) -> DerivativeTraitsFromCallables<Impl::Functions<DerivativeArgs...>, Arg>;
+template <typename... DerivativeArgs, typename Arg>
+DerivativeTraitsFromCallables(const Impl::Functions<DerivativeArgs...>& derivativesFunctions, Arg&& parameterI)
+    -> DerivativeTraitsFromCallables<Impl::Functions<DerivativeArgs...>, Arg>;
 } // namespace Ikarus

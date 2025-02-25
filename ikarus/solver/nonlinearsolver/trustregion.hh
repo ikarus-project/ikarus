@@ -209,12 +209,10 @@ public:
 
   /**
    * \brief Solves the nonlinear optimization problem using the TrustRegion algorithm.
-   * \tparam SolutionType Type of the solution predictor (default is NoPredictor).
-   * \param x the solutin.
+   * \param x the solution.
    * \return NonLinearSolverInformation containing information about the solver result.
    */
   [[nodiscard]] NonLinearSolverInformation solve(Domain& x) {
-    Domain xOld = x;
     init(x);
 
     NonLinearSolverInformation solverInformation;
@@ -222,7 +220,6 @@ public:
     Heta_.resizeLike(gradient());
     truncatedConjugateGradient_.analyzePattern(hessian());
     stats_.energy   = energyValue();
-    xOld            = x;
     stats_.gradNorm = norm(gradient());
     truncatedConjugateGradient_.analyzePattern(hessian());
 
@@ -370,12 +367,11 @@ public:
       if (info_.acceptProposal) {
         stats_.energy = stats_.energyProposal;
         updateAll(x);
-        xOld = x;
         this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, stats_.etaNorm);
         this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, stats_.gradNorm);
         this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
       } else {
-        x = xOld;
+        updateFunction_(x, -eta_);
         eta_.setZero();
       }
       updateAll(x);

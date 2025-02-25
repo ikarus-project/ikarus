@@ -94,11 +94,11 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
   auto nonLinOp    = Ikarus::makeNonLinearOperator(functions(f, df, ddf), ev);
   auto subNonLinOp = derivative(nonLinOp);
 
-  t.check(utils::checkGradient(nonLinOp, ev,{.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkGradient(nonLinOp, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << std::string("checkGradient Failed");
-  t.check(utils::checkHessian(nonLinOp,ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkHessian(nonLinOp, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << std::string("checkHessian Failed");
-  t.check(utils::checkJacobian(subNonLinOp,ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkJacobian(subNonLinOp, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << std::string("checkJacobian Failed");
 
   return t;

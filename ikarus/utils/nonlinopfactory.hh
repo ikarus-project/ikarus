@@ -21,9 +21,8 @@ namespace Ikarus {
 
 struct NonLinearOperatorFactory
 {
-  template <typename Assembler, typename Parameter, typename... Affordances>
-  static auto op(Assembler&& as, const Parameter& arg, AffordanceCollection<Affordances...> affordances,
-                 DBCOption dbcOption) {
+  template <typename Assembler, typename... Affordances>
+  static auto op(Assembler&& as, AffordanceCollection<Affordances...> affordances, DBCOption dbcOption) {
     auto assemblerPtr = [as]() {
       if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
                     traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value)
@@ -32,43 +31,48 @@ struct NonLinearOperatorFactory
         return std::make_shared<std::remove_cvref_t<Assembler>>(std::forward<Assembler>(as));
     }();
 
-    [[maybe_unused]] auto KFunction = [dbcOption, assembler = assemblerPtr, affordances](const Parameter& p) -> auto& {
+    using FERequirement = typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement;
+
+    [[maybe_unused]] auto KFunction = [dbcOption, assembler = assemblerPtr,
+                                       affordances](const FERequirement& p) -> auto& {
       return assembler->matrix(p, affordances.matrixAffordance(), dbcOption);
     };
 
     [[maybe_unused]] auto residualFunction = [dbcOption, assembler = assemblerPtr,
-                                              affordances](const Parameter& p) -> auto& {
+                                              affordances](const FERequirement& p) -> auto& {
       return assembler->vector(p, affordances.vectorAffordance(), dbcOption);
     };
 
-    assert(arg.populated() && " Before you calls this method you have to pass populated fe requirements");
+    auto reqArg = FERequirement(); // This is only created to help  makeNonLinearOperator deduce the argument type of
+                                   // the functions. therefore, no valid values needed
+
     if constexpr (affordances.hasScalarAffordance) {
-      [[maybe_unused]] auto energyFunction = [assembler = assemblerPtr, affordances](const Parameter& p) -> auto& {
+      [[maybe_unused]] auto energyFunction = [assembler = assemblerPtr, affordances](const FERequirement& p) -> auto& {
         return assembler->scalar(p, affordances.scalarAffordance());
       };
 
-      return makeNonLinearOperator(functions(energyFunction, residualFunction, KFunction), arg);
+      return makeNonLinearOperator(functions(energyFunction, residualFunction, KFunction), reqArg);
     } else
-      return makeNonLinearOperator(functions(residualFunction, KFunction), arg);
+      return makeNonLinearOperator(functions(residualFunction, KFunction), reqArg);
   }
 
   template <typename Assembler>
   static auto op(Assembler&& as, DBCOption dbcOption) {
     auto ex = []() {
       DUNE_THROW(Dune::InvalidStateException,
-                 "Assembler has to be bound to a fe requirement and an affordance collection before you can call "
+                 "Assembler has to be bound to an affordance collection before you can call "
                  "this method");
     };
     if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
                   traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value) {
-      if (as->boundToRequirement() and as->boundToAffordanceCollection()) {
-        return op(std::forward<Assembler>(as), as->requirement(), as->affordanceCollection(), dbcOption);
+      if (as->boundToAffordanceCollection()) {
+        return op(std::forward<Assembler>(as), as->affordanceCollection(), dbcOption);
       } else {
         ex();
       }
     } else {
-      if (as->boundToRequirement() and as->boundToAffordanceCollection()) {
-        return op(std::forward<Assembler>(as), as.requirement(), as.affordanceCollection(), dbcOption);
+      if (as->boundToAffordanceCollection()) {
+        return op(std::forward<Assembler>(as), as.affordanceCollection(), dbcOption);
       } else {
         ex();
       }
@@ -80,61 +84,19 @@ struct NonLinearOperatorFactory
   static auto op(Assembler&& as) {
     auto ex = []() {
       DUNE_THROW(Dune::InvalidStateException,
-                 "Assembler has to be bound to a fe requirement to an affordance collection and to an "
+                 "Assembler has to be bound to an affordance collection and to an "
                  "DBCOption before you can call "
                  "this method");
     };
     if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
                   traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value) {
-      if (not as->bound())
+      if (not(as->boundToAffordanceCollection() and as->boundToDBCOption()))
         ex();
-      return op(std::forward<Assembler>(as), as->requirement(), as->affordanceCollection(), as->dBCOption());
+      return op(std::forward<Assembler>(as), as->affordanceCollection(), as->dBCOption());
     } else {
-      if (not as.bound())
+      if (not(as->boundToAffordanceCollection() and as->boundToDBCOption()))
         ex();
-      return op(std::forward<Assembler>(as), as.requirement(), as.affordanceCollection(), as.dBCOption());
-    }
-  }
-
-  template <typename Assembler, typename... Affordances>
-  static auto op(Assembler&& as, AffordanceCollection<Affordances...> affordances,
-                 DBCOption dbcOption = DBCOption::Full) {
-    auto ex = []() {
-      DUNE_THROW(Dune::InvalidStateException,
-                 "Assembler has to be bound to a fe requirement before you can call "
-                 "this method");
-    };
-
-    if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
-                  traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value) {
-      if (not as->boundToRequirement())
-        ex();
-      return op(std::forward<Assembler>(as), as->requirement(), affordances, dbcOption);
-    } else {
-      if (not as.boundToRequirement())
-        ex();
-      return op(std::forward<Assembler>(as), as.requirement(), affordances, dbcOption);
-    }
-  }
-
-  template <typename Assembler>
-  static auto op(Assembler&& as, typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement& req,
-                 DBCOption dbcOption) {
-    auto ex = []() {
-      DUNE_THROW(Dune::InvalidStateException,
-                 "Assembler has to be bound to an affordance collection before you can call "
-                 "this method");
-    };
-
-    if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
-                  traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value) {
-      if (not as->boundToAffordanceCollection())
-        ex();
-      return op(std::forward<Assembler>(as), as->requirement(), as->affordanceCollection(), dbcOption);
-    } else {
-      if (not as.boundToAffordanceCollection())
-        ex();
-      return op(std::forward<Assembler>(as), as.requirement(), as.affordanceCollection(), dbcOption);
+      return op(std::forward<Assembler>(as), as.affordanceCollection(), as.dBCOption());
     }
   }
 };

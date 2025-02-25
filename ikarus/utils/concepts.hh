@@ -228,8 +228,8 @@ namespace Concepts {
     not(std::is_same_v<typename NLS::NonLinearOperator::Domain, double> and
         ((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix,
                                                   typename NLS::NonLinearOperator::Traits::template Range<1>>::value) or
-         (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix,
-                                                     typename NLS::NonLinearOperator::Traits::template Range<1>>::value)));
+         (traits::isSpecializationTypeNonTypeAndType<
+             Eigen::SparseMatrix, typename NLS::NonLinearOperator::Traits::template Range<1>>::value)));
   };
 
   /**

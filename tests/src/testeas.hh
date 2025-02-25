@@ -32,10 +32,10 @@ struct ElementTest<FE>
         fe.setEASType(numberOfEASParameter);
         auto messageIfFailed = "The numbers of EAS parameters are " + std::to_string(numberOfEASParameter) + ".";
         if (numberOfEASParameter == 0) {
-          t.subTest(checkGradientOfElement(nonLinOp,req, messageIfFailed));
-          t.subTest(checkHessianOfElement(nonLinOp,req,  messageIfFailed));
+          t.subTest(checkGradientOfElement(nonLinOp, req, messageIfFailed));
+          t.subTest(checkHessianOfElement(nonLinOp, req, messageIfFailed));
         }
-        t.subTest(checkJacobianOfElement(subOp,req,  messageIfFailed));
+        t.subTest(checkJacobianOfElement(subOp, req, messageIfFailed));
 
         t.subTest(checkFEByAutoDiff(nonLinOp, fe, req, affordance, messageIfFailed));
 

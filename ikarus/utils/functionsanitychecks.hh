@@ -9,11 +9,14 @@
 #pragma once
 
 #include <type_traits>
+
 #include <dune/common/float_cmp.hh>
 #include <dune/functions/common/signature.hh>
-#include <ikarus/utils/defaultfunctions.hh>
 
 #include <spdlog/spdlog.h>
+
+#include <ikarus/utils/defaultfunctions.hh>
+
 namespace Ikarus::utils {
 namespace Impl {
   /**
@@ -51,15 +54,14 @@ struct CheckFlags
  * \param p_updateFunction Update function.
  * \return True if the check passed, false otherwise.
  */
-template <typename NLO, typename UF= UpdateDefault>
-bool checkGradient(
-    NLO& nonLinOp,const typename NLO::Domain& p, CheckFlags checkFlags = CheckFlags(),
-     UF&& p_updateFunction = { }) {
-   auto x = p;
-   auto gradF = derivative(nonLinOp);
-   const auto e = nonLinOp(x);
-   decltype(auto) g = gradF(x);
-   using UpdateType =std::remove_cvref_t<decltype(g)>;
+template <typename NLO, typename UF = UpdateDefault>
+bool checkGradient(NLO& nonLinOp, const typename NLO::Domain& p, CheckFlags checkFlags = CheckFlags(),
+                   UF&& p_updateFunction = {}) {
+  auto x           = p;
+  auto gradF       = derivative(nonLinOp);
+  const auto e     = nonLinOp(x);
+  decltype(auto) g = gradF(x);
+  using UpdateType = std::remove_cvref_t<decltype(g)>;
 
   UpdateType b;
   if constexpr (not std::is_floating_point_v<UpdateType>) {
@@ -68,8 +70,6 @@ bool checkGradient(
     b /= b.norm();
   } else
     b = 1;
-
-
 
   double gradfv;
   if constexpr (not std::is_floating_point_v<UpdateType>)
@@ -80,7 +80,7 @@ bool checkGradient(
   auto ftfunc = [&](auto t) {
     p_updateFunction(x, t * b);
     const auto ept = nonLinOp(x);
-    auto value = std::abs(ept - e - t * gradfv);
+    auto value     = std::abs(ept - e - t * gradfv);
     p_updateFunction(x, -t * b);
     return value;
   };
@@ -115,15 +115,15 @@ bool checkGradient(
  * \return True if the check passed, false otherwise.
  */
 template <typename NLO, typename UF = UpdateDefault>
-bool checkJacobian(
-    NLO& nonLinOp,const typename NLO::Domain& p, CheckFlags checkFlags = CheckFlags(),
-    UF&& p_updateFunction = { }) {
-   auto x = p;
+bool checkJacobian(NLO& nonLinOp, const typename NLO::Domain& p, CheckFlags checkFlags = CheckFlags(),
+                   UF&& p_updateFunction = {}) {
+  auto x = p;
 
-  auto gradF = derivative(nonLinOp);
-  const auto e = nonLinOp(x);
+  auto gradF       = derivative(nonLinOp);
+  const auto e     = nonLinOp(x);
   decltype(auto) g = gradF(x);
-  using UpdateType =std::conditional_t<NLO::nDerivatives==2, std::remove_cvref_t<decltype(g)>, std::remove_cvref_t<decltype(e)>>;
+  using UpdateType =
+      std::conditional_t<NLO::nDerivatives == 2, std::remove_cvref_t<decltype(g)>, std::remove_cvref_t<decltype(e)>>;
 
   UpdateType b;
   b.resizeLike(g.col(0));
@@ -135,7 +135,7 @@ bool checkJacobian(
   auto ftfunc = [&](auto t) {
     p_updateFunction(x, t * b);
     const auto etb = nonLinOp(x);
-    auto value = (etb - e - t * jacofv).norm();
+    auto value     = (etb - e - t * jacofv).norm();
     p_updateFunction(x, -t * b);
     return value;
   };
@@ -169,16 +169,15 @@ bool checkJacobian(
  * \return True if the check passed, false otherwise.
  */
 template <typename NLO, typename UF = UpdateDefault>
-bool checkHessian(
-    NLO& nonLinOp,const typename NLO::Domain& p, CheckFlags checkFlags = CheckFlags(),
-    UF&& p_updateFunction = { }) {
-   auto x = p;
-  auto gradF = derivative(nonLinOp);
-  auto hessF = derivative(gradF);
-  const auto e = nonLinOp(x);
+bool checkHessian(NLO& nonLinOp, const typename NLO::Domain& p, CheckFlags checkFlags = CheckFlags(),
+                  UF&& p_updateFunction = {}) {
+  auto x           = p;
+  auto gradF       = derivative(nonLinOp);
+  auto hessF       = derivative(gradF);
+  const auto e     = nonLinOp(x);
   decltype(auto) g = gradF(x);
   decltype(auto) h = hessF(x);
-  using UpdateType =std::remove_cvref_t<decltype(g)>;
+  using UpdateType = std::remove_cvref_t<decltype(g)>;
   UpdateType b;
 
   if constexpr (not std::is_floating_point_v<UpdateType>) {
@@ -187,8 +186,6 @@ bool checkHessian(
     b /= b.norm();
   } else
     b = 1;
-
-
 
   double gradfv, vhessv;
   if constexpr (not std::is_floating_point_v<UpdateType>) {
@@ -202,7 +199,7 @@ bool checkHessian(
   auto ftfunc = [&](auto t) {
     p_updateFunction(x, t * b);
     const auto etb = nonLinOp(x);
-    auto value = std::abs(etb - e - t * gradfv - 0.5 * t * t * vhessv);
+    auto value     = std::abs(etb - e - t * gradfv - 0.5 * t * t * vhessv);
     p_updateFunction(x, -t * b);
     return value;
   };
