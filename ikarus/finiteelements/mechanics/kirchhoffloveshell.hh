@@ -50,11 +50,10 @@ template <typename PreFE, typename FE>
 class KirchhoffLoveShell : public ResultTypeBase<>
 {
 public:
-  using Traits       = PreFE::Traits;
-  using BasisHandler = typename Traits::BasisHandler;
-  using FlatBasis    = typename Traits::FlatBasis;
-  using Requirement =
-      FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
+  using Traits         = PreFE::Traits;
+  using BasisHandler   = typename Traits::BasisHandler;
+  using FlatBasis      = typename Traits::FlatBasis;
+  using Requirement    = FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
   using LocalView      = typename Traits::LocalView;
   using Geometry       = typename Traits::Geometry;
   using GridView       = typename Traits::GridView;

@@ -96,8 +96,8 @@ requires traits::isSpecializationNonTypeAndTypes<TrustRegionConfig, std::remove_
 auto createNonlinearSolver(TRConfig&& config, NLO&& nonLinearOperator) {
   static constexpr PreConditioner preConditioner = std::remove_cvref_t<TRConfig>::preConditionerType;
   using UF                                       = std::remove_cvref_t<TRConfig>::UpdateFunction;
-   static_assert(std::remove_cvref_t<NLO>::nDerivatives == 2,
-                 "The number of derivatives in the nonlinear operator have to be exactly 2.");
+  static_assert(std::remove_cvref_t<NLO>::nDerivatives == 2,
+                "The number of derivatives in the nonlinear operator have to be exactly 2.");
   auto solver = std::make_shared<TrustRegion<NLO, preConditioner, UF>>(nonLinearOperator,
                                                                        std::forward<TRConfig>(config).updateFunction);
 
@@ -170,22 +170,20 @@ template <typename NLO, PreConditioner preConditioner, typename UF>
 class TrustRegion : public IObservable<NonLinearSolverMessages>
 {
 public:
-  using Settings  = TRSettings;                               ///< Type of the settings for the TrustRegion solver
+  using Settings = TRSettings; ///< Type of the settings for the TrustRegion solver
 
-    using NLOTraits= typename NLO::Traits;
+  using NLOTraits = typename NLO::Traits;
 
-  using Domain = typename NLOTraits::Domain; ///< Type of the parameter vector of
-                                                              ///< the nonlinear operator
-  using CorrectionType = typename NLOTraits::template Range<1>;        ///< Type of the correction of x += deltaX.
-  using UpdateFunction = UF;                                  ///< Type of the update function.
-
-
+  using Domain = typename NLOTraits::Domain;                    ///< Type of the parameter vector of
+                                                                ///< the nonlinear operator
+  using CorrectionType = typename NLOTraits::template Range<1>; ///< Type of the correction of x += deltaX.
+  using UpdateFunction = UF;                                    ///< Type of the update function.
 
   using NonLinearOperator = NLO; ///< Type of the non-linear operator
 
-  using EnergyType = typename NLOTraits::template Range<0>;   ///< Type of the scalar cost
-  using GradientType = typename NLOTraits::template Range<1>;   ///< Type of the gradient vector
-  using HessianType = typename NLOTraits::template Range<2>;   ///< Type of the Hessian matrix
+  using EnergyType   = typename NLOTraits::template Range<0>; ///< Type of the scalar cost
+  using GradientType = typename NLOTraits::template Range<1>; ///< Type of the gradient vector
+  using HessianType  = typename NLOTraits::template Range<2>; ///< Type of the Hessian matrix
 
   /**
    * \brief Constructs a TrustRegion solver instance.
@@ -215,16 +213,16 @@ public:
    * \param x the solutin.
    * \return NonLinearSolverInformation containing information about the solver result.
    */
-  [[nodiscard]] NonLinearSolverInformation solve( Domain& x) {
+  [[nodiscard]] NonLinearSolverInformation solve(Domain& x) {
     Domain xOld = x;
     init(x);
 
     NonLinearSolverInformation solverInformation;
     eta_.resizeLike(gradient());
     Heta_.resizeLike(gradient());
-        truncatedConjugateGradient_.analyzePattern(hessian());
+    truncatedConjugateGradient_.analyzePattern(hessian());
     stats_.energy   = energyValue();
-    xOld           = x;
+    xOld            = x;
     stats_.gradNorm = norm(gradient());
     truncatedConjugateGradient_.analyzePattern(hessian());
 
@@ -402,49 +400,39 @@ public:
    */
   auto& energy() { return energyFunction_; }
 
-    /**
+  /**
    * \brief Access the residual.
    * \return The residual by value.
    */
-   auto residual() { return derivative(energyFunction_); }
+  auto residual() { return derivative(energyFunction_); }
 
 private:
+  template <class T>
+  constexpr auto make_optional_reference(T& value) {
+    return std::make_optional<std::reference_wrapper<const T>>(std::cref(value));
+  }
 
-template< class T >
-constexpr auto make_optional_reference( T& value )
-{
-  return std::make_optional<std::reference_wrapper<const T>>(std::cref(value));
-}
+  template <class T>
+  requires(not std::is_lvalue_reference_v<T>)
+  constexpr T make_optional_reference(T&& value) {
+    return value;
+  }
 
-template< class T > requires (not std::is_lvalue_reference_v<T>)
-constexpr T make_optional_reference( T&& value )
-{
-  return value;
-}
+  void init(const Domain& x) {
+    this->notify(NonLinearSolverMessages::INIT);
+    stats_  = Stats{};
+    info_   = AlgoInfo{};
+    energy_ = make_optional_reference(energyFunction_(x));
+    grad_   = make_optional_reference(derivative(energyFunction_)(x));
+    hess_   = make_optional_reference(derivative(derivative(energyFunction_))(x));
+  }
 
-
-
-
-void init(const Domain& x)
-{
-     this->notify(NonLinearSolverMessages::INIT);
-    stats_ = Stats{};
-    info_  = AlgoInfo{};
-    energy_=make_optional_reference(energyFunction_(x));
-    grad_=make_optional_reference(derivative(energyFunction_)(x));
-    hess_=make_optional_reference(derivative(derivative(energyFunction_))(x));
-}
-
-void updateAll(const Domain& x)
-{
-  energy_=make_optional_reference(energyFunction_(x));
-  grad_=make_optional_reference(derivative(energyFunction_)(x));
-  hess_=make_optional_reference(derivative(derivative(energyFunction_))(x));
-}
-void updateEnergy(const Domain& x)
-{
-  energy_=make_optional_reference(energyFunction_(x));
-}
+  void updateAll(const Domain& x) {
+    energy_ = make_optional_reference(energyFunction_(x));
+    grad_   = make_optional_reference(derivative(energyFunction_)(x));
+    hess_   = make_optional_reference(derivative(derivative(energyFunction_))(x));
+  }
+  void updateEnergy(const Domain& x) { energy_ = make_optional_reference(energyFunction_(x)); }
 
   void logState() const {
     spdlog::info(
@@ -466,8 +454,7 @@ void updateEnergy(const Domain& x)
     /** Gradient correction tolerance reached  */
     if (stats_.gradNorm < settings_.grad_tol && stats_.outerIter != 0) {
       logFinalState();
-      spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(gradient): {:1.16e}", energyValue(),
-                   stats_.gradNorm);
+      spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(gradient): {:1.16e}", energyValue(), stats_.gradNorm);
       stream << "Gradient norm tolerance reached; options.tolerance = " << settings_.grad_tol;
 
       info_.reasonString = stream.str();
@@ -476,8 +463,7 @@ void updateEnergy(const Domain& x)
       return true;
     } else if (stats_.etaNorm < settings_.corr_tol && stats_.outerIter != 0) {
       logFinalState();
-      spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(correction): {:1.16e}", energyValue(),
-                   stats_.etaNorm);
+      spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(correction): {:1.16e}", energyValue(), stats_.etaNorm);
       stream << "Displacement norm tolerance reached;  = " << settings_.corr_tol << "." << std::endl;
 
       info_.reasonString = stream.str();
@@ -528,43 +514,44 @@ void updateEnergy(const Domain& x)
     innerInfo_ = truncatedConjugateGradient_.getInfo();
   }
 
+  template <class T>
+  static constexpr T& resolveOptRef(T& gf) noexcept {
+    return gf;
+  }
 
-  template<class T>
-static constexpr T& resolveOptRef(T& gf) noexcept
-{
-  return gf;
-}
+  template <class T>
+  static constexpr T& resolveOptRef(std::optional<std::reference_wrapper<T>>& gf) noexcept {
+    return gf.value().get();
+  }
 
-template<class T>
-static constexpr T& resolveOptRef(std::optional<std::reference_wrapper<T>>& gf) noexcept
-{
-  return gf.value().get();
-}
+  template <class T>
+  static constexpr T& resolveOptRef(const std::optional<std::reference_wrapper<T>>& gf) noexcept {
+    return gf.value().get();
+  }
 
-template<class T>
-static constexpr T& resolveOptRef(const std::optional<std::reference_wrapper<T>>& gf) noexcept
-{
-  return gf.value().get();
-}
-
-
-   auto& energyValue() const noexcept { return resolveOptRef(energy_); }
-   auto& energyValue() noexcept { return resolveOptRef(energy_); }
-   auto& gradient() const noexcept { return resolveOptRef(grad_); }
-   auto& gradient() noexcept  { return resolveOptRef(grad_); }
-   auto& hessian() const noexcept { return resolveOptRef(hess_); }
-   auto& hessian() noexcept { return resolveOptRef(hess_); }
-
-
+  auto& energyValue() const noexcept { return resolveOptRef(energy_); }
+  auto& energyValue() noexcept { return resolveOptRef(energy_); }
+  auto& gradient() const noexcept { return resolveOptRef(grad_); }
+  auto& gradient() noexcept { return resolveOptRef(grad_); }
+  auto& hessian() const noexcept { return resolveOptRef(hess_); }
+  auto& hessian() noexcept { return resolveOptRef(hess_); }
 
   NLO energyFunction_;
   // typename NLO::Derivative gradientFunction_;
   // typename NLO::Derivative::Derivative  hessianFunction_;
 
-
-  std::conditional_t<std::is_lvalue_reference_v<EnergyType>,std::optional<std::reference_wrapper<std::add_const_t<std::remove_cvref_t<EnergyType>>>>,EnergyType> energy_;
-  std::conditional_t<std::is_lvalue_reference_v<GradientType>,std::optional<std::reference_wrapper<std::add_const_t<std::remove_cvref_t<GradientType>>>>,GradientType>   grad_;
-  std::conditional_t<std::is_lvalue_reference_v<HessianType>,std::optional<std::reference_wrapper<std::add_const_t<std::remove_cvref_t<HessianType>>>>,HessianType>  hess_;
+  std::conditional_t<std::is_lvalue_reference_v<EnergyType>,
+                     std::optional<std::reference_wrapper<std::add_const_t<std::remove_cvref_t<EnergyType>>>>,
+                     EnergyType>
+      energy_;
+  std::conditional_t<std::is_lvalue_reference_v<GradientType>,
+                     std::optional<std::reference_wrapper<std::add_const_t<std::remove_cvref_t<GradientType>>>>,
+                     GradientType>
+      grad_;
+  std::conditional_t<std::is_lvalue_reference_v<HessianType>,
+                     std::optional<std::reference_wrapper<std::add_const_t<std::remove_cvref_t<HessianType>>>>,
+                     HessianType>
+      hess_;
 
   UpdateFunction updateFunction_;
   std::remove_cvref_t<CorrectionType> eta_;

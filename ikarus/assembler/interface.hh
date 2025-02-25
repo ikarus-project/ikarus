@@ -336,7 +336,7 @@ public:
      * \return Const reference to the calculated vectorial quantity.
      */
   VectorType& vector(const FERequirement& feRequirements, VectorAffordance affordance,
-                           DBCOption dbcOption = DBCOption::Full) {
+                     DBCOption dbcOption = DBCOption::Full) {
     if (dbcOption == DBCOption::Raw) {
       return underlying().getRawVectorImpl(feRequirements, affordance);
     } else if (dbcOption == DBCOption::Reduced) {
@@ -411,7 +411,7 @@ public:
    * \return Const reference to the modified sparse matrix quantity.
    */
   MatrixType& matrix(const FERequirement& feRequirements, MatrixAffordance affordance,
-                           DBCOption dbcOption = DBCOption::Full) {
+                     DBCOption dbcOption = DBCOption::Full) {
     if (dbcOption == DBCOption::Raw) {
       return underlying().getRawMatrixImpl(feRequirements, affordance);
     } else if (dbcOption == DBCOption::Reduced) {

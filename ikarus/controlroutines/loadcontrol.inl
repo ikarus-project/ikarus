@@ -11,14 +11,13 @@
 
 namespace Ikarus {
 template <typename NLS>
-template<typename Domain>
+template <typename Domain>
 ControlInformation LoadControl<NLS>::run(Domain& x) {
-
-      static_assert(
-        requires {
-          x.parameter() = 0.0;
-          x.parameter() += 0.0;
-        }, "The last parameter (load factor) must be assignable and incrementable with a double!");
+  static_assert(
+      requires {
+        x.parameter() = 0.0;
+        x.parameter() += 0.0;
+      }, "The last parameter (load factor) must be assignable and incrementable with a double!");
   ControlInformation info({false});
   decltype(auto) nonOp = nonLinearSolver_->residual();
   this->notify(ControlMessages::CONTROL_STARTED, static_cast<std::string>(this->name()));

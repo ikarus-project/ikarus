@@ -72,9 +72,8 @@ auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
   };
 
   if constexpr (std::remove_cvref_t<NLO>::nDerivatives == 2) {
-    auto solver =
-        solverFactory(derivative(nonLinearOperator), std::forward<NRConfig>(config).linearSolver,
-                      std::forward<NRConfig>(config).updateFunction);
+    auto solver = solverFactory(derivative(nonLinearOperator), std::forward<NRConfig>(config).linearSolver,
+                                std::forward<NRConfig>(config).updateFunction);
     solver->setup(config.parameters);
     return solver;
   } else {
@@ -102,18 +101,15 @@ template <typename NLO, typename LS, typename UF>
 class NewtonRaphson : public IObservable<NonLinearSolverMessages>
 {
 public:
-  using Settings = NRSettings;
-      using SignatureTraits= typename NLO::Traits;
-  using CorrectionType = typename SignatureTraits::template Range<0>;        ///< Type of the correction of x += deltaX.
-  using JacobianType = typename SignatureTraits::template Range<1>;
+  using Settings        = NRSettings;
+  using SignatureTraits = typename NLO::Traits;
+  using CorrectionType  = typename SignatureTraits::template Range<0>; ///< Type of the correction of x += deltaX.
+  using JacobianType    = typename SignatureTraits::template Range<1>;
   ///< Compile-time boolean indicating if the linear solver satisfies the non-linear solver concept
-  static constexpr bool isLinearSolver =
-      Ikarus::Concepts::LinearSolverCheck<LS, JacobianType, CorrectionType>;
+  static constexpr bool isLinearSolver = Ikarus::Concepts::LinearSolverCheck<LS, JacobianType, CorrectionType>;
 
   ///< Type representing the parameter vector of the nonlinear operator.
   using Domain = typename SignatureTraits::Domain;
-
-
 
   using UpdateFunction    = UF;  ///< Type representing the update function.
   using NonLinearOperator = NLO; ///< Type of the non-linear operator
@@ -126,7 +122,8 @@ public:
    */
   template <typename LS2 = LS, typename UF2 = UF>
   explicit NewtonRaphson(const NonLinearOperator& residual, LS2&& linearSolver = {}, UF2&& updateFunction = {})
-      : residualFunction_{residual}, jacobianFunction_{derivative(residualFunction_)},
+      : residualFunction_{residual},
+        jacobianFunction_{derivative(residualFunction_)},
         linearSolver_{std::forward<LS2>(linearSolver)},
         updateFunction_{std::forward<UF2>(updateFunction)} {}
 
@@ -151,14 +148,14 @@ public:
   [[nodiscard(
       "The solve method returns information of the solution process. You should store this information and check if "
       "it was successful")]] Ikarus::NonLinearSolverInformation
-  solve(SolutionType& x ) {
+  solve(SolutionType& x) {
     this->notify(NonLinearSolverMessages::INIT);
     Ikarus::NonLinearSolverInformation solverInformation;
     solverInformation.success = true;
 
     decltype(auto) rx = residualFunction_(x);
     decltype(auto) Ax = jacobianFunction_(x);
-    auto rNorm     = norm(rx);
+    auto rNorm        = norm(rx);
     decltype(rNorm) dNorm;
     int iter{0};
     if constexpr (isLinearSolver)
@@ -177,8 +174,8 @@ public:
       }
       this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
       this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
-      rx = residualFunction_(x);
-      Ax = jacobianFunction_(x);
+      rx    = residualFunction_(x);
+      Ax    = jacobianFunction_(x);
       rNorm = norm(rx);
       this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
       this->notify(NonLinearSolverMessages::ITERATION_ENDED);

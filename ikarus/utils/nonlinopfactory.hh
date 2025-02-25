@@ -37,7 +37,7 @@ struct NonLinearOperatorFactory
     };
 
     [[maybe_unused]] auto residualFunction = [dbcOption, assembler = assemblerPtr,
-                                              affordances](const Parameter& p)  -> auto& {
+                                              affordances](const Parameter& p) -> auto& {
       return assembler->vector(p, affordances.vectorAffordance(), dbcOption);
     };
 
@@ -47,8 +47,7 @@ struct NonLinearOperatorFactory
         return assembler->scalar(p, affordances.scalarAffordance());
       };
 
-      return makeNonLinearOperator(
-          functions(energyFunction, residualFunction, KFunction), arg);
+      return makeNonLinearOperator(functions(energyFunction, residualFunction, KFunction), arg);
     } else
       return makeNonLinearOperator(functions(residualFunction, KFunction), arg);
   }

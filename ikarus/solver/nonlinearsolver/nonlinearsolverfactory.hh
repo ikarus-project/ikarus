@@ -52,20 +52,19 @@ struct NonlinearSolverFactory
   template <typename Assembler>
   requires Concepts::FlatAssembler<typename std::remove_cvref_t<Assembler>::element_type>
   auto create(Assembler&& assembler) const {
-    auto nonLinOp         = NonLinearOperatorFactory::op(assembler);
+    auto nonLinOp        = NonLinearOperatorFactory::op(assembler);
     using NonLinOpTraits = typename decltype(nonLinOp)::Traits;
 
-    using CorrectionType           = typename NonLinOpTraits::template Range<1>;
-    using Domain           = typename NonLinOpTraits::Domain;
-    auto updateF = [assembler, setting = settings]<typename D>(D& a,
-                                                            const CorrectionType& b) {
-      decltype(auto) x = [&]() ->auto&{
-        if constexpr( requires {a.globalSolution();})
-        return a.globalSolution();
+    using CorrectionType = typename NonLinOpTraits::template Range<1>;
+    using Domain         = typename NonLinOpTraits::Domain;
+    auto updateF         = [assembler, setting = settings]<typename D>(D& a, const CorrectionType& b) {
+      decltype(auto) x = [&]() -> auto& {
+        if constexpr (requires { a.globalSolution(); })
+          return a.globalSolution();
         else
-        return a;
+          return a;
       }();
-                                                  
+
       if (assembler->dBCOption() == DBCOption::Reduced) {
         setting.updateFunction(x, assembler->createFullVector(b));
       } else

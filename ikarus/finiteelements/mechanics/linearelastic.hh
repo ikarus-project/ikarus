@@ -58,14 +58,13 @@ public:
   using Traits       = PreFE::Traits;
   using BasisHandler = typename Traits::BasisHandler;
   using FlatBasis    = typename Traits::FlatBasis;
-  using Requirement =
-      FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
-  using LocalView = typename Traits::LocalView;
-  using Geometry  = typename Traits::Geometry;
-  using GridView  = typename Traits::GridView;
-  using Element   = typename Traits::Element;
-  using Material  = PRE::Material;
-  using Pre       = PRE;
+  using Requirement  = FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
+  using LocalView    = typename Traits::LocalView;
+  using Geometry     = typename Traits::Geometry;
+  using GridView     = typename Traits::GridView;
+  using Element      = typename Traits::Element;
+  using Material     = PRE::Material;
+  using Pre          = PRE;
 
   static constexpr int myDim = Traits::mydim;
   using LocalBasisType       = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
@@ -187,7 +186,7 @@ public:
                   isSameResultType<RT, ResultTypes::linearStressFull>) {
       const auto eps     = strainFunction(req);
       auto epsVoigt      = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
-      decltype(auto) mat = [&]() -> decltype(auto){
+      decltype(auto) mat = [&]() -> decltype(auto) {
         if constexpr (isSameResultType<RT, ResultTypes::linearStressFull> and requires { mat_.underlying(); })
           return mat_.underlying();
         else

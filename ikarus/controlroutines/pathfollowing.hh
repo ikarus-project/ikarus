@@ -37,10 +37,11 @@ namespace Impl {
    */
   template <typename NLS, typename PF = ArcLength, typename ASS>
   consteval bool checkPathFollowingTemplates() {
-    return true;//Concepts::PathFollowingStrategy<PF, std::remove_cvref_t<typename NLS::NonLinearOperator>, SubsidiaryArgs>;
+    return true; // Concepts::PathFollowingStrategy<PF, std::remove_cvref_t<typename NLS::NonLinearOperator>,
+                 // SubsidiaryArgs>;
     // and           Concepts::AdaptiveStepSizingStrategy<ASS, NonLinearSolverInformation, SubsidiaryArgs,
     //                                  std::remove_cvref_t<typename NLS::NonLinearOperator>>
-                                                 ;//and           Concepts::NonLinearSolverCheckForPathFollowing<NLS>;
+    ; // and           Concepts::NonLinearSolverCheckForPathFollowing<NLS>;
   }
 
 } // namespace Impl

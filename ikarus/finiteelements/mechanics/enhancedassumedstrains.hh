@@ -50,13 +50,12 @@ template <typename PreFE, typename FE>
 class EnhancedAssumedStrains
 {
 public:
-  using Traits = PreFE::Traits;
-  using Requirement =
-      FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
-  using LocalView = typename Traits::LocalView;
-  using Geometry  = typename Traits::Geometry;
-  using GridView  = typename Traits::GridView;
-  using Pre       = EnhancedAssumedStrainsPre;
+  using Traits      = PreFE::Traits;
+  using Requirement = FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
+  using LocalView   = typename Traits::LocalView;
+  using Geometry    = typename Traits::Geometry;
+  using GridView    = typename Traits::GridView;
+  using Pre         = EnhancedAssumedStrainsPre;
 
   /**
    * \brief Constructor for Enhanced Assumed Strains elements.
@@ -101,7 +100,7 @@ public:
    */
   template <template <typename, int, int> class RT>
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
-                       Dune::PriorityTag<2>) const  {
+                       Dune::PriorityTag<2>) const {
     if (isDisplacementBased())
       return underlying().template calculateAtImpl<RT>(req, local, Dune::PriorityTag<1>());
 

@@ -45,15 +45,15 @@ public:
         loadSteps_{loadSteps},
         parameterBegin_{tbeginEnd[0]},
         parameterEnd_{tbeginEnd[1]},
-        stepSize_{(parameterEnd_ - parameterBegin_) / loadSteps_} {  }
+        stepSize_{(parameterEnd_ - parameterBegin_) / loadSteps_} {}
 
   /**
    * \brief Executes the LoadControl routine.
    *  \tparam Domain Type of the domain.
-    * \param x The solution.
+   * \param x The solution.
    * \return ControlInformation structure containing information about the control results.
    */
-   template<typename Domain>
+  template <typename Domain>
   ControlInformation run(Domain& x);
 
   /* \brief returns the nonlinear solver */
