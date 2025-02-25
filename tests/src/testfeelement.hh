@@ -146,7 +146,7 @@ inline auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe,
 template <template <typename, int, int> class RT, typename ResultEvaluator = Ikarus::Impl::DefaultUserFunction,typename RCF>
 auto checkResultFunctionFunctorFactory(const RCF& resultCollectionFunction, ResultEvaluator&& resultEvaluator = {}) {
   return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req, [[maybe_unused]] auto& affordance) {
-    auto [sol, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe,req);
+    auto [sol, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
     req.globalSolution()=sol;
     return checkResultFunction<RT, ResultEvaluator>(nonLinOp, fe, req, expectedStress, positions,
                                                     std::forward<ResultEvaluator>(resultEvaluator), "");
@@ -160,7 +160,7 @@ inline auto checkFEByAutoDiffFunctor = [](auto& nonLinOp, auto& fe, auto& req, a
 template <template <typename, int, int> class RT, bool voigt = true,typename RCF>
 auto checkCalculateAtFunctorFactory(const RCF& resultCollectionFunction) {
   return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req, [[maybe_unused]] auto& affordance) {
-    auto [sol, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe,req);
+    auto [sol, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
     req.globalSolution()=sol;
     if constexpr (voigt)
       return checkCalculateAt<RT>(nonLinOp, fe, req, expectedStress, positions);

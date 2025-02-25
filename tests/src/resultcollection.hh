@@ -24,7 +24,7 @@ static Eigen::Vector<double, 12> displacementsForTetrahedron({0, 0, 0, 0, 1, 1, 
 
 } // namespace Testing
 
-inline auto linearStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linearStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 4;
   constexpr int quantities = 3;
 
@@ -49,7 +49,7 @@ inline auto linearStressResultsOfSquare = []<typename NOP, typename FE>(NOP& non
   return std::make_tuple(Testing::displacementsForSquare, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linear3dPlaneStrainStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linear3dPlaneStrainStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   static_assert(!Testing::isPlaneStress<typename FE::Material>);
 
   constexpr int vertices   = 4;
@@ -65,7 +65,7 @@ inline auto linear3dPlaneStrainStressResultsOfSquare = []<typename NOP, typename
   return std::make_tuple( Testing::displacementsForSquare, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearPolarStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linearPolarStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   static_assert(Testing::isPlaneStress<typename FE::Material>);
 
   constexpr int vertices   = 4;
@@ -81,7 +81,7 @@ inline auto linearPolarStressResultsOfSquare = []<typename NOP, typename FE>(NOP
   return std::make_tuple(Testing::displacementsForSquare,expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearVonMisesResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linearVonMisesResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 4;
   constexpr int quantities = 1;
 
@@ -105,7 +105,7 @@ inline auto linearHydrostaticStressResultsOfSquare = []<typename NOP, typename F
   return std::make_tuple(Testing::displacementsForSquare, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearTriaxialityStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linearTriaxialityStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 4;
   constexpr int quantities = 1;
 
@@ -117,7 +117,7 @@ inline auto linearTriaxialityStressResultsOfSquare = []<typename NOP, typename F
   return std::make_tuple(Testing::displacementsForSquare, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearPrincipalStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linearPrincipalStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices = 4;
 
   const auto expectedStress = []() {
@@ -141,7 +141,7 @@ inline auto linearPrincipalStressResultsOfSquare = []<typename NOP, typename FE>
   return std::make_tuple(Testing::displacementsForSquare, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linearStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 8;
   constexpr int quantities = 6;
 
@@ -159,7 +159,7 @@ inline auto linearStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLi
   return std::make_tuple(Testing::displacementsForCube, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearVonMisesResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linearVonMisesResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 8;
   constexpr int quantities = 1;
 
@@ -169,7 +169,7 @@ inline auto linearVonMisesResultsOfCube = []<typename NOP, typename FE>(NOP& non
   return std::make_tuple(Testing::displacementsForCube, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearTriaxialityResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linearTriaxialityResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 8;
   constexpr int quantities = 1;
 
@@ -179,7 +179,7 @@ inline auto linearTriaxialityResultsOfCube = []<typename NOP, typename FE>(NOP& 
   return std::make_tuple(Testing::displacementsForCube, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearHydrostaticStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linearHydrostaticStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 8;
   constexpr int quantities = 1;
 
@@ -189,7 +189,7 @@ inline auto linearHydrostaticStressResultsOfCube = []<typename NOP, typename FE>
   return std::make_tuple(Testing::displacementsForCube, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearPrincipalStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linearPrincipalStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 8;
   constexpr int quantities = 3;
 
@@ -207,7 +207,7 @@ inline auto linearPrincipalStressResultsOfCube = []<typename NOP, typename FE>(N
   return std::make_tuple(Testing::displacementsForCube, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearStressResultsOfTriangle = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linearStressResultsOfTriangle = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 3;
   constexpr int quantities = 3;
 
@@ -220,7 +220,7 @@ inline auto linearStressResultsOfTriangle = []<typename NOP, typename FE>(NOP& n
   return std::make_tuple(Testing::displacementsForTriangle, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearPolarStressResultsOfTriangle = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linearPolarStressResultsOfTriangle = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   static_assert(Testing::isPlaneStress<typename FE::Material>);
 
   constexpr int vertices   = 3;
@@ -235,7 +235,7 @@ inline auto linearPolarStressResultsOfTriangle = []<typename NOP, typename FE>(N
   return std::make_tuple(Testing::displacementsForTriangle, expectedStress, Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearStressResultsOfTetrahedron = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe,typename FE::Requirement& req) {
+inline auto linearStressResultsOfTetrahedron = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
   constexpr int vertices   = 4;
   constexpr int quantities = 6;
 
