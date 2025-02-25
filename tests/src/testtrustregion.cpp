@@ -46,7 +46,7 @@ static auto trustRegion1() {
   auto fvLambda   = [](const auto& xL) { return f(xL); };
   auto dfvLambda  = [](const auto& xL) { return df(xL); };
   auto ddfvLambda = [](const auto& xL) { return ddf(xL); };
-  auto nonLinOp= makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), x);
+  auto nonLinOp   = makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), x);
 
   Eigen::Vector<double, 1> xExpected;
   xExpected << 0;
@@ -92,10 +92,10 @@ static auto trustRegion2() {
   Eigen::Vector2d x;
   x << 2, 3;
 
-  auto fvLambda   = [](auto&& xL) { return rosenbrock(xL); };
-  auto dfvLambda  = [](auto&& xL) { return rosenbrockdx(xL); };
-  auto ddfvLambda = [](auto&& xL) { return rosenbrockddx(xL); };
-  auto nonLinOp= makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), x);
+  auto fvLambda      = [](auto&& xL) { return rosenbrock(xL); };
+  auto dfvLambda     = [](auto&& xL) { return rosenbrockdx(xL); };
+  auto ddfvLambda    = [](auto&& xL) { return rosenbrockddx(xL); };
+  auto nonLinOp      = makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), x);
   const double eps   = 1e-10;
   const int maxIter_ = 30;
   Eigen::Vector2d xExpected;
@@ -151,7 +151,7 @@ static auto trustRegion3() {
     auto xR = xL.template cast<autodiff::dual2nd>().eval();
     return ddf3(xR);
   };
-  auto nonLinOp= makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), x);
+  auto nonLinOp      = makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), x);
   const double eps   = 1e-12;
   const int maxIter_ = 30;
   Eigen::Vector2d xExpected;
@@ -164,7 +164,7 @@ static auto trustRegion3() {
   t.check(11 == solverInfo.iterations);
   t.check(eps > solverInfo.residualNorm);
   t.check(isApproxSame(x, xExpected, eps));
-  
+
   t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp(x)));
 
   x << 0.7, -3.3;
@@ -186,7 +186,7 @@ static auto trustRegion3() {
   t.check(8 == solverInfo3.iterations);
   t.check(eps > solverInfo3.residualNorm);
   t.check(isApproxSame(x, xExpected, eps));
-  
+
   t.check(Dune::FloatCmp::eq(-31.180733385187978, nonLinOp(x)));
   return t;
 }
@@ -233,7 +233,7 @@ static auto trustRegion4_RiemanianUnitSphere() {
   auto dfvLambda  = [](auto&& xL) { return df3R(xL); };
   auto ddfvLambda = [](auto&& xL) { return ddf3R(xL); };
 
-  auto nonLinOp= makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), d);
+  auto nonLinOp = makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), d);
   t.check(Dune::FloatCmp::eq(nonLinOp(d), fvLambda(d))) << "Nonlinear operator and lambda have different value";
 
   t.check(isApproxSame(dfvLambda(d), derivative(nonLinOp)(d), 1e-15))
@@ -252,8 +252,7 @@ static auto trustRegion4_RiemanianUnitSphere() {
   t.check(tol > solverInfo3.residualNorm) << "Trust region didn't reach the correct norm";
 
   t.check(1e-17 >= nonLinOp(d)) << "Trust region energy is not zero";
-  t.check(isApproxSame(d.getValue(), -Eigen::Vector2d::UnitY(), 1e-15))
-      << "Trust region solution is wrong";
+  t.check(isApproxSame(d.getValue(), -Eigen::Vector2d::UnitY(), 1e-15)) << "Trust region solution is wrong";
   return t;
 }
 
@@ -411,7 +410,7 @@ static auto trustRegion5_RiemanianUnitSphereAndDispBlocked() {
   t.check(10 == h.rows());
   t.check(10 == h.cols());
 
-  auto nonLinOp= makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), mT);
+  auto nonLinOp = makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), mT);
   t.check(Dune::FloatCmp::eq(nonLinOp(mT), fvLambda(mT)));
 
   t.check(isApproxSame(dfvLambda(mT), derivative(nonLinOp)(mT), 1e-15));

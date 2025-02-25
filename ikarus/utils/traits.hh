@@ -18,7 +18,8 @@ class shared_ptr;
 
 namespace Eigen {
 
- template<typename Derived> class SparseMatrixBase;
+template <typename Derived>
+class SparseMatrixBase;
 }
 
 #include <dune/common/hybridutilities.hh>
@@ -476,8 +477,6 @@ struct ChangeArgTypeAtPos<std::function<R(Args...)>, Pos, NewType>
  * @tparam T The type to check.
  */
 template <typename T>
-concept EigenSparseMatrix =
-     std::is_base_of_v<Eigen::SparseMatrixBase<T>, T> ;
-
+concept EigenSparseMatrix = std::is_base_of_v<Eigen::SparseMatrixBase<T>, T>;
 
 } // namespace Ikarus::traits

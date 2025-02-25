@@ -57,14 +57,7 @@ struct NonlinearSolverFactory
 
     using CorrectionType = typename NonLinOpTraits::template Range<1>;
     using Domain         = typename NonLinOpTraits::Domain;
-    auto updateF         = [assembler, setting = settings]<typename D>(D& a, const CorrectionType& b) {
-      decltype(auto) x = [&]() -> auto& {
-        if constexpr (requires { a.globalSolution(); })
-          return a.globalSolution();
-        else
-          return a;
-      }();
-
+    auto updateF         = [assembler, setting = settings]<typename D>(D& x, const CorrectionType& b) {
       if (assembler->dBCOption() == DBCOption::Reduced) {
         setting.updateFunction(x, assembler->createFullVector(b));
       } else

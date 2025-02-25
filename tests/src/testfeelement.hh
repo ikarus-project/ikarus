@@ -126,7 +126,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   // check if element has a test functor, if yes we execute it
   if constexpr (requires { ElementTest<FEType>::test(); }) {
     auto testFunctor = ElementTest<FEType>::test();
-    t.subTest(testFunctor(nonLinOp,fe, requirements, affordances));
+    t.subTest(testFunctor(nonLinOp, fe, requirements, affordances));
   } else
     spdlog::info("No element test functor found for {}", Dune::className<FEType>());
 
@@ -134,20 +134,25 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
 }
 
 inline auto checkGradientFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req,
-                                      [[maybe_unused]] auto& affordance) { return checkGradientOfElement(nonLinOp,req); };
-inline auto checkHessianFunctor  = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req,
-                                     [[maybe_unused]] auto& affordance) { return checkHessianOfElement(nonLinOp,req); };
+                                      [[maybe_unused]] auto& affordance) {
+  return checkGradientOfElement(nonLinOp, req);
+};
+inline auto checkHessianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req,
+                                     [[maybe_unused]] auto& affordance) {
+  return checkHessianOfElement(nonLinOp, req);
+};
 inline auto checkJacobianFunctor = [](auto& nonLinOp, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req,
                                       [[maybe_unused]] auto& affordance) {
   auto subOperator = derivative(nonLinOp);
-  return checkJacobianOfElement(subOperator,req);
+  return checkJacobianOfElement(subOperator, req);
 };
 
-template <template <typename, int, int> class RT, typename ResultEvaluator = Ikarus::Impl::DefaultUserFunction,typename RCF>
+template <template <typename, int, int> class RT, typename ResultEvaluator = Ikarus::Impl::DefaultUserFunction,
+          typename RCF>
 auto checkResultFunctionFunctorFactory(const RCF& resultCollectionFunction, ResultEvaluator&& resultEvaluator = {}) {
   return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req, [[maybe_unused]] auto& affordance) {
     auto [sol, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
-    req.globalSolution()=sol;
+    req.globalSolution()                  = sol;
     return checkResultFunction<RT, ResultEvaluator>(nonLinOp, fe, req, expectedStress, positions,
                                                     std::forward<ResultEvaluator>(resultEvaluator), "");
   };
@@ -157,15 +162,14 @@ inline auto checkFEByAutoDiffFunctor = [](auto& nonLinOp, auto& fe, auto& req, a
   return checkFEByAutoDiff(nonLinOp, fe, req, affordance);
 };
 
-template <template <typename, int, int> class RT, bool voigt = true,typename RCF>
+template <template <typename, int, int> class RT, bool voigt = true, typename RCF>
 auto checkCalculateAtFunctorFactory(const RCF& resultCollectionFunction) {
   return [&](auto& nonLinOp, auto& fe, [[maybe_unused]] auto& req, [[maybe_unused]] auto& affordance) {
     auto [sol, expectedStress, positions] = resultCollectionFunction(nonLinOp, fe);
-    req.globalSolution()=sol;
+    req.globalSolution()                  = sol;
     if constexpr (voigt)
       return checkCalculateAt<RT>(nonLinOp, fe, req, expectedStress, positions);
     else
-      return checkCalculateAt<RT, voigt>(nonLinOp, fe, req, stressResultsToMatrix(expectedStress),
-                                         positions);
+      return checkCalculateAt<RT, voigt>(nonLinOp, fe, req, stressResultsToMatrix(expectedStress), positions);
   };
 }
