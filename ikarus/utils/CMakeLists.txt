@@ -8,6 +8,7 @@ install(
         basis.hh
         concepts.hh
         defaultfunctions.hh
+        derivativetraits.hh
         dirichletvalues.hh
         eigendunetransformations.hh
         eigensparseaddon.hh
