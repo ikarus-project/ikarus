@@ -22,7 +22,8 @@ namespace Ikarus {
 struct NonLinearOperatorFactory
 {
   template <typename Assembler, typename... Affordances>
-  static auto op(Assembler&& as, AffordanceCollection<Affordances...> affordances, DBCOption dbcOption = DBCOption::Full) {
+  static auto op(Assembler&& as, AffordanceCollection<Affordances...> affordances, 
+                 DBCOption dbcOption = DBCOption::Full) {
     auto assemblerPtr = [as]() {
       if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
                     traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value)
