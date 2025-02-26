@@ -3,7 +3,7 @@
 
 /**
  * \file interface.hh
- * \brief Defines the interface for flat, scalar, vector and matrix assemblers
+ * \brief Defines the interface for scalar, vector and matrix flat assemblers
  */
 
 #pragma once
