@@ -12,7 +12,7 @@ include(../../cmake/tools.cmake)
 file(
   GLOB programSourceFiles
   RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-  *.cpp
+  CONFIGURE_DEPENDS *.cpp
 )
 set(programSourceFiles
     testadaptivestepsizing.cpp

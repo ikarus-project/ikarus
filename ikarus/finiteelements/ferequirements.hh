@@ -379,16 +379,4 @@ private:
   std::unique_ptr<PM> parameter_; ///< Unique pointer to the parameter.
 };
 
-// // We need this indirection with Eigen::Ref for the Python u
-// template <FESolutions sol, FEParameter para, bool wrapWithRef = false, typename SV = Eigen::VectorXd,
-//           typename PM = double>
-// struct FERequirementsFactory
-// {
-// private:
-//   using typeEigen = std::conditional_t<wrapWithRef and Ikarus::Concepts::EigenMatrix<SV>, Eigen::Ref<SV>, SV>;
-
-// public:
-//   using type = FERequirements<sol, para, typeEigen, PM>;
-// };
-
 } // namespace Ikarus

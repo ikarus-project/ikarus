@@ -213,57 +213,66 @@ public:
    * \return NonLinearSolverInformation containing information about the solver result.
    */
   [[nodiscard]] NonLinearSolverInformation solve(Domain& x) {
-    init(x);
+    this->notify(NonLinearSolverMessages::INIT);
+    stats_ = Stats{};
+    info_  = AlgoInfo{};
 
     NonLinearSolverInformation solverInformation;
-    eta_.resizeLike(gradient());
-    Heta_.resizeLike(gradient());
-    truncatedConjugateGradient_.analyzePattern(hessian());
-    stats_.energy   = energyValue();
-    stats_.gradNorm = norm(gradient());
-    truncatedConjugateGradient_.analyzePattern(hessian());
+    auto& energyF    = energyFunction_;
+    auto gradientF   = derivative(energyF);
+    auto hessianF    = derivative(gradientF);
+    decltype(auto) e = energyF(x);
+    decltype(auto) g = gradientF(x);
+    decltype(auto) h = hessianF(x);
+
+    eta_.resizeLike(g);
+    Heta_.resizeLike(g);
+    truncatedConjugateGradient_.analyzePattern(h);
+    stats_.energy   = e;
+    stats_.gradNorm = norm(g);
+    truncatedConjugateGradient_.analyzePattern(h);
 
     innerInfo_.Delta = settings_.Delta0;
     spdlog::info(
         "        | iter | inner_i |   rho |   energy | energy_p | energy_inc |  norm(g) |    Delta | norm(corr) | "
         "InnerBreakReason");
     spdlog::info("{:-^143}", "-");
-    while (not stoppingCriterion()) {
+    while (not stoppingCriterion(e)) {
       this->notify(NonLinearSolverMessages::ITERATION_STARTED);
       if (settings_.useRand) {
         if (stats_.outerIter == 0) {
           eta_.setRandom();
-          while (eta_.dot(hessian() * eta_) > innerInfo_.Delta * innerInfo_.Delta)
+          while (eta_.dot(h * eta_) > innerInfo_.Delta * innerInfo_.Delta)
             eta_ *= eps_; // eps is sqrt(sqrt(maschine-precision))
         } else
           eta_.setZero();
       } else
         eta_.setZero();
 
-      solveInnerProblem();
+      solveInnerProblem(g, h);
       stats_.innerIterSum += innerInfo_.numInnerIter;
 
       info_.stopReasonString = tcg_stop_reason_[static_cast<int>(innerInfo_.stop_tCG)];
-      Heta_                  = hessian() * eta_;
+      Heta_                  = h * eta_;
       if (settings_.useRand and stats_.outerIter == 0) {
         info_.used_cauchy            = false;
         info_.randomPredictionString = " Used Random correction predictor";
         info_.cauchystr              = "                  ";
         double tauC;
         // Check the curvature
-        const Eigen::VectorXd Hg = hessian() * gradient();
-        const auto g_Hg          = gradient().dot(Hg);
+        const Eigen::VectorXd Hg = h * g;
+        const auto g_Hg          = g.dot(Hg);
         if (g_Hg <= 0)
           tauC = 1;
         else
           tauC = std::min(Dune::power(stats_.gradNorm, 3) / (innerInfo_.Delta * g_Hg), 1.0);
 
         // generate the Cauchy point.
-        const Eigen::VectorXd etaC  = -tauC * innerInfo_.Delta / stats_.gradNorm * gradient();
+        const Eigen::VectorXd etaC  = -tauC * innerInfo_.Delta / stats_.gradNorm * g;
         const Eigen::VectorXd HetaC = -tauC * innerInfo_.Delta / stats_.gradNorm * Hg;
 
-        const double mdle  = stats_.energy + gradient().dot(eta_) + .5 * Heta_.dot(eta_);
-        const double mdlec = stats_.energy + gradient().dot(etaC) + .5 * HetaC.dot(etaC);
+        const double mdle  = stats_.energy + g.dot(eta_) + .5 * Heta_.dot(eta_);
+        const double mdlec = stats_.energy + g.dot(etaC) + .5 * HetaC.dot(etaC);
         if (mdlec < mdle && stats_.outerIter == 0) {
           eta_              = etaC;
           Heta_             = HetaC;
@@ -279,13 +288,13 @@ public:
       updateFunction_(x, eta_);
 
       // Calculate energy of our proposed update step
-      updateEnergy(x);
-      stats_.energyProposal = energyValue();
+      e                     = energyF(x);
+      stats_.energyProposal = e;
 
       // Will we accept the proposal or not?
       // Check the performance of the quadratic model against the actual energy.
       auto rhonum = stats_.energy - stats_.energyProposal;
-      auto rhoden = -eta_.dot(gradient() + 0.5 * Heta_);
+      auto rhoden = -eta_.dot(g + 0.5 * Heta_);
 
       /*  Close to convergence the proposed energy and the real energy almost coincide.
        *  Therefore, the performance check of our model becomes ill-conditioned
@@ -366,7 +375,6 @@ public:
 
       if (info_.acceptProposal) {
         stats_.energy = stats_.energyProposal;
-        updateAll(x);
         this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, stats_.etaNorm);
         this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, stats_.gradNorm);
         this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
@@ -374,8 +382,10 @@ public:
         updateFunction_(x, -eta_);
         eta_.setZero();
       }
-      updateAll(x);
-      stats_.gradNorm = gradient().norm();
+      e               = energyF(x);
+      g               = gradientF(x);
+      h               = hessianF(x);
+      stats_.gradNorm = g.norm();
       this->notify(NonLinearSolverMessages::ITERATION_ENDED);
     }
     spdlog::info("{}", info_.reasonString);
@@ -414,22 +424,6 @@ private:
     return value;
   }
 
-  void init(const Domain& x) {
-    this->notify(NonLinearSolverMessages::INIT);
-    stats_  = Stats{};
-    info_   = AlgoInfo{};
-    energy_ = make_optional_reference(energyFunction_(x));
-    grad_   = make_optional_reference(derivative(energyFunction_)(x));
-    hess_   = make_optional_reference(derivative(derivative(energyFunction_))(x));
-  }
-
-  void updateAll(const Domain& x) {
-    energy_ = make_optional_reference(energyFunction_(x));
-    grad_   = make_optional_reference(derivative(energyFunction_)(x));
-    hess_   = make_optional_reference(derivative(derivative(energyFunction_))(x));
-  }
-  void updateEnergy(const Domain& x) { energy_ = make_optional_reference(energyFunction_(x)); }
-
   void logState() const {
     spdlog::info(
         "{:>3s} {:>3s} {:>6d} {:>9d}  {:>6.2f}  {:>9.2e}  {:>9.2e}  {:>11.2e}  {:>9.2e}  {:>9.2e}  {:>11.2e}   "
@@ -445,12 +439,12 @@ private:
                  stats_.gradNorm, " ", " ", info_.stopReasonString + info_.cauchystr + info_.randomPredictionString);
   }
 
-  bool stoppingCriterion() {
+  bool stoppingCriterion(const auto& energy) {
     std::ostringstream stream;
     /** Gradient correction tolerance reached  */
     if (stats_.gradNorm < settings_.grad_tol && stats_.outerIter != 0) {
       logFinalState();
-      spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(gradient): {:1.16e}", energyValue(), stats_.gradNorm);
+      spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(gradient): {:1.16e}", energy, stats_.gradNorm);
       stream << "Gradient norm tolerance reached; options.tolerance = " << settings_.grad_tol;
 
       info_.reasonString = stream.str();
@@ -459,7 +453,7 @@ private:
       return true;
     } else if (stats_.etaNorm < settings_.corr_tol && stats_.outerIter != 0) {
       logFinalState();
-      spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(correction): {:1.16e}", energyValue(), stats_.etaNorm);
+      spdlog::info("CONVERGENCE:  Energy: {:1.16e}    norm(correction): {:1.16e}", energy, stats_.etaNorm);
       stream << "Displacement norm tolerance reached;  = " << settings_.corr_tol << "." << std::endl;
 
       info_.reasonString = stream.str();
@@ -487,10 +481,10 @@ private:
     return false;
   }
 
-  void solveInnerProblem() {
+  void solveInnerProblem(const auto& g, const auto& h) {
     truncatedConjugateGradient_.setInfo(innerInfo_);
     int attempts = 0;
-    truncatedConjugateGradient_.factorize(hessian());
+    truncatedConjugateGradient_.factorize(h);
     // If the preconditioner is IncompleteCholesky the factorization may fail if we have negative diagonal entries and
     // the initial shift is too small. Therefore, if the factorization fails we increase the initial shift by a factor
     // of 5.
@@ -498,7 +492,7 @@ private:
       while (truncatedConjugateGradient_.info() != Eigen::Success) {
         choleskyInitialShift_ *= 5;
         truncatedConjugateGradient_.preconditioner().setInitialShift(choleskyInitialShift_);
-        truncatedConjugateGradient_.factorize(hessian());
+        truncatedConjugateGradient_.factorize(h);
         if (attempts > 5)
           DUNE_THROW(Dune::MathError, "Factorization of preconditioner failed!");
         ++attempts;
@@ -506,48 +500,11 @@ private:
       if (truncatedConjugateGradient_.info() == Eigen::Success)
         choleskyInitialShift_ = 1e-3;
     }
-    eta_       = truncatedConjugateGradient_.solveWithGuess(-gradient(), eta_);
+    eta_       = truncatedConjugateGradient_.solveWithGuess(-g, eta_);
     innerInfo_ = truncatedConjugateGradient_.getInfo();
   }
 
-  template <class T>
-  static constexpr T& resolveOptRef(T& gf) noexcept {
-    return gf;
-  }
-
-  template <class T>
-  static constexpr T& resolveOptRef(std::optional<std::reference_wrapper<T>>& gf) noexcept {
-    return gf.value().get();
-  }
-
-  template <class T>
-  static constexpr T& resolveOptRef(const std::optional<std::reference_wrapper<T>>& gf) noexcept {
-    return gf.value().get();
-  }
-
-  auto& energyValue() const noexcept { return resolveOptRef(energy_); }
-  auto& energyValue() noexcept { return resolveOptRef(energy_); }
-  auto& gradient() const noexcept { return resolveOptRef(grad_); }
-  auto& gradient() noexcept { return resolveOptRef(grad_); }
-  auto& hessian() const noexcept { return resolveOptRef(hess_); }
-  auto& hessian() noexcept { return resolveOptRef(hess_); }
-
   NLO energyFunction_;
-  // typename NLO::Derivative gradientFunction_;
-  // typename NLO::Derivative::Derivative  hessianFunction_;
-
-  std::conditional_t<std::is_lvalue_reference_v<EnergyType>,
-                     std::optional<std::reference_wrapper<std::add_const_t<std::remove_cvref_t<EnergyType>>>>,
-                     EnergyType>
-      energy_;
-  std::conditional_t<std::is_lvalue_reference_v<GradientType>,
-                     std::optional<std::reference_wrapper<std::add_const_t<std::remove_cvref_t<GradientType>>>>,
-                     GradientType>
-      grad_;
-  std::conditional_t<std::is_lvalue_reference_v<HessianType>,
-                     std::optional<std::reference_wrapper<std::add_const_t<std::remove_cvref_t<HessianType>>>>,
-                     HessianType>
-      hess_;
 
   UpdateFunction updateFunction_;
   std::remove_cvref_t<CorrectionType> eta_;

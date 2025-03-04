@@ -193,7 +193,7 @@ private:
     auto nonOp = Ikarus::makeNonLinearOperator(functions(f, df), Er);
 
     auto linearSolver   = [](auto& r, auto& A) { return (A.inverse() * r).eval(); };
-    auto updateFunction = [&](auto& dEr, auto& ecomps) {
+    auto updateFunction = [&](auto&, const auto& ecomps) {
       for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
         auto indexPair = fromVoigt(i);
         E(indexPair[0], indexPair[1]) += ecomps(ri++);

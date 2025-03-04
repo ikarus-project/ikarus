@@ -54,7 +54,7 @@ auto f = nonLinOp(x);
 auto df = derivative(nonLinOp)(x);
 while (abs(nonLinOp.value()) > eps and iterCount <= maxIter) {
 
-  x -=f / df;
+  x -= f / df;
   f = nonLinOp(x);
   df = derivative(nonLinOp)(x);
   iterCount++;

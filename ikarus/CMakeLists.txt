@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.18)
 file(
   GLOB_RECURSE sources
   RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
-  *.cpp
+  CONFIGURE_DEPENDS *.cpp
 )
 
 dune_enable_all_packages()

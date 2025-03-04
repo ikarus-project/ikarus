@@ -22,7 +22,7 @@ namespace Impl {
   template <typename... Args>
   struct Functions;
 } // namespace Impl
-
+#ifndef DOXYGEN
 enum class FEParameter;
 enum class FESolutions;
 template <FESolutions sol, FEParameter para, typename SV, typename PM>
@@ -38,13 +38,12 @@ template <typename TypeListOne, typename TypeListTwo>
 class DerivativeTraitsFromCallables
 {
 public:
-  DerivativeTraitsFromCallables([[maybe_unused]] const TypeListOne& derivativesFunctions,
-                                [[maybe_unused]] const TypeListTwo& args) {
+  DerivativeTraitsFromCallables(const TypeListOne&, const TypeListTwo&) {
     static_assert(!sizeof(TypeListOne),
                   "This type should not be instantiated. check that your arguments satisfies the template below");
   }
 };
-
+#endif
 template <typename... DerivativeArgs, typename Arg>
 struct DerivativeTraitsFromCallables<Impl::Functions<DerivativeArgs...>, Arg>
 {

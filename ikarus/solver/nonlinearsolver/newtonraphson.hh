@@ -138,8 +138,6 @@ public:
     settings_ = settings;
   }
 
-  using SolutionType = std::remove_cvref_t<Domain>; ///< Type of the solution vector
-
   /**
    * \brief Solve the nonlinear system.
    * \param x Where the solution should be stored.
@@ -148,7 +146,7 @@ public:
   [[nodiscard(
       "The solve method returns information of the solution process. You should store this information and check if "
       "it was successful")]] Ikarus::NonLinearSolverInformation
-  solve(SolutionType& x) {
+  solve(Domain& x) {
     this->notify(NonLinearSolverMessages::INIT);
     Ikarus::NonLinearSolverInformation solverInformation;
     solverInformation.success = true;

@@ -49,12 +49,10 @@ public:
 
   /**
    * \brief Executes the LoadControl routine.
-   *  \tparam Domain Type of the domain.
    * \param x The solution.
    * \return ControlInformation structure containing information about the control results.
    */
-  template <typename Domain>
-  ControlInformation run(Domain& x);
+  ControlInformation run(typename NLS::Domain& x);
 
   /* \brief returns the nonlinear solver */
   NLS& nonLinearSolver() { return *nonLinearSolver_; }

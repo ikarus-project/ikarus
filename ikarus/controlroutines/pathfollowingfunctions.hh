@@ -93,8 +93,7 @@ struct ArcLength
    * \tparam NLO Type of the residual function.
    * \param residual The residual function.
    * \param args The subsidiary function arguments.
-   * \param d The solution vector.
-   * \param lambda The load factor.
+   * \param req The solution.
    * \ingroup  controlroutines
    */
   template <typename NLO>
@@ -112,7 +111,7 @@ struct ArcLength
     else
       solverTag = SolverTypeTag::sd_SimplicialLDLT;
 
-    req.parameter()  = 1.0; // lambda =1.0
+    req.parameter()  = 1.0;
     decltype(auto) R = residual(req);
     decltype(auto) K = derivative(residual)(req);
 
@@ -141,8 +140,7 @@ struct ArcLength
    * \tparam NLO Type of the residual function.
    * \param residual The residual function.
    * \param args The subsidiary function arguments.
-   * \param d The solution vector.
-   * \param lambda The load factor.
+   * \param req The solution.
    */
   template <typename NLO>
   void intermediatePrediction(typename NLO::Domain& req, NLO& residual, SubsidiaryArgs& args) {
@@ -192,8 +190,7 @@ struct LoadControlSubsidiaryFunction
    * \tparam NLO Type of the residual function.
    * \param residual The residual function.
    * \param args The subsidiary function arguments.
-   * \param d The solution vector.
-   * \param lambda The load factor.
+   * \param req The solution.
    */
   template <typename NLO>
   void initialPrediction(typename NLO::Domain& req, NLO& residual, SubsidiaryArgs& args) {
@@ -209,8 +206,7 @@ struct LoadControlSubsidiaryFunction
    * \tparam NLO Type of the residual function.
    * \param residual The residual function.
    * \param args The subsidiary function arguments.
-   * \param d The solution vector.
-   * \param lambda The load factor.
+   * \param req The solution.
    */
   template <typename NLO>
   void intermediatePrediction(typename NLO::Domain& req, NLO& residual, SubsidiaryArgs& args) {
@@ -266,8 +262,7 @@ struct DisplacementControl
    * \tparam NLO Type of the residual function.
    * \param residual The residual function.
    * \param args The subsidiary function arguments.
-   * \param d The solution vector.
-   * \param lambda The load factor.
+   * \param req The solution.
    */
   template <typename NLO>
   void initialPrediction(typename NLO::Domain& req, NLO& residual, SubsidiaryArgs& args) {
@@ -283,8 +278,7 @@ struct DisplacementControl
    * \tparam NLO Type of the residual function.
    * \param residual The residual function.
    * \param args The subsidiary function arguments.
-   * \param d The solution vector.
-   * \param lambda The load factor.
+   * \param req The solution.
    */
   template <typename NLO>
   void intermediatePrediction(typename NLO::Domain& req, NLO& residual, SubsidiaryArgs& args) {

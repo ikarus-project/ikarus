@@ -88,8 +88,8 @@ with the following three member functions:
 
 ```cpp
 void evaluateSubsidiaryFunction(SubsidiaryArgs& args) const;
-void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args, SolutionType& d,  double& lambda);
-void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args, SolutionType& d,  double& lambda);
+void initialPrediction(NonLinearOperator::Domain& req, NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args);
+void intermediatePrediction(NonLinearOperator::Domain& req, NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args);
 ```
 
 For each Newton-Raphson iteration, the function `#!cpp evaluateSubsidiaryFunction(SubsidiaryArgs& args)` is used to evaluate the
@@ -135,8 +135,8 @@ struct StandardArcLength {
                    "You have to call initialPrediction first. Otherwise psi is not defined");
     }
 
-     template <typename NLO,typename SolutionType>
-    void initialPrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args, SolutionType& d,  double& lambda) {
+     template <typename NLO>
+    void initialPrediction(NonLinearOperator::Domain& req,NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
       auto linearSolver
           = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);  // for the linear predictor step
 
@@ -157,12 +157,12 @@ struct StandardArcLength {
       args.DD      = args.DD * args.stepSize / s;
       args.Dlambda = args.stepSize / s;
 
-      d = args.DD;
-      lambda  = args.Dlambda;
+      req.globalSolution() = args.DD;
+      req.parameter()  = args.Dlambda;
     }
 
-  template <typename NLO,typename SolutionType>
-    void intermediatePrediction(NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+  template <typename NLO>
+    void intermediatePrediction(NonLinearOperator::Domain& req, NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
       nonLinearOperator.firstParameter() += args.DD;
       nonLinearOperator.lastParameter() += args.Dlambda;
     }

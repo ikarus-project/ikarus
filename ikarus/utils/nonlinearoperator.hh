@@ -47,38 +47,11 @@ auto functions(Args&&... args) {
 #ifndef DOXYGEN
 template <class Signature, template <class> class DerivativeTraits, class... F>
 class NonLinearOperator;
-
 #endif
 
-template <class Range, class D, template <class> class DerivativeTraits, class F>
-class NonLinearOperator<Range(D), DerivativeTraits, F>
-    : private Dune::Functions::DifferentiableFunctionFromCallables<Range(D), DerivativeTraits, F>
-{
-  using Base = Dune::Functions::DifferentiableFunctionFromCallables<Range(D), DerivativeTraits, F>;
-
-public:
-  using Domain                       = std::remove_cvref_t<D>;
-  static constexpr auto nDerivatives = 0;
-
-  template <class FFF, Dune::disableCopyMove<NonLinearOperator, FFF> = 0>
-  NonLinearOperator(FFF&& f)
-      : Base(std::forward<FFF>(f)) {}
-  using Traits = DerivativeTraitsFromCallables<Impl::Functions<F>, Domain>;
-
-  using Derivative = NonLinearOperator<typename Traits::template Range<1>(D), DerivativeTraits>;
-
-  Range operator()(const D& x) const { return Base::operator()(x); }
-
-  /**
-   * \brief Get derivative of NonLinearOperator
-   *
-   */
-  friend Derivative derivative(const NonLinearOperator& t) { return derivative(static_cast<const Base&>(t)); }
-};
-
 /**
- * \brief NonLinearOperator is a class taking linear algebra function and their arguments.
- * The function are assumed to be derivatives of each other w.r.t. the first parameter
+ * \brief NonLinearOperator is a class taking several callables.
+ * The function are assumed to be derivatives of each other w.r.t. the argument
  *
  * \tparam DerivativeArgs The types of derivative arguments.
  * \tparam ParameterArgs The types of parameter arguments.
@@ -112,14 +85,23 @@ public:
   }
 };
 
-template <typename... DerivativeArgs, typename Arg>
-auto makeNonLinearOperator(const Impl::Functions<DerivativeArgs...>& derivativesFunctions, const Arg& parameter) {
+/**
+ * \brief Factory method for NonLinearOperator
+ * It is a function taking several callables and the argument of these functions to derive the correct signatures for
+ * the functions (which could be templated lambdas) The function are assumed to be derivatives of each other w.r.t. the
+ * parameter
+ *
+ * \tparam F The types of  functions.
+ * \tparam Arg The types of the argument.
+ */
+template <typename... F, typename Arg>
+auto makeNonLinearOperator(const Impl::Functions<F...>& derivativesFunctions, const Arg& parameter) {
   DerivativeTraitsFromCallables t(derivativesFunctions, parameter);
   using DerivTraits = decltype(t);
-  auto la           = []<typename... F>(F&&... f) {
+  auto la           = []<typename... FF>(FF&&... f) {
     return Ikarus::NonLinearOperator<typename DerivTraits::template Range<0>(typename DerivTraits::Domain),
-                                               DerivTraits::template DerivativeTraits, std::remove_cvref_t<F>...>(
-        std::forward<F>(f)...);
+                                               DerivTraits::template DerivativeTraits, std::remove_cvref_t<FF>...>(
+        std::forward<FF>(f)...);
   };
   return std::apply(la, derivativesFunctions.args);
 }
