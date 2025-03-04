@@ -82,7 +82,7 @@ struct DerivativeTraitsFromCallables<Impl::Functions<DerivativeArgs...>, Arg>
   {
   private:
     static constexpr int indexOfSignatureImpl = traits::Index<Signature, RawSignatures>::value + 1;
-    static constexpr int indexOfSignature     = indexOfSignatureImpl;
+    static constexpr int indexOfSignature     = traits::Index<Signature, RawSignatures>::value + 1;
 
   public:
     using Range = std::tuple_element_t<indexOfSignature, Ranges>;
