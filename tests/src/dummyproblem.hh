@@ -21,7 +21,7 @@
 
 template <typename G = Dune::UGGrid<2>, bool useYASP = false>
 struct DummyProblem
-{F
+{
   using Grid     = G;
   using GridView = typename Grid::LeafGridView;
 

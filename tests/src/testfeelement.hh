@@ -19,7 +19,6 @@
 #include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 
-
 /** These tests test your element on some gridElement with some basis
  *
  * \tparam PREFunc Type of the functor returning a pre finite element.

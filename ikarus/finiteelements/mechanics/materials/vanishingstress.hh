@@ -18,7 +18,6 @@
 #include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/tensorutils.hh>
 
-
 namespace Ikarus::Materials {
 
 /**

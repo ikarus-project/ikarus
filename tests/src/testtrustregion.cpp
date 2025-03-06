@@ -19,7 +19,6 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
 
-
 using namespace Ikarus;
 using Dune::TestSuite;
 

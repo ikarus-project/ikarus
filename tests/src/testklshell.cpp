@@ -35,7 +35,6 @@
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
-
 using Dune::TestSuite;
 
 static auto NonLinearKLShellLoadControlTR() {

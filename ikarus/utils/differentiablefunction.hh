@@ -3,7 +3,7 @@
 
 /**
  * \file differentiablefunction.hh
- * \brief Provides a DifferentiableFunction class for handling differentiable Functionss.
+ * \brief Provides a DifferentiableFunction class for handling differentiable Functions.
  *
  */
 
@@ -16,7 +16,6 @@
 
 #include <ikarus/utils/derivativetraits.hh>
 #include <ikarus/utils/traits.hh>
-
 
 namespace Ikarus {
 

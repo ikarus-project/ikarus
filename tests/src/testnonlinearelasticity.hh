@@ -30,7 +30,6 @@
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 
-
 using Dune::TestSuite;
 
 struct OwnResultFunction

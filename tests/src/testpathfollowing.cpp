@@ -16,7 +16,6 @@
 #include <ikarus/utils/observer/controllogger.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
-
 using namespace Ikarus::Concepts;
 using Dune::TestSuite;
 
