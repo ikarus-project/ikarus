@@ -20,7 +20,6 @@
 #include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
 
-
 using namespace Ikarus;
 using namespace Materials;
 using Dune::TestSuite;

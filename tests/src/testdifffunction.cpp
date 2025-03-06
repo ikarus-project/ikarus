@@ -17,7 +17,6 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
-
 using namespace Ikarus;
 using Dune::TestSuite;
 
