@@ -29,7 +29,7 @@ set(programSourceFiles
     testmaterial.cpp
     testnonlinearelasticityneohooke.cpp
     testnonlinearelasticitysvk.cpp
-    testnonlinearoperator.cpp
+    testdifffunction.cpp
     testpathfollowing.cpp
     testpolyfit.cpp
     testpythonconversion.cpp

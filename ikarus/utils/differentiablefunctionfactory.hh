@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * \file nonlinopfactory.hh
- * \brief Contains the generic NonLinearOperatorFactory class.
+ * \file differentiablefunctionfactory.hh
+ * \brief Contains the generic DifferentiableFunctionFactory class.
  */
 
 #pragma once
@@ -15,11 +15,11 @@
 #include <ikarus/assembler/dirichletbcenforcement.hh>
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/utils/derivativetraits.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
+#include <ikarus/utils/differentiablefunction.hh>
 
 namespace Ikarus {
 
-struct NonLinearOperatorFactory
+struct DifferentiableFunctionFactory
 {
   template <typename Assembler, typename... Affordances>
   static auto op(Assembler&& as, AffordanceCollection<Affordances...> affordances,
@@ -44,17 +44,17 @@ struct NonLinearOperatorFactory
       return assembler->vector(p, affordances.vectorAffordance(), dbcOption);
     };
 
-    auto reqArg = FERequirement(); // This is only created to help  makeNonLinearOperator deduce the argument type of
-                                   // the functions. therefore, no valid values needed
+    auto reqArg = FERequirement(); // This is only created to help  makeDifferentiableFunction deduce the argument type
+                                   // of the functions. therefore, no valid values needed
 
     if constexpr (affordances.hasScalarAffordance) {
       [[maybe_unused]] auto energyFunction = [assembler = assemblerPtr, affordances](const FERequirement& p) -> auto& {
         return assembler->scalar(p, affordances.scalarAffordance());
       };
 
-      return makeNonLinearOperator(functions(energyFunction, residualFunction, KFunction), reqArg);
+      return makeDifferentiableFunction(functions(energyFunction, residualFunction, KFunction), reqArg);
     } else
-      return makeNonLinearOperator(functions(residualFunction, KFunction), reqArg);
+      return makeDifferentiableFunction(functions(residualFunction, KFunction), reqArg);
   }
 
   template <typename Assembler>

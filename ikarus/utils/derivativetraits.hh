@@ -29,7 +29,7 @@ template <FESolutions sol, FEParameter para, typename SV, typename PM>
 class FERequirements;
 
 /**
- * \brief Represents a NonLinearOperator class for handling nonlinear operators.
+ * \brief Represents the traits obtained from a set of callables
  * \ingroup utils
  * \tparam TypeListOne The type list for the first set of functions.
  * \tparam TypeListTwo The type list for the second set of functions.

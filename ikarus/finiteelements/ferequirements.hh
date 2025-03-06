@@ -299,7 +299,7 @@ public:
    * \param solVec Reference to the raw global solution vector.
    * \return Reference to the updated FERequirements instance.
    */
-  template <typename SV2 = SV>
+  template <typename SV2 = SolutionVectorType>
   FERequirements& insertGlobalSolution(SV2&& solVec) {
     sol_ = std::make_unique<SV>(std::forward<SV2>(solVec));
     return *this;
@@ -310,7 +310,7 @@ public:
    *
    * \return Reference to the raw global solution vector.
    */
-  const SV& globalSolution() const {
+  const SolutionVectorType& globalSolution() const {
     if (!sol_)
       DUNE_THROW(Dune::InvalidStateException, "Solution vector is not initialized.");
     return *sol_;

@@ -57,7 +57,7 @@ auto alc = Ikarus::PathFollowing(nr, load_steps, stepSize, pft);
 where `#!cpp nr` is a Newton-Raphson solver which considers a scalar subsidiary function and is defined by
 
 ```cpp
-auto nr = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(nonLinOp, std::move(linSolver));
+auto nr = Ikarus::makeNewtonRaphsonWithSubsidiaryFunction(f, std::move(linSolver));
 ```
 
 and `#!cpp pft` is the desired path-following technique. Three different path-following techniques are included, namely
@@ -88,8 +88,8 @@ with the following three member functions:
 
 ```cpp
 void evaluateSubsidiaryFunction(SubsidiaryArgs& args) const;
-void initialPrediction(NonLinearOperator::Domain& req, NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args);
-void intermediatePrediction(NonLinearOperator::Domain& req, NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args);
+void initialPrediction(DifferentiableFunction::Domain& req, DifferentiableFunction& differentiableFunction, SubsidiaryArgs& args);
+void intermediatePrediction(DifferentiableFunction::Domain& req, DifferentiableFunction& differentiableFunction, SubsidiaryArgs& args);
 ```
 
 For each Newton-Raphson iteration, the function `#!cpp evaluateSubsidiaryFunction(SubsidiaryArgs& args)` is used to evaluate the
@@ -135,16 +135,16 @@ struct StandardArcLength {
                    "You have to call initialPrediction first. Otherwise psi is not defined");
     }
 
-     template <typename NLO>
-    void initialPrediction(NonLinearOperator::Domain& req,NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
+     template <typename F>
+    void initialPrediction(F::Domain& req,F& differentiableFunction, SubsidiaryArgs& args) {
       auto linearSolver
           = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);  // for the linear predictor step
 
-      nonLinearOperator.lastParameter() = 1.0;  // lambda =1.0
+      req.parameter() = 1.0;  // lambda =1.0
 
-      nonLinearOperator.template update<0>();
-      const auto& R = nonLinearOperator.value();
-      const auto& K = nonLinearOperator.derivative();
+      differentiableFunction.template update<0>();
+      auto&& R = differentiableFunction(req);
+      auto&& K = derivative(differentiableFunction)(req);
 
       linearSolver.factorize(K);
       linearSolver.solve(args.DD, -R);
@@ -161,10 +161,10 @@ struct StandardArcLength {
       req.parameter()  = args.Dlambda;
     }
 
-  template <typename NLO>
-    void intermediatePrediction(NonLinearOperator::Domain& req, NonLinearOperator& nonLinearOperator, SubsidiaryArgs& args) {
-      nonLinearOperator.firstParameter() += args.DD;
-      nonLinearOperator.lastParameter() += args.Dlambda;
+  template <typename F>
+    void intermediatePrediction(F::Domain& req, F& differentiableFunction, SubsidiaryArgs& args) {
+      req.globalSolution() += args.DD;
+      req.parameter()  += args.Dlambda;
     }
 
     std::string name = "Arc length";
@@ -183,10 +183,10 @@ The general interface for adaptive step-sizing is represented by the following c
 ```cpp
 namespace Ikarus::Concepts {
     template <typename AdaptiveStepSizing, typename NonLinearSolverInformation, typename SubsidiaryArgs,
-              typename NonLinearOperator>
+              typename F>
     concept AdaptiveStepSizingStrategy = requires(AdaptiveStepSizing adaptiveSS, NonLinearSolverInformation info,
-                                                  SubsidiaryArgs args, NonLinearOperator nop) {
-      { adaptiveSS(info, args, nop) } -> std::same_as<void>; // (1)!
+                                                  SubsidiaryArgs args, F f) {
+      { adaptiveSS(info, args, f) } -> std::same_as<void>; // (1)!
       { adaptiveSS.targetIterations() } -> std::same_as<int>; // (2)!
       { adaptiveSS.setTargetIterations(std::declval<int>()) } -> std::same_as<void>; // (3)!
     };
@@ -205,7 +205,7 @@ For implementation details, refer to `ikarus/controlroutines/adaptivestepsizing.
 
 By default, `AdaptiveStepSizing::NoOp` is used with a path-following technique.
 `AdaptiveStepSizing::NoOp` uses the step size provided by the user and doesn't modify them while using `PathFollowing`.
-`NoOp` here stands for [No Operation](https://en.wikipedia.org/wiki/NOP_(code)).
+`NoOp` here stands for [No Operation](https://en.wikipedia.org/wiki/F_(code)).
 
 #### Iteration-based
 

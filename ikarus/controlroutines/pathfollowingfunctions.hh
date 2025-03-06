@@ -90,18 +90,18 @@ struct ArcLength
    * This method initializes the prediction step for the standard arc-length method it computes \f$\psi\f$ and
    * computes initial \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$.
    *
-   * \tparam NLO Type of the residual function.
+   * \tparam F Type of the residual function.
    * \param residual The residual function.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    * \ingroup  controlroutines
    */
-  template <typename NLO>
-  requires(Ikarus::Concepts::LinearSolverCheck<Ikarus::LinearSolver, typename NLO::Traits::template Range<1>,
-                                               typename NLO::Domain::SolutionVectorType>)
-  void initialPrediction(typename NLO::Domain& req, NLO& residual, SubsidiaryArgs& args) {
+  template <typename F>
+  requires(Ikarus::Concepts::LinearSolverCheck<Ikarus::LinearSolver, typename F::Traits::template Range<1>,
+                                               typename F::Domain::SolutionVectorType>)
+  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
     SolverTypeTag solverTag;
-    using JacobianType = std::remove_cvref_t<typename NLO::Traits::template Range<1>>;
+    using JacobianType = std::remove_cvref_t<typename F::Traits::template Range<1>>;
     static_assert((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value) or
                       (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix, JacobianType>::value),
                   "Linear solver not implemented for the chosen derivative type of the non-linear operator");
@@ -137,13 +137,13 @@ struct ArcLength
    *
    * This method updates the prediction step for the standard arc-length method.
    *
-   * \tparam NLO Type of the residual function.
+   * \tparam F Type of the residual function.
    * \param residual The residual function.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename NLO>
-  void intermediatePrediction(typename NLO::Domain& req, NLO& residual, SubsidiaryArgs& args) {
+  template <typename F>
+  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
     req.globalSolution() += args.DD;
     req.parameter() += args.Dlambda;
   }
@@ -187,13 +187,13 @@ struct LoadControlSubsidiaryFunction
    *
    * This method initializes the prediction step for the load control method.
    *
-   * \tparam NLO Type of the residual function.
+   * \tparam F Type of the residual function.
    * \param residual The residual function.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename NLO>
-  void initialPrediction(typename NLO::Domain& req, NLO& residual, SubsidiaryArgs& args) {
+  template <typename F>
+  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
     args.Dlambda    = args.stepSize;
     req.parameter() = args.Dlambda;
   }
@@ -203,13 +203,13 @@ struct LoadControlSubsidiaryFunction
    *
    * This method updates the prediction step for the load control method.
    *
-   * \tparam NLO Type of the residual function.
+   * \tparam F Type of the residual function.
    * \param residual The residual function.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename NLO>
-  void intermediatePrediction(typename NLO::Domain& req, NLO& residual, SubsidiaryArgs& args) {
+  template <typename F>
+  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
     req.parameter() += args.Dlambda;
   }
 
@@ -259,13 +259,13 @@ struct DisplacementControl
    *
    * This method initializes the prediction step for the displacement control method.
    *
-   * \tparam NLO Type of the residual function.
+   * \tparam F Type of the residual function.
    * \param residual The residual function.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename NLO>
-  void initialPrediction(typename NLO::Domain& req, NLO& residual, SubsidiaryArgs& args) {
+  template <typename F>
+  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
     args.DD(controlledIndices).array() = args.stepSize;
     req.globalSolution()               = args.DD;
   }
@@ -275,13 +275,13 @@ struct DisplacementControl
    *
    * This method updates the prediction step for the displacement control method.
    *
-   * \tparam NLO Type of the residual function.
+   * \tparam F Type of the residual function.
    * \param residual The residual function.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename NLO>
-  void intermediatePrediction(typename NLO::Domain& req, NLO& residual, SubsidiaryArgs& args) {
+  template <typename F>
+  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
     req.globalSolution() += args.DD;
   }
 

@@ -25,10 +25,11 @@
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/utils/differentiablefunction.hh>
+#include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/dirichletvalues.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
+
 
 using Dune::TestSuite;
 
@@ -85,7 +86,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   const auto& d      = req.globalSolution();
   const auto& lambda = req.parameter();
   sparseAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics);
-  auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseAssembler, DBCOption::Reduced);
+  auto f = Ikarus::DifferentiableFunctionFactory::op(sparseAssembler, DBCOption::Reduced);
 
   const double gradTol = 1e-8;
 
@@ -110,7 +111,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   auto lc = Ikarus::LoadControl(tr, 1, {0, 50});
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run(req);
-  auto actualEnergy      = nonLinOp(req);
+  auto actualEnergy      = f(req);
   const auto maxDisp     = std::ranges::max(d);
   double energyExpected;
   if (std::is_same_v<Grid, Grids::Yasp>)
@@ -179,7 +180,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
       << "Test resultName: " << resultFunction5->name() << "should be PK2StressFull";
   t.check(resultFunction5->ncomps() == 6) << "Test result comps: " << resultFunction5->ncomps() << "should be 6";
 
-  auto grad = derivative(nonLinOp)(req);
+  auto grad = derivative(f)(req);
   t.check(controlInfo.success, "Successful result");
   t.check(gradTol >= grad.norm(), "Gradient Tolerance should be larger than actual tolerance");
   return t;

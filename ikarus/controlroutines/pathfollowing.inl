@@ -15,7 +15,7 @@
 #include <ikarus/controlroutines/controlinfos.hh>
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
+#include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 

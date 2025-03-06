@@ -28,12 +28,13 @@
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/utils/differentiablefunction.hh>
+#include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
+
 
 using Dune::TestSuite;
 
@@ -110,16 +111,14 @@ static auto NonLinearKLShellLoadControlTR() {
   auto req = typename FEType::Requirement(basis);
 
   sparseAssembler->bind(Ikarus::AffordanceCollections::elastoStatics);
-  auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseAssembler, DBCOption::Full);
+  auto fus::DifferentiableFunctionFactory::op(sparseAssembler, DBCOption::Full);
 
-  t.check(utils::checkGradient(nonLinOp, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
-      << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
-      << "Check Hessian failed";
+  t.check(utils::checkGradient(f{.draw = false, .writeSlopeStatementIfFailed = true})) << "Check gradient failed";
+  t.check(utils::checkHessian(f{.draw = false, .writeSlopeStatementIfFailed = true})) << "Check Hessian failed";
 
   const double gradTol = 1e-14;
 
-  auto tr = makeTrustRegion(nonLinOp);
+  auto tr = makeTrustRegion(f
   tr->setup({.verbosity = 1,
              .maxIter   = 1000,
              .grad_tol  = gradTol,

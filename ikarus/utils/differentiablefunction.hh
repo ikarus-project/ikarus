@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * \file nonlinearoperator.hh
- * \brief Provides a NonLinearOperator class for handling nonlinear operators.
+ * \file differentiablefunction.hh
+ * \brief Provides a DifferentiableFunction class for handling differentiable Functionss.
  *
  */
 
@@ -11,11 +11,12 @@
 #include <tuple>
 #include <type_traits>
 
-#include "dune/functions/common/differentiablefunctionfromcallables.hh"
 #include <dune/common/hybridutilities.hh>
+#include <dune/functions/common/differentiablefunctionfromcallables.hh>
 
 #include <ikarus/utils/derivativetraits.hh>
 #include <ikarus/utils/traits.hh>
+
 
 namespace Ikarus {
 
@@ -46,18 +47,18 @@ auto functions(Args&&... args) {
 }
 #ifndef DOXYGEN
 template <class Signature, template <class> class DerivativeTraits, class... F>
-class NonLinearOperator;
+class DifferentiableFunction;
 #endif
 
 /**
- * \brief NonLinearOperator is a class taking several callables.
+ * \brief DifferentiableFunction is a class taking several callables.
  * The function are assumed to be derivatives of each other w.r.t. the argument
  *
  * \tparam DerivativeArgs The types of derivative arguments.
  * \tparam ParameterArgs The types of parameter arguments.
  */
 template <class Range, class D, template <class> class DerivativeTraits, class F, class... FF>
-class NonLinearOperator<Range(D), DerivativeTraits, F, FF...>
+class DifferentiableFunction<Range(D), DerivativeTraits, F, FF...>
     : private Dune::Functions::DifferentiableFunctionFromCallables<Range(D), DerivativeTraits, F, FF...>
 {
   using Base = Dune::Functions::DifferentiableFunctionFromCallables<Range(D), DerivativeTraits, F, FF...>;
@@ -67,26 +68,26 @@ public:
   static constexpr auto nDerivatives = sizeof...(FF);
 
   template <class... FFF>
-  NonLinearOperator(FFF&&... f)
+  DifferentiableFunction(FFF&&... f)
       : Base(std::forward<FFF>(f)...) {}
   using Traits = DerivativeTraitsFromCallables<Impl::Functions<F, FF...>, D>;
 
-  using Derivative = NonLinearOperator<typename Traits::template Range<1>(D), DerivativeTraits, FF...>;
+  using Derivative = DifferentiableFunction<typename Traits::template Range<1>(D), DerivativeTraits, FF...>;
 
   Range operator()(const D& x) const { return Base::operator()(x); }
 
   /**
-   * \brief Get derivative of NonLinearOperator
+   * \brief Get derivative of DifferentiableFunction
    *
    */
-  friend Derivative derivative(const NonLinearOperator& t) {
+  friend Derivative derivative(const DifferentiableFunction& t) {
     auto df = derivative(static_cast<const Base&>(t));
     return Derivative(df);
   }
 };
 
 /**
- * \brief Factory method for NonLinearOperator
+ * \brief Factory method for DifferentiableFunction
  * It is a function taking several callables and the argument of these functions to derive the correct signatures for
  * the functions (which could be templated lambdas) The function are assumed to be derivatives of each other w.r.t. the
  * parameter
@@ -95,12 +96,12 @@ public:
  * \tparam Arg The types of the argument.
  */
 template <typename... F, typename Arg>
-auto makeNonLinearOperator(const Impl::Functions<F...>& derivativesFunctions, const Arg& parameter) {
+auto makeDifferentiableFunction(const Impl::Functions<F...>& derivativesFunctions, const Arg& parameter) {
   DerivativeTraitsFromCallables t(derivativesFunctions, parameter);
   using DerivTraits = decltype(t);
   auto la           = []<typename... FF>(FF&&... f) {
-    return Ikarus::NonLinearOperator<typename DerivTraits::template Range<0>(typename DerivTraits::Domain),
-                                               DerivTraits::template DerivativeTraits, std::remove_cvref_t<FF>...>(
+    return Ikarus::DifferentiableFunction<typename DerivTraits::template Range<0>(typename DerivTraits::Domain),
+                                                    DerivTraits::template DerivativeTraits, std::remove_cvref_t<FF>...>(
         std::forward<FF>(f)...);
   };
   return std::apply(la, derivativesFunctions.args);

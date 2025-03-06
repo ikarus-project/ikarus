@@ -14,9 +14,10 @@
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
-#include "ikarus/utils/tensorutils.hh"
 #include <ikarus/utils/concepts.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
+#include <ikarus/utils/differentiablefunction.hh>
+#include <ikarus/utils/tensorutils.hh>
+
 
 namespace Ikarus::Materials {
 
@@ -164,7 +165,7 @@ private:
    * \brief Reduces stress components to satisfy the vanishing stress condition.
    * \tparam Derived The derived type of the input matrix.
    * \param Eraw The input strain matrix.
-   * \return std::pair<NonLinearOperator, decltype(auto)> The stress reduction result.
+   * \return std::pair<DifferentiableFunction, decltype(auto)> The stress reduction result.
    */
   template <typename Derived>
   auto reduceStress(const Eigen::MatrixBase<Derived>& Eraw) const {
@@ -190,7 +191,7 @@ private:
     auto Er = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
 
     Er.setZero();
-    auto nonOp = Ikarus::makeNonLinearOperator(functions(f, df), Er);
+    auto nonOp = Ikarus::makeDifferentiableFunction(functions(f, df), Er);
 
     auto linearSolver   = [](auto& r, auto& A) { return (A.inverse() * r).eval(); };
     auto updateFunction = [&](auto&, const auto& ecomps) {

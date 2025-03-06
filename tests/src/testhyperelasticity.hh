@@ -17,8 +17,9 @@
 
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
+#include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
+
 
 using namespace Ikarus;
 using namespace Materials;

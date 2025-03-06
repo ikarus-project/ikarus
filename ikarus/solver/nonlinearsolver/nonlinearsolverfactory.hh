@@ -12,7 +12,7 @@
 
 #include <ikarus/assembler/dirichletbcenforcement.hh>
 #include <ikarus/utils/defaultfunctions.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
+#include <ikarus/utils/differentiablefunctionfactory.hh>
 
 namespace Ikarus {
 
@@ -52,11 +52,11 @@ struct NonlinearSolverFactory
   template <typename Assembler>
   requires Concepts::FlatAssembler<typename std::remove_cvref_t<Assembler>::element_type>
   auto create(Assembler&& assembler) const {
-    auto nonLinOp        = NonLinearOperatorFactory::op(assembler);
-    using NonLinOpTraits = typename decltype(nonLinOp)::Traits;
+    auto f        = DifferentiableFunctionFactory::op(assembler);
+    using fTraits = typename decltype(f)::Traits;
 
-    using CorrectionType = typename NonLinOpTraits::template Range<1>;
-    using Domain         = typename NonLinOpTraits::Domain;
+    using CorrectionType = typename fTraits::template Range<1>;
+    using Domain         = typename fTraits::Domain;
     auto updateF         = [assembler, setting = settings]<typename D, typename C>(D& x, const C& b) {
       if (assembler->dBCOption() == DBCOption::Reduced) {
         setting.updateFunction(x, assembler->createFullVector(b));
@@ -64,7 +64,7 @@ struct NonlinearSolverFactory
         setting.updateFunction(x, b);
     };
     auto settingsNew = settings.rebindUpdateFunction(std::move(updateF));
-    return createNonlinearSolver(std::move(settingsNew), std::move(nonLinOp));
+    return createNonlinearSolver(std::move(settingsNew), std::move(f));
   }
 };
 }; // namespace Ikarus

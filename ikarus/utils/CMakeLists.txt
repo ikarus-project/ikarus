@@ -20,8 +20,8 @@ install(
         linearalgebrahelper.hh
         makeenum.hh
         math.hh
-        nonlinearoperator.hh
-        nonlinopfactory.hh
+        differentiablefunction.hh
+        differentiablefunctionfactory.hh
         polyfit.hh
         pythonautodiffdefinitions.hh
         tensorutils.hh

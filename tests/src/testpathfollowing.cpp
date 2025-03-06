@@ -11,10 +11,11 @@
 #include <Eigen/Core>
 
 #include <ikarus/controlroutines/pathfollowing.hh>
+#include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/observer/controllogger.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
+
 
 using namespace Ikarus::Concepts;
 using Dune::TestSuite;
@@ -38,8 +39,8 @@ static auto stiffnessMatrix(const Eigen::VectorXd& D, [[maybe_unused]] double la
   return mat;
 }
 
-template <typename NonLinearOperator>
-static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp, typename NonLinearOperator::Domain& req,
+template <typename DifferentiableFunction>
+static auto simple2DOperatorArcLengthTest(DifferentiableFunction& f, typename DifferentiableFunction::Domain& req,
                                           double stepSize, int loadSteps) {
   req.globalSolution().setZero();
   req.parameter() = 0.0;
@@ -47,7 +48,7 @@ static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp, typename 
   auto pft        = Ikarus::ArcLength{}; // Type of path following technique
 
   auto nrSettings = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.linearSolver = linSolver};
-  auto nr         = Ikarus::createNonlinearSolver(nrSettings, nonLinOp);
+  auto nr         = Ikarus::createNonlinearSolver(nrSettings, f);
 
   auto alc = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
 
@@ -70,14 +71,15 @@ static auto simple2DOperatorArcLengthTest(NonLinearOperator& nonLinOp, typename 
   return t;
 }
 
-template <typename NonLinearOperator>
-static auto simple2DOperatorArcLengthTestAsDefault(NonLinearOperator& nonLinOp, typename NonLinearOperator::Domain& req,
-                                                   double stepSize, int loadSteps) {
+template <typename DifferentiableFunction>
+static auto simple2DOperatorArcLengthTestAsDefault(DifferentiableFunction& f,
+                                                   typename DifferentiableFunction::Domain& req, double stepSize,
+                                                   int loadSteps) {
   req.globalSolution().setZero();
   req.parameter() = 0.0;
   auto linSolver  = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
   auto nrSettings = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.linearSolver = linSolver};
-  auto nr         = Ikarus::createNonlinearSolver(nrSettings, nonLinOp);
+  auto nr         = Ikarus::createNonlinearSolver(nrSettings, f);
   auto alc        = Ikarus::PathFollowing(nr, loadSteps, stepSize);
   auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
   auto pathFollowingObserver   = std::make_shared<Ikarus::ControlLogger>();
@@ -98,8 +100,8 @@ static auto simple2DOperatorArcLengthTestAsDefault(NonLinearOperator& nonLinOp, 
   return t;
 }
 
-template <typename NonLinearOperator>
-static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp, typename NonLinearOperator::Domain& req,
+template <typename DifferentiableFunction>
+static auto simple2DOperatorLoadControlTest(DifferentiableFunction& f, typename DifferentiableFunction::Domain& req,
                                             double stepSize, int loadSteps) {
   req.globalSolution().setZero();
   req.parameter() = 0.0;
@@ -107,7 +109,7 @@ static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp, typenam
   auto pft        = Ikarus::LoadControlSubsidiaryFunction{}; // Type of path following technique
 
   auto nrSettings = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.linearSolver = linSolver};
-  auto nr         = Ikarus::createNonlinearSolver(nrSettings, nonLinOp);
+  auto nr         = Ikarus::createNonlinearSolver(nrSettings, f);
   auto lc         = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
   auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
   auto pathFollowingObserver   = std::make_shared<Ikarus::ControlLogger>();
@@ -128,9 +130,9 @@ static auto simple2DOperatorLoadControlTest(NonLinearOperator& nonLinOp, typenam
   return t;
 }
 
-template <typename NonLinearOperator>
-static auto simple2DOperatorDisplacementControlTest(NonLinearOperator& nonLinOp,
-                                                    typename NonLinearOperator::Domain& req, double stepSize,
+template <typename DifferentiableFunction>
+static auto simple2DOperatorDisplacementControlTest(DifferentiableFunction& f,
+                                                    typename DifferentiableFunction::Domain& req, double stepSize,
                                                     int loadSteps) {
   req.globalSolution().setZero();
   req.parameter()                    = 0.0;
@@ -140,7 +142,7 @@ static auto simple2DOperatorDisplacementControlTest(NonLinearOperator& nonLinOp,
   auto pft = Ikarus::DisplacementControl{controlledIndices}; // Type of path following technique
 
   auto nrSettings = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.linearSolver = linSolver};
-  auto nr         = Ikarus::createNonlinearSolver(nrSettings, nonLinOp);
+  auto nr         = Ikarus::createNonlinearSolver(nrSettings, f);
   auto dc         = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
   auto nonLinearSolverObserver = std::make_shared<Ikarus::NonLinearSolverLogger>();
   auto pathFollowingObserver   = std::make_shared<Ikarus::ControlLogger>();
@@ -175,15 +177,15 @@ int main(int argc, char** argv) {
   req.insertGlobalSolution(D);
   req.insertParameter(lambda);
 
-  auto nonLinOp = Ikarus::makeNonLinearOperator(Ikarus::functions(fvLambda, dfvLambda), req);
+  auto f = Ikarus::makeDifferentiableFunction(Ikarus::functions(fvLambda, dfvLambda), req);
 
   double stepSize = 0.1;
   int loadSteps   = 5;
 
-  t.subTest(simple2DOperatorArcLengthTest(nonLinOp, req, stepSize, loadSteps));
-  t.subTest(simple2DOperatorArcLengthTestAsDefault(nonLinOp, req, stepSize, loadSteps));
-  t.subTest(simple2DOperatorLoadControlTest(nonLinOp, req, stepSize, loadSteps));
-  t.subTest(simple2DOperatorDisplacementControlTest(nonLinOp, req, stepSize, loadSteps));
+  t.subTest(simple2DOperatorArcLengthTest(f, req, stepSize, loadSteps));
+  t.subTest(simple2DOperatorArcLengthTestAsDefault(f, req, stepSize, loadSteps));
+  t.subTest(simple2DOperatorLoadControlTest(f, req, stepSize, loadSteps));
+  t.subTest(simple2DOperatorDisplacementControlTest(f, req, stepSize, loadSteps));
 
   return t.exit();
 }

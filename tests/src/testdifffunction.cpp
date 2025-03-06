@@ -12,10 +12,11 @@
 
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/utils/derivativetraits.hh>
+#include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
+
 
 using namespace Ikarus;
 using Dune::TestSuite;
@@ -53,14 +54,14 @@ static auto simple1DOperatorNewtonRaphsonTest() {
 
   auto fvLambda  = [&](auto&& x_) { return f(x_); };
   auto dfvLambda = [&](auto&& x_) { return df(x_); };
-  auto nonLinOp  = makeNonLinearOperator(functions(fvLambda, dfvLambda), x);
+  auto f         = makeDifferentiableFunction(functions(fvLambda, dfvLambda), x);
 
   // Newton method test
   const double eps       = 1e-14;
   const int maxIter      = 20;
   const double xExpected = std::sqrt(5.0) - 1.0;
 
-  Ikarus::NewtonRaphson nr(nonLinOp);
+  Ikarus::NewtonRaphson nr(f);
   t.subTest(checkNewtonRaphson(nr, x, eps, maxIter, 7, xExpected));
   return t;
 }
@@ -75,9 +76,9 @@ static auto simple1DOperatorNewtonRaphsonCheckThatThePerfectPredictorWorksTest()
   const int maxIter      = 20;
   const double xExpected = std::sqrt(5.0) - 1.0;
   double x               = xExpected;
-  auto nonLinOp          = makeNonLinearOperator(functions(fvLambda, dfvLambda), x);
+  auto f                 = makeDifferentiableFunction(functions(fvLambda, dfvLambda), x);
 
-  Ikarus::NewtonRaphson nr(nonLinOp);
+  Ikarus::NewtonRaphson nr(f);
 
   t.subTest(checkNewtonRaphson(nr, x, eps, maxIter, 0, xExpected));
   return t;
@@ -90,14 +91,14 @@ static auto simple1DOperatorNewtonRaphsonWithWrongDerivativeTest() {
 
   auto fvLambda  = [](auto&& x_) { return f(x_); };
   auto dfvLambda = [](auto&& x_) { return dfFail(x_); };
-  auto nonLinOp  = makeNonLinearOperator(functions(fvLambda, dfvLambda), x);
+  auto f         = makeDifferentiableFunction(functions(fvLambda, dfvLambda), x);
 
   // Newton method test
   const double eps  = 1e-14;
   const int maxIter = 20;
 
   TestSuite t("checkNewtonRaphsonFailing");
-  Ikarus::NewtonRaphson nr(nonLinOp);
+  Ikarus::NewtonRaphson nr(f);
   nr.setup({eps, maxIter});
   const auto solverInfo = nr.solve(x);
 
@@ -122,14 +123,14 @@ static auto simple1DOperatorNewtonRaphsonTestWithParameter() {
   for (int i = 0; i < 3; ++i) {
     auto fvLambda  = [&](auto&& x_) { return fp(x_, i); };
     auto dfvLambda = [&](auto&& x_) { return dfp(x_, i); };
-    auto nonLinOp  = makeNonLinearOperator(functions(fvLambda, dfvLambda), x);
+    auto f         = makeDifferentiableFunction(functions(fvLambda, dfvLambda), x);
 
     // Newton method test
     const double eps       = 1e-14;
     const int maxIter      = 20;
     const double xExpected = std::sqrt(4 + i * i) - i;
 
-    Ikarus::NewtonRaphson nr(nonLinOp);
+    Ikarus::NewtonRaphson nr(f);
     const int iterExpected = i == 0 ? 7 : i == 1 ? 5 : 4;
     t.subTest(checkNewtonRaphson(nr, x, eps, maxIter, iterExpected, xExpected));
   }
@@ -146,12 +147,12 @@ static auto vectorValuedOperatorNewtonRaphsonTest() {
 
   auto fvLambda  = [&](auto&& x_) { return fv(x_, A, b); };
   auto dfvLambda = [&](auto&& x_) { return dfv(x_, A, b); };
-  auto nonLinOp  = makeNonLinearOperator(functions(fvLambda, dfvLambda), x);
+  auto f         = makeDifferentiableFunction(functions(fvLambda, dfvLambda), x);
 
   // Newton method test
   const double eps  = 1e-14;
   const int maxIter = 20;
-  Ikarus::NewtonRaphson nr(nonLinOp, [&](auto& r, auto& A_) { return A_.inverse() * r; }); // special linear solver
+  Ikarus::NewtonRaphson nr(f, [&](auto& r, auto& A_) { return A_.inverse() * r; }); // special linear solver
   return checkNewtonRaphson(nr, x, eps, maxIter, 1, (-A.ldlt().solve(b)).eval());
 }
 
@@ -178,24 +179,24 @@ static auto secondOrderVectorValuedOperatorTest() {
   Eigen::MatrixXd A(3, 3);
   A = Eigen::MatrixXd::Identity(3, 3) * 13;
 
-  auto fvLambda              = [&](auto&& x_) { return f2v(x_, A, b); };
-  auto dfvLambda             = [&](auto&& x_) { return df2v(x_, A, b); };
-  auto ddfvLambda            = [&](auto&& x_) { return ddf2v(x_, A, b); };
-  NonLinearOperator nonLinOp = makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), x);
+  auto fvLambda            = [&](auto&& x_) { return f2v(x_, A, b); };
+  auto dfvLambda           = [&](auto&& x_) { return df2v(x_, A, b); };
+  auto ddfvLambda          = [&](auto&& x_) { return ddf2v(x_, A, b); };
+  DifferentiableFunction f = makeDifferentiableFunction(functions(fvLambda, dfvLambda, ddfvLambda), x);
 
-  t.check(Ikarus::utils::checkGradient(nonLinOp, x, {.draw = false, .writeSlopeStatementIfFailed = false}));
+  t.check(Ikarus::utils::checkGradient(f, x, {.draw = false, .writeSlopeStatementIfFailed = false}));
 
-  auto subOperator = derivative(nonLinOp);
+  auto subOperator = derivative(f);
   // Newton method test find root of first derivative
   const double eps  = 1e-14;
   const int maxIter = 20;
   Ikarus::NewtonRaphson nr(subOperator, Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT));
   checkNewtonRaphson(nr, x, eps, maxIter, 1, (-0.5 * A.ldlt().solve(b)).eval());
-  const double e = nonLinOp(x);
+  const double e = f(x);
   t.check(Dune::FloatCmp::eq(-2.6538461538461533, e));
   x << 1, 2, 3; // Restart and check with predictor
   t.subTest(checkNewtonRaphson(nr, x, eps, maxIter, 1, (-0.5 * A.ldlt().solve(b)).eval()));
-  const double e2 = nonLinOp(x);
+  const double e2 = f(x);
   t.check(Dune::FloatCmp::eq(-2.6538461538461533, e2));
   return t;
 }
@@ -235,12 +236,12 @@ static auto secondOrderVectorValuedOperatorNonlinearAutodiff() {
   auto dfvLambda  = [&](auto&& x_) { return df2vNL(x_, A, b); };
   auto ddfvLambda = [&](auto&& x_) { return ddf2vNL(x_, A, b); };
 
-  auto nonLinOp = makeNonLinearOperator(functions(fvLambda, dfvLambda, ddfvLambda), x);
+  auto f = makeDifferentiableFunction(functions(fvLambda, dfvLambda, ddfvLambda), x);
 
-  t.check(Ikarus::utils::checkGradient(nonLinOp, x, {.draw = false, .writeSlopeStatementIfFailed = false}));
-  t.check(Ikarus::utils::checkHessian(nonLinOp, x, {.draw = false, .writeSlopeStatementIfFailed = false}));
+  t.check(Ikarus::utils::checkGradient(f, x, {.draw = false, .writeSlopeStatementIfFailed = false}));
+  t.check(Ikarus::utils::checkHessian(f, x, {.draw = false, .writeSlopeStatementIfFailed = false}));
 
-  auto subOperator = derivative(nonLinOp);
+  auto subOperator = derivative(f);
 
   // Newton method test find root of first derivative
   const double eps  = 1e-14;
@@ -253,7 +254,7 @@ static auto secondOrderVectorValuedOperatorNonlinearAutodiff() {
 
   t.subTest(checkNewtonRaphson(nr, x, eps, maxIter, 5, xSol));
 
-  const double e = nonLinOp(x);
+  const double e = f(x);
   t.check(Dune::FloatCmp::eq(-1.1750584073929625716, e));
   return t;
 }

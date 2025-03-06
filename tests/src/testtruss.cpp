@@ -122,12 +122,11 @@ static auto vonMisesTrussTest() {
 
   /// Create Observer to write information of the non-linear solver
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-  auto nonLinOp                = Ikarus::NonLinearOperatorFactory::op(denseFlatAssembler);
+  auto f                       = Ikarus::DifferentiableFunctionFactory::op(denseFlatAssembler);
 
-  t.check(utils::checkGradient(nonLinOp, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkGradient(f, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
-      << "Check Hessian failed";
+  t.check(utils::checkHessian(f, req, {.draw = false, .writeSlopeStatementIfFailed = true})) << "Check Hessian failed";
 
   constexpr int loadSteps = 10;
 

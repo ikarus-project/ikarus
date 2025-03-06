@@ -15,7 +15,7 @@
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
+#include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 
@@ -37,9 +37,10 @@ namespace Impl {
    */
   template <typename NLS, typename PF = ArcLength, typename ASS>
   consteval bool checkPathFollowingTemplates() {
-    return Concepts::PathFollowingStrategy<PF, std::remove_cvref_t<typename NLS::NonLinearOperator>, SubsidiaryArgs> and
+    return Concepts::PathFollowingStrategy<PF, std::remove_cvref_t<typename NLS::DifferentiableFunction>,
+                                           SubsidiaryArgs> and
            Concepts::AdaptiveStepSizingStrategy<ASS, NonLinearSolverInformation, SubsidiaryArgs,
-                                                std::remove_cvref_t<typename NLS::NonLinearOperator>> and
+                                                std::remove_cvref_t<typename NLS::DifferentiableFunction>> and
            Concepts::NonLinearSolverCheckForPathFollowing<NLS>;
   }
 

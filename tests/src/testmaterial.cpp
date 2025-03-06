@@ -11,9 +11,9 @@
 
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
+#include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
 
 using namespace Ikarus;
 using namespace Ikarus::Materials;
@@ -91,17 +91,18 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
     return (mat.template tangentModuli<strainTag>(xv) * strainDerivativeFactor * strainDerivativeFactor).eval();
   };
 
-  auto nonLinOp    = Ikarus::makeNonLinearOperator(functions(f, df, ddf), ev);
-  auto subNonLinOp = derivative(nonLinOp);
+  auto f  = Ikarus::makeDifferentiableFunction(functions(f, df, ddf), ev);
+  auto df = derivative(f);
 
-  t.check(utils::checkGradient(nonLinOp, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkGradient(f.draw = false, .writeSlopeStatementIfFailed = true
+}))
       << std::string("checkGradient Failed");
-  t.check(utils::checkHessian(nonLinOp, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
-      << std::string("checkHessian Failed");
-  t.check(utils::checkJacobian(subNonLinOp, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
-      << std::string("checkJacobian Failed");
+t.check(utils::checkHessian(f, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
+    << std::string("checkHessian Failed");
+t.check(utils::checkJacobian(df, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
+    << std::string("checkJacobian Failed");
 
-  return t;
+return t;
 }
 
 template <typename Material>

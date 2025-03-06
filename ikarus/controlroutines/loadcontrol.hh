@@ -18,11 +18,10 @@ namespace Ikarus {
 
 /**
  * \class LoadControl
- * \brief The LoadControl control routine increases the last parameter of a nonlinear operator and calls a nonlinear
- * solver.
- *   \ingroup controlroutines
- * This class represents the LoadControl control routine. It increments the last parameter of a nonlinear operator
- * and utilizes a nonlinear solver, such as Newton's method, to solve the resulting system at each step.
+ * \brief The LoadControl control routine increases the parameter of the fe requirements given in run function and
+ * solves the corresponding differentiable function f for its root and calls a nonlinear solver. \ingroup
+ * controlroutines This class represents the LoadControl control routine. It increments the parameter of the fe
+ * requirement and utilizes a nonlinear solver, such as Newton's method, to solve the resulting system at each step.
  *
  * \tparam NLS Type of the nonlinear solver used in the control routine.
  */

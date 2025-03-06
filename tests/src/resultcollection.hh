@@ -24,7 +24,7 @@ static Eigen::Vector<double, 12> displacementsForTetrahedron({0, 0, 0, 0, 1, 1, 
 
 } // namespace Testing
 
-inline auto linearStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearStressResultsOfSquare = []<typename F, typename FE>(F& f, FE& fe) {
   constexpr int vertices   = 4;
   constexpr int quantities = 3;
 
@@ -50,7 +50,7 @@ inline auto linearStressResultsOfSquare = []<typename NOP, typename FE>(NOP& non
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linear3dPlaneStrainStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linear3dPlaneStrainStressResultsOfSquare = []<typename F, typename FE>(F& f, FE& fe) {
   static_assert(!Testing::isPlaneStress<typename FE::Material>);
 
   constexpr int vertices   = 4;
@@ -67,7 +67,7 @@ inline auto linear3dPlaneStrainStressResultsOfSquare = []<typename NOP, typename
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearPolarStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearPolarStressResultsOfSquare = []<typename F, typename FE>(F& f, FE& fe) {
   static_assert(Testing::isPlaneStress<typename FE::Material>);
 
   constexpr int vertices   = 4;
@@ -84,7 +84,7 @@ inline auto linearPolarStressResultsOfSquare = []<typename NOP, typename FE>(NOP
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearVonMisesResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearVonMisesResultsOfSquare = []<typename F, typename FE>(F& f, FE& fe) {
   constexpr int vertices   = 4;
   constexpr int quantities = 1;
 
@@ -97,7 +97,7 @@ inline auto linearVonMisesResultsOfSquare = []<typename NOP, typename FE>(NOP& n
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearHydrostaticStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearHydrostaticStressResultsOfSquare = []<typename F, typename FE>(F& f, FE& fe) {
   constexpr int vertices   = 4;
   constexpr int quantities = 1;
 
@@ -110,7 +110,7 @@ inline auto linearHydrostaticStressResultsOfSquare = []<typename NOP, typename F
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearTriaxialityStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearTriaxialityStressResultsOfSquare = []<typename F, typename FE>(F& f, FE& fe) {
   constexpr int vertices   = 4;
   constexpr int quantities = 1;
 
@@ -123,7 +123,7 @@ inline auto linearTriaxialityStressResultsOfSquare = []<typename NOP, typename F
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearPrincipalStressResultsOfSquare = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearPrincipalStressResultsOfSquare = []<typename F, typename FE>(F& f, FE& fe) {
   constexpr int vertices = 4;
 
   const auto expectedStress = []() {
@@ -147,7 +147,7 @@ inline auto linearPrincipalStressResultsOfSquare = []<typename NOP, typename FE>
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearStressResultsOfCube = []<typename F, typename FE>(F& f, FE& fe) {
   constexpr int vertices   = 8;
   constexpr int quantities = 6;
 
@@ -166,7 +166,7 @@ inline auto linearStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLi
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearVonMisesResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearVonMisesResultsOfCube = []<typename F, typename FE>(F& f, FE& fe) {
   constexpr int vertices   = 8;
   constexpr int quantities = 1;
 
@@ -177,7 +177,7 @@ inline auto linearVonMisesResultsOfCube = []<typename NOP, typename FE>(NOP& non
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearTriaxialityResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearTriaxialityResultsOfCube = []<typename F, typename FE>(F& f, FE& fe) {
   constexpr int vertices   = 8;
   constexpr int quantities = 1;
 
@@ -188,7 +188,7 @@ inline auto linearTriaxialityResultsOfCube = []<typename NOP, typename FE>(NOP& 
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearHydrostaticStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearHydrostaticStressResultsOfCube = []<typename F, typename FE>(F& f, FE& fe) {
   constexpr int vertices   = 8;
   constexpr int quantities = 1;
 
@@ -199,7 +199,7 @@ inline auto linearHydrostaticStressResultsOfCube = []<typename NOP, typename FE>
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearPrincipalStressResultsOfCube = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearPrincipalStressResultsOfCube = []<typename F, typename FE>(F& f, FE& fe) {
   constexpr int vertices   = 8;
   constexpr int quantities = 3;
 
@@ -218,7 +218,7 @@ inline auto linearPrincipalStressResultsOfCube = []<typename NOP, typename FE>(N
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearStressResultsOfTriangle = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearStressResultsOfTriangle = []<typename F, typename FE>(F& f, FE& fe) {
   constexpr int vertices   = 3;
   constexpr int quantities = 3;
 
@@ -232,7 +232,7 @@ inline auto linearStressResultsOfTriangle = []<typename NOP, typename FE>(NOP& n
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearPolarStressResultsOfTriangle = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearPolarStressResultsOfTriangle = []<typename F, typename FE>(F& f, FE& fe) {
   static_assert(Testing::isPlaneStress<typename FE::Material>);
 
   constexpr int vertices   = 3;
@@ -248,7 +248,7 @@ inline auto linearPolarStressResultsOfTriangle = []<typename NOP, typename FE>(N
                          Ikarus::utils::referenceElementVertexPositions(fe));
 };
 
-inline auto linearStressResultsOfTetrahedron = []<typename NOP, typename FE>(NOP& nonLinearOperator, FE& fe) {
+inline auto linearStressResultsOfTetrahedron = []<typename F, typename FE>(F& f, FE& fe) {
   constexpr int vertices   = 4;
   constexpr int quantities = 6;
 

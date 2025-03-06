@@ -21,7 +21,7 @@
 
 template <typename G = Dune::UGGrid<2>, bool useYASP = false>
 struct DummyProblem
-{
+{F
   using Grid     = G;
   using GridView = typename Grid::LeafGridView;
 
@@ -86,12 +86,12 @@ struct DummyProblem
   {
     requirement_.parameter() = 1.0;
     sparseAssembler_->bind(requirement_);
-    auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(
+    auto f = Ikarus::DifferentiableFunctionFactory::op(
         sparseAssembler_,
         Ikarus::AffordanceCollection(Ikarus::VectorAffordance::forces, Ikarus::MatrixAffordance::stiffness));
 
-    const auto& K    = derivative(nonLinOp)(requirement_);
-    const auto& Fext = nonLinOp(requirement_);
+    const auto& K    = derivative(f)(requirement_);
+    const auto& Fext = f(requirement_);
 
     auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
     linSolver.compute(K);

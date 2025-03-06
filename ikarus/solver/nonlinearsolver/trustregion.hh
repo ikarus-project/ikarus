@@ -79,27 +79,26 @@ struct TrustRegionConfig
   }
 };
 
-template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
+template <typename F, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
           typename UF = utils::UpdateDefault>
 class TrustRegion;
 
 /**
  * \brief Function to create a trust region non-linear solver
- * \tparam NLO Type of the nonlinear operator to solve.
+ * \tparam F Type of the differentiable function to solve.
  * \tparam TRConfig Type of the nonlinear solver config.
  * \param config Config for the solver.
- * \param nonLinearOperator Nonlinear operator to solve.
+ * \param f Function to solve.
  * \return Shared pointer to the TrustRegion solver instance.
  */
-template <typename NLO, typename TRConfig>
+template <typename F, typename TRConfig>
 requires traits::isSpecializationNonTypeAndTypes<TrustRegionConfig, std::remove_cvref_t<TRConfig>>::value
-auto createNonlinearSolver(TRConfig&& config, NLO&& nonLinearOperator) {
+auto createNonlinearSolver(TRConfig&& config, F&& f) {
   static constexpr PreConditioner preConditioner = std::remove_cvref_t<TRConfig>::preConditionerType;
   using UF                                       = std::remove_cvref_t<TRConfig>::UpdateFunction;
-  static_assert(std::remove_cvref_t<NLO>::nDerivatives == 2,
-                "The number of derivatives in the nonlinear operator have to be exactly 2.");
-  auto solver = std::make_shared<TrustRegion<NLO, preConditioner, UF>>(nonLinearOperator,
-                                                                       std::forward<TRConfig>(config).updateFunction);
+  static_assert(std::remove_cvref_t<F>::nDerivatives == 2,
+                "The number of derivatives in the DifferentiableFunction have to be exactly 2.");
+  auto solver = std::make_shared<TrustRegion<F, preConditioner, UF>>(f, std::forward<TRConfig>(config).updateFunction);
 
   solver->setup(config.parameters);
   return solver;
@@ -162,37 +161,34 @@ struct Stats
 * This code is heavily inspired by the trust-region implementation of
 <a href="https://github.com/NicolasBoumal/manopt/blob/master/manopt/solvers/trustregions/trustregions.m">Manopt</a>.
 * \ingroup solvers
-* \tparam NLO Type of the nonlinear operator to solve.
+* \tparam F Type of the differentiable function to solve.
 * \tparam preConditioner Type of preconditioner to use (default is IncompleteCholesky).
 * \tparam UF Type of the update function
 */
-template <typename NLO, PreConditioner preConditioner, typename UF>
+template <typename F, PreConditioner preConditioner, typename UF>
 class TrustRegion : public IObservable<NonLinearSolverMessages>
 {
 public:
   using Settings = TRSettings; ///< Type of the settings for the TrustRegion solver
 
-  using NLOTraits = typename NLO::Traits;
+  using FTraits                = typename F::Traits;
+  using Domain                 = typename FTraits::Domain;            ///< Type of the parameter vector of
+  using CorrectionType         = typename FTraits::template Range<1>; ///< Type of the correction of x += deltaX.
+  using UpdateFunction         = UF;                                  ///< Type of the update function.
+  using DifferentiableFunction = F;                                   ///< Type of function to minimize
 
-  using Domain = typename NLOTraits::Domain;                    ///< Type of the parameter vector of
-                                                                ///< the nonlinear operator
-  using CorrectionType = typename NLOTraits::template Range<1>; ///< Type of the correction of x += deltaX.
-  using UpdateFunction = UF;                                    ///< Type of the update function.
-
-  using NonLinearOperator = NLO; ///< Type of the non-linear operator
-
-  using EnergyType   = typename NLOTraits::template Range<0>; ///< Type of the scalar cost
-  using GradientType = typename NLOTraits::template Range<1>; ///< Type of the gradient vector
-  using HessianType  = typename NLOTraits::template Range<2>; ///< Type of the Hessian matrix
+  using EnergyType   = typename FTraits::template Range<0>; ///< Type of the scalar cost
+  using GradientType = typename FTraits::template Range<1>; ///< Type of the gradient vector
+  using HessianType  = typename FTraits::template Range<2>; ///< Type of the Hessian matrix
 
   /**
    * \brief Constructs a TrustRegion solver instance.
-   * \param nonLinearOperator Nonlinear operator to solve.
+   * \param f Function to solve.
    * \param updateFunction Update function
    */
   template <typename UF2 = UF>
-  explicit TrustRegion(const NLO& nonLinearOperator, UF2&& updateFunction = {})
-      : energyFunction_{nonLinearOperator},
+  explicit TrustRegion(const F& f, UF2&& updateFunction = {})
+      : energyFunction_{f},
         updateFunction_{std::forward<UF2>(updateFunction)} {}
 
   /**
@@ -504,7 +500,7 @@ private:
     innerInfo_ = truncatedConjugateGradient_.getInfo();
   }
 
-  NLO energyFunction_;
+  F energyFunction_;
 
   UpdateFunction updateFunction_;
   std::remove_cvref_t<CorrectionType> eta_;
@@ -532,22 +528,21 @@ private:
 /**
  * \brief Creates an instance of the TrustRegion solver.
  *
- * \tparam NLO Type of the nonlinear operator to solve.
+ * \tparam F Type of the function to solve.
  * \tparam preConditioner Type of the preconditioner used internally (default is IncompleteCholesky).
  * \tparam UF Type of the update function (default is UpdateDefault).
- * \param nonLinearOperator Nonlinear operator to solve.
+ * \param f The function to solve.
  * \param updateFunction Update function (default is UpdateDefault).
  * \return Shared pointer to the TrustRegion solver instance.
  */
-template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
+template <typename F, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
           typename UF = utils::UpdateDefault>
-auto makeTrustRegion(const NLO& nonLinearOperator, UF&& updateFunction = {}) {
-  return std::make_shared<TrustRegion<NLO, preConditioner, UF>>(nonLinearOperator, updateFunction);
+auto makeTrustRegion(const F& f, UF&& updateFunction = {}) {
+  return std::make_shared<TrustRegion<F, preConditioner, UF>>(f, updateFunction);
 }
 
-template <typename NLO, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
+template <typename F, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
           typename UF2 = utils::UpdateDefault>
-TrustRegion(const NLO& nonLinearOperator,
-            UF2&& updateFunction = {}) -> TrustRegion<NLO, preConditioner, std::remove_cvref_t<UF2>>;
+TrustRegion(const F& f, UF2&& updateFunction = {}) -> TrustRegion<F, preConditioner, std::remove_cvref_t<UF2>>;
 
 } // namespace Ikarus

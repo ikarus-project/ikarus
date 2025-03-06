@@ -21,10 +21,10 @@
 #include <ikarus/finiteelements/mechanics/kirchhoffloveshell.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/utils/differentiablefunction.hh>
+#include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
 #include <ikarus/utils/observer/controllogger.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
@@ -227,9 +227,9 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   checkSolverInfos(t, expectedIterations[0], controlInfoWSS, loadSteps, message1);
   checkSolverInfos(t, expectedIterations[1], controlInfoWoSS, loadSteps, message2);
 
-  auto nonLinOp = NonLinearOperatorFactory::op(sparseAssembler);
-  t.check(utils::checkGradient(nonLinOp, req, {.draw = false})) << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp, req, {.draw = false})) << "Check hessian failed";
+  auto f = DifferentiableFunctionFactory::op(sparseAssembler);
+  t.check(utils::checkGradient(f, req, {.draw = false})) << "Check gradient failed";
+  t.check(utils::checkHessian(f, req, {.draw = false})) << "Check hessian failed";
 
   return t;
 }

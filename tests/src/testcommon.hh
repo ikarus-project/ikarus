@@ -241,40 +241,36 @@ struct ElementTest
 {
 };
 
-template <typename NonLinearOperator>
-[[nodiscard]] auto checkGradientOfElement(NonLinearOperator& nonLinearOperator,
-                                          const typename NonLinearOperator::Domain& req,
+template <typename DifferentiableFunction>
+[[nodiscard]] auto checkGradientOfElement(DifferentiableFunction& f, const typename DifferentiableFunction::Domain& req,
                                           const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check gradient");
-  t.check(Ikarus::utils::checkGradient(nonLinearOperator, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(Ikarus::utils::checkGradient(f, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "calculateVector is not the gradient of calculateScalar." << messageIfFailed;
   return t;
 }
 
-template <typename NonLinearOperator>
-[[nodiscard]] auto checkHessianOfElement(NonLinearOperator& nonLinearOperator,
-                                         const typename NonLinearOperator::Domain& req,
+template <typename DifferentiableFunction>
+[[nodiscard]] auto checkHessianOfElement(DifferentiableFunction& f, const typename DifferentiableFunction::Domain& req,
                                          const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check Hessian");
-  t.check(Ikarus::utils::checkHessian(nonLinearOperator, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(Ikarus::utils::checkHessian(f, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "calculateMatrix is not the Hessian of calculateScalar. " << messageIfFailed;
   return t;
 }
 
-template <typename NonLinearOperator>
-[[nodiscard]] auto checkJacobianOfElement(NonLinearOperator& nonLinearOperator,
-                                          const typename NonLinearOperator::Domain& req,
+template <typename DifferentiableFunction>
+[[nodiscard]] auto checkJacobianOfElement(DifferentiableFunction& f, const typename DifferentiableFunction::Domain& req,
                                           const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check Jacobian");
-  t.check(Ikarus::utils::checkJacobian(nonLinearOperator, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(Ikarus::utils::checkJacobian(f, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "The Jacobian of calculateVector is not calculateMatrix." << messageIfFailed;
   return t;
 }
 
 template <template <typename, int, int> class RT, bool vectorizedResult = true>
-[[nodiscard]] auto checkCalculateAt(auto& /*nonLinearOperator*/, auto& fe, const auto& feRequirements,
-                                    const auto& expectedResult, const auto& evaluationPositions,
-                                    const std::string& messageIfFailed = "") {
+[[nodiscard]] auto checkCalculateAt(auto& /*f*/, auto& fe, const auto& feRequirements, const auto& expectedResult,
+                                    const auto& evaluationPositions, const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Test of the calulateAt function for " + Dune::className(fe), Dune::TestSuite::AlwaysThrow);
 
   using FiniteElement = std::remove_cvref_t<decltype(fe)>;
@@ -304,9 +300,8 @@ template <template <typename, int, int> class RT, bool vectorizedResult = true>
 }
 
 template <template <typename, int, int> class resType, typename ResultEvaluator>
-[[nodiscard]] auto checkResultFunction(auto& /*nonLinearOperator*/, auto& fe, const auto& feRequirements,
-                                       auto& expectedResult, const auto& evaluationPositions,
-                                       ResultEvaluator&& resultEvaluator  = {},
+[[nodiscard]] auto checkResultFunction(auto& /*f*/, auto& fe, const auto& feRequirements, auto& expectedResult,
+                                       const auto& evaluationPositions, ResultEvaluator&& resultEvaluator = {},
                                        const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Result Function Test" + Dune::className(fe));
 
@@ -368,9 +363,9 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
   return t;
 }
 
-template <typename NonLinearOperator, typename FiniteElement,
+template <typename DifferentiableFunction, typename FiniteElement,
           typename FERequirementType = typename FiniteElement::FERequirementType, typename AffordanceColl>
-[[nodiscard]] auto checkFEByAutoDiff(NonLinearOperator&, FiniteElement& fe, FERequirementType req,
+[[nodiscard]] auto checkFEByAutoDiff(DifferentiableFunction&, FiniteElement& fe, FERequirementType req,
                                      AffordanceColl affordance, const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation");
   auto& basis           = fe.localView().globalBasis();

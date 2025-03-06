@@ -42,24 +42,24 @@ struct CheckFlags
 };
 
 /**
- * \brief Checks the gradient of a nonlinear operator.
+ * \brief Checks the gradient of a differentiable Functions.
  * \details The checkgradient function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 4.8 and
  * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/checkdiff.m
  * \ingroup utils
- * \tparam NLO Type of the nonlinear operator.
+ * \tparam F Type of the differentiable Functions.
  * \tparam UF Type of the update function.
- * \param nonLinOp The nonlinear operator.
+ * \param f The differentiable Functions.
  * \param x the evaluation point.
  * \param checkFlags Flags for the check.
  * \param p_updateFunction Update function.
  * \return True if the check passed, false otherwise.
  */
-template <typename NLO, typename UF = UpdateDefault>
-bool checkGradient(NLO& nonLinOp, const typename NLO::Domain& p, CheckFlags checkFlags = CheckFlags(),
+template <typename F, typename UF = UpdateDefault>
+bool checkGradient(F& f, const typename F::Domain& p, CheckFlags checkFlags = CheckFlags(),
                    UF&& p_updateFunction = {}) {
   auto x           = p;
-  auto gradF       = derivative(nonLinOp);
-  const auto e     = nonLinOp(x);
+  auto gradF       = derivative(f);
+  const auto e     = f(x);
   decltype(auto) g = gradF(x);
   using UpdateType = std::remove_cvref_t<decltype(g)>;
 
@@ -79,7 +79,7 @@ bool checkGradient(NLO& nonLinOp, const typename NLO::Domain& p, CheckFlags chec
 
   auto ftfunc = [&](auto t) {
     p_updateFunction(x, t * b);
-    const auto ept = nonLinOp(x);
+    const auto ept = f(x);
     auto value     = std::abs(ept - e - t * gradfv);
     p_updateFunction(x, -t * b);
     return value;
@@ -102,28 +102,28 @@ bool checkGradient(NLO& nonLinOp, const typename NLO::Domain& p, CheckFlags chec
 }
 
 /**
- * \brief Checks the Jacobian of a nonlinear operator.
+ * \brief Checks the Jacobian of a differentiable Functions.
  * \details The checkjacobian function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 4.8 and
  * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/checkdiff.m
  * \ingroup utils
- * \tparam NLO Type of the nonlinear operator.
+ * \tparam F Type of the differentiable Functions.
  * \tparam UF Type of the update function.
- * \param nonLinOp The nonlinear operator.
+ * \param f The differentiable Functions.
  * \param x the evaluation point.
  * \param checkFlags Flags for the check.
  * \param p_updateFunction Update function.
  * \return True if the check passed, false otherwise.
  */
-template <typename NLO, typename UF = UpdateDefault>
-bool checkJacobian(NLO& nonLinOp, const typename NLO::Domain& p, CheckFlags checkFlags = CheckFlags(),
+template <typename F, typename UF = UpdateDefault>
+bool checkJacobian(F& f, const typename F::Domain& p, CheckFlags checkFlags = CheckFlags(),
                    UF&& p_updateFunction = {}) {
   auto x = p;
 
-  auto gradF       = derivative(nonLinOp);
-  const auto e     = nonLinOp(x);
+  auto gradF       = derivative(f);
+  const auto e     = f(x);
   decltype(auto) g = gradF(x);
   using UpdateType =
-      std::conditional_t<NLO::nDerivatives == 2, std::remove_cvref_t<decltype(g)>, std::remove_cvref_t<decltype(e)>>;
+      std::conditional_t<F::nDerivatives == 2, std::remove_cvref_t<decltype(g)>, std::remove_cvref_t<decltype(e)>>;
 
   UpdateType b;
   b.resizeLike(g.col(0));
@@ -134,7 +134,7 @@ bool checkJacobian(NLO& nonLinOp, const typename NLO::Domain& p, CheckFlags chec
 
   auto ftfunc = [&](auto t) {
     p_updateFunction(x, t * b);
-    const auto etb = nonLinOp(x);
+    const auto etb = f(x);
     auto value     = (etb - e - t * jacofv).norm();
     p_updateFunction(x, -t * b);
     return value;
@@ -156,25 +156,24 @@ bool checkJacobian(NLO& nonLinOp, const typename NLO::Domain& p, CheckFlags chec
 }
 
 /**
- * \brief Checks the Hessian of a nonlinear operator.
+ * \brief Checks the Hessian of a differentiable Functions.
  * \details  The checkHessian function is inspired by http://sma.epfl.ch/~nboumal/book/  Chapter 6.8 and
  * https://github.com/NicolasBoumal/manopt/blob/master/manopt/tools/checkhessian.m
  * \ingroup utils
- * \tparam NLO Type of the nonlinear operator.
+ * \tparam F Type of the differentiable Functions.
  * \tparam UF Type of the update function.
- * \param nonLinOp The nonlinear operator.
+ * \param f The differentiable Functions.
  * \param x the evaluation point.
  * \param checkFlags Flags for the check.
  * \param p_updateFunction Update function.
  * \return True if the check passed, false otherwise.
  */
-template <typename NLO, typename UF = UpdateDefault>
-bool checkHessian(NLO& nonLinOp, const typename NLO::Domain& p, CheckFlags checkFlags = CheckFlags(),
-                  UF&& p_updateFunction = {}) {
+template <typename F, typename UF = UpdateDefault>
+bool checkHessian(F& f, const typename F::Domain& p, CheckFlags checkFlags = CheckFlags(), UF&& p_updateFunction = {}) {
   auto x           = p;
-  auto gradF       = derivative(nonLinOp);
+  auto gradF       = derivative(f);
   auto hessF       = derivative(gradF);
-  const auto e     = nonLinOp(x);
+  const auto e     = f(x);
   decltype(auto) g = gradF(x);
   decltype(auto) h = hessF(x);
   using UpdateType = std::remove_cvref_t<decltype(g)>;
@@ -198,7 +197,7 @@ bool checkHessian(NLO& nonLinOp, const typename NLO::Domain& p, CheckFlags check
 
   auto ftfunc = [&](auto t) {
     p_updateFunction(x, t * b);
-    const auto etb = nonLinOp(x);
+    const auto etb = f(x);
     auto value     = std::abs(etb - e - t * gradfv - 0.5 * t * t * vhessv);
     p_updateFunction(x, -t * b);
     return value;

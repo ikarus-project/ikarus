@@ -19,7 +19,7 @@
 
 namespace Ikarus {
 
-template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
 class NewtonRaphsonWithSubsidiaryFunction;
 
 struct NewtonRaphsonWithSubsidiaryFunctionSettings
@@ -48,39 +48,39 @@ struct NewtonRaphsonWithSubsidiaryFunctionConfig
     return settings;
   }
 
-  template <typename NLO>
-  using Solver = NewtonRaphsonWithSubsidiaryFunction<NLO, LS, UF>;
+  template <typename F>
+  using Solver = NewtonRaphsonWithSubsidiaryFunction<F, LS, UF>;
 };
 
 /**
  * \brief Function to create a NewtonRaphson with subsidiary function solver instance.
- * \tparam NLO Type of the nonlinear operator to solve.
+ * \tparam F Type of the differentiable function to solve.
  * \tparam NRConfig Type of the nonlinear solver config.
  * \param config Config for the solver.
- * \param nonLinearOperator Nonlinear operator to solve.
+ * \param f Function to solve.
  * \return Shared pointer to the NewtonRaphson solver instance.
  */
-template <typename NLO, typename NRConfig>
+template <typename F, typename NRConfig>
 requires traits::isSpecialization<NewtonRaphsonWithSubsidiaryFunctionConfig, std::remove_cvref_t<NRConfig>>::value
-auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
+auto createNonlinearSolver(NRConfig&& config, F&& f) {
   using LS           = std::remove_cvref_t<NRConfig>::LinearSolver;
   using UF           = std::remove_cvref_t<NRConfig>::UpdateFunction;
-  auto solverFactory = []<class NLO2, class LS2, class UF2>(NLO2&& nlo2, LS2&& ls, UF2&& uf) {
-    return std::make_shared<NewtonRaphsonWithSubsidiaryFunction<std::remove_cvref_t<NLO2>, std::remove_cvref_t<LS2>,
-                                                                std::remove_cvref_t<UF2>>>(nlo2, std::forward<LS2>(ls),
+  auto solverFactory = []<class F2, class LS2, class UF2>(F2&& F2, LS2&& ls, UF2&& uf) {
+    return std::make_shared<NewtonRaphsonWithSubsidiaryFunction<std::remove_cvref_t<F2>, std::remove_cvref_t<LS2>,
+                                                                std::remove_cvref_t<UF2>>>(F2, std::forward<LS2>(ls),
                                                                                            std::forward<UF2>(uf));
   };
 
-  if constexpr (std::remove_cvref_t<NLO>::nDerivatives == 2) {
-    auto solver = solverFactory(derivative(nonLinearOperator), std::forward<NRConfig>(config).linearSolver,
+  if constexpr (std::remove_cvref_t<F>::nDerivatives == 2) {
+    auto solver = solverFactory(derivative(f), std::forward<NRConfig>(config).linearSolver,
                                 std::forward<NRConfig>(config).updateFunction);
     solver->setup(config.parameters);
     return solver;
   } else {
-    static_assert(std::remove_cvref_t<NLO>::nDerivatives >= 1,
-                  "The number of derivatives in the nonlinear operator have to be more than 0");
-    auto solver = solverFactory(nonLinearOperator, std::forward<NRConfig>(config).linearSolver,
-                                std::forward<NRConfig>(config).updateFunction);
+    static_assert(std::remove_cvref_t<F>::nDerivatives >= 1,
+                  "The number of derivatives in the differentiable function have to be more than 0");
+    auto solver =
+        solverFactory(f, std::forward<NRConfig>(config).linearSolver, std::forward<NRConfig>(config).updateFunction);
     ;
 
     solver->setup(std::forward<NRConfig>(config).parameters);
@@ -94,26 +94,26 @@ auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
  * This class provides a Newton-Raphson solver for solving nonlinear systems with a subsidiary function.
  * It uses a linear solver to handle the linear system arising in each iteration.
  *
- * \tparam NLO Type of the nonlinear operator.
+ * \tparam F Type of the function.
  * \tparam LS Type of the linear solver used internally (default is SolverDefault).
  * \tparam UF Type of the update function (default is UpdateDefault).
  */
-template <typename NLO, typename LS, typename UF>
+template <typename F, typename LS, typename UF>
 class NewtonRaphsonWithSubsidiaryFunction : public IObservable<NonLinearSolverMessages>
 {
 public:
   using Settings        = NewtonRaphsonWithSubsidiaryFunctionSettings;
-  using SignatureTraits = typename NLO::Traits;
-  ///< Type representing the parameter vector of the nonlinear operator.
-  using Domain         = typename SignatureTraits::Domain;
+  using SignatureTraits = typename F::Traits;
+
+  using Domain         = typename SignatureTraits::Domain; ///< Type representing the parameter vector of the Function.
   using CorrectionType = typename SignatureTraits::template Range<0>; ///< Type of the correction of x += deltaX.
   using JacobianType   = typename SignatureTraits::template Range<1>;
   ///< Compile-time boolean indicating if the linear solver satisfies the non-linear solver concept
   static constexpr bool isLinearSolver = Ikarus::Concepts::LinearSolverCheck<LS, JacobianType, CorrectionType>;
 
   ///< Type representing the update function.
-  using UpdateFunctionType = UF;
-  using NonLinearOperator  = NLO; ///< Type of the non-linear operator
+  using UpdateFunctionType     = UF;
+  using DifferentiableFunction = F; ///< Type of the non-linear operator
 
   /**
    * \brief Constructor for NewtonRaphsonWithSubsidiaryFunction.
@@ -122,7 +122,7 @@ public:
    * \param updateFunction Update function (default is UpdateDefault).
    */
   template <typename LS2 = LS, typename UF2 = UF>
-  explicit NewtonRaphsonWithSubsidiaryFunction(const NonLinearOperator& residual, LS2&& linearSolver = {},
+  explicit NewtonRaphsonWithSubsidiaryFunction(const DifferentiableFunction& residual, LS2&& linearSolver = {},
                                                UF2&& updateFunction = {})
       : residualFunction_{residual},
         jacobianFunction_{derivative(residualFunction_)},
@@ -250,8 +250,8 @@ public:
   auto& residual() { return residualFunction_; }
 
 private:
-  NonLinearOperator residualFunction_;
-  typename NonLinearOperator::Derivative jacobianFunction_;
+  DifferentiableFunction residualFunction_;
+  typename DifferentiableFunction::Derivative jacobianFunction_;
   std::remove_cvref_t<CorrectionType> correction_;
   LS linearSolver_;
   UF updateFunction_;
@@ -259,23 +259,22 @@ private:
 };
 /**
  * \brief Function to create a NewtonRaphson with subsidiary function solver instance.
- * \tparam NLO Type of the nonlinear operator to solve.
+ * \tparam F Type of the function to solve.
  * \tparam LS Type of the linear solver used internally (default is SolverDefault).
  * \tparam UF Type of the update function (default is UpdateDefault).
- * \param nonLinearOperator Nonlinear operator to solve.
+ * \param f Function to solve.
  * \param linearSolver Linear solver used internally (default is SolverDefault).
  * \param updateFunction Update function (default is UpdateDefault).
  * \return Shared pointer to the NewtonRaphson solver instance.
  */
-template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
-auto makeNewtonRaphsonWithSubsidiaryFunction(const NLO& nonLinearOperator, LS&& linearSolver = {},
-                                             UF&& updateFunction = {}) {
-  return std::make_shared<NewtonRaphsonWithSubsidiaryFunction<NLO, LS, UF>>(
-      nonLinearOperator, std::forward<LS>(linearSolver), std::move(updateFunction));
+template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+auto makeNewtonRaphsonWithSubsidiaryFunction(const F& f, LS&& linearSolver = {}, UF&& updateFunction = {}) {
+  return std::make_shared<NewtonRaphsonWithSubsidiaryFunction<F, LS, UF>>(f, std::forward<LS>(linearSolver),
+                                                                          std::move(updateFunction));
 }
 
-template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
-NewtonRaphsonWithSubsidiaryFunction(const NLO& nonLinearOperator, LS&& linearSolver = {}, UF&& updateFunction = {})
-    -> NewtonRaphsonWithSubsidiaryFunction<NLO, std::remove_cvref_t<LS>, std::remove_cvref_t<UF>>;
+template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+NewtonRaphsonWithSubsidiaryFunction(const F& f, LS&& linearSolver = {}, UF&& updateFunction = {})
+    -> NewtonRaphsonWithSubsidiaryFunction<F, std::remove_cvref_t<LS>, std::remove_cvref_t<UF>>;
 
 } // namespace Ikarus
