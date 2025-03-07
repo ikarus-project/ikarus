@@ -110,14 +110,14 @@ static auto NonLinearKLShellLoadControlTR() {
   auto req = typename FEType::Requirement(basis);
 
   sparseAssembler->bind(Ikarus::AffordanceCollections::elastoStatics);
-  auto fus::DifferentiableFunctionFactory::op(sparseAssembler, DBCOption::Full);
+  auto f = Ikarus::DifferentiableFunctionFactory::op(sparseAssembler, DBCOption::Full);
 
-  t.check(utils::checkGradient(f{.draw = false, .writeSlopeStatementIfFailed = true})) << "Check gradient failed";
-  t.check(utils::checkHessian(f{.draw = false, .writeSlopeStatementIfFailed = true})) << "Check Hessian failed";
+  t.check(utils::checkGradient(f, req, {.draw = false, .writeSlopeStatementIfFailed = true})) << "Check gradient failed";
+  t.check(utils::checkHessian(f, req, {.draw = false, .writeSlopeStatementIfFailed = true})) << "Check Hessian failed";
 
   const double gradTol = 1e-14;
 
-  auto tr = makeTrustRegion(f
+  auto tr = makeTrustRegion(f);
   tr->setup({.verbosity = 1,
              .maxIter   = 1000,
              .grad_tol  = gradTol,

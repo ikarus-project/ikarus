@@ -84,18 +84,17 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
                                                   << moduliV;
   }
 
-  auto f  = [&](auto& xv) { return mat.template storedEnergy<strainTag>(xv); };
-  auto df = [&](auto& xv) { return (mat.template stresses<strainTag>(xv) * strainDerivativeFactor).eval(); };
+  auto fl  = [&](auto& xv) { return mat.template storedEnergy<strainTag>(xv); };
+  auto dfl = [&](auto& xv) { return (mat.template stresses<strainTag>(xv) * strainDerivativeFactor).eval(); };
 
-  auto ddf = [&](auto& xv) {
+  auto ddfl = [&](auto& xv) {
     return (mat.template tangentModuli<strainTag>(xv) * strainDerivativeFactor * strainDerivativeFactor).eval();
   };
 
-  auto f  = Ikarus::makeDifferentiableFunction(functions(f, df, ddf), ev);
+  auto f  = Ikarus::makeDifferentiableFunction(functions(fl, dfl, ddfl), ev);
   auto df = derivative(f);
 
-  t.check(utils::checkGradient(f.draw = false, .writeSlopeStatementIfFailed = true
-}))
+  t.check(utils::checkGradient(f, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << std::string("checkGradient Failed");
 t.check(utils::checkHessian(f, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
     << std::string("checkHessian Failed");

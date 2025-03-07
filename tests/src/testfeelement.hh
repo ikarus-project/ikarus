@@ -31,13 +31,13 @@ template <typename PREFunc, typename PreBasis, typename ReferenceElement, typena
           typename... F>
 auto testFEElement(const PreBasis& preBasis, const std::string& elementName, const CornerDistortionFlag& distortionFlag,
                    const ReferenceElement& refElement, PREFunc&& preFunc, Skills&& additionalSkills,
-                   Ikarus::AffordanceCollection<AF...> affordances, F&&... f) {
+                   Ikarus::AffordanceCollection<AF...> affordances, F&&... testf) {
   constexpr int gridDim = ReferenceElement::dimension;
 
   Dune::TestSuite t(std::string("testFEElement ") + elementName + " on grid element with dimension " +
                     std::to_string(gridDim));
 
-  auto fTuple = std::forward_as_tuple(f...);
+  auto fTuple = std::forward_as_tuple(testf...);
 
   auto grid     = createUGGridFromCorners<gridDim>(distortionFlag, refElement.type());
   auto gridView = grid->leafGridView();
@@ -117,24 +117,23 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
       << "\nThe supported types are " << Dune::className<typename FEType::SupportedResultTypes>() << "\n";
 
   sparseAssembler->bind(requirements, Ikarus::AffordanceCollections::elastoStatics);
-  auto fableFunctionFactory::op(sparseAssembler);
+  auto f = Ikarus::DifferentiableFunctionFactory::op(sparseAssembler);
 
   // execute all passed functions
   Dune::Hybrid::forEach(Dune::Hybrid::integralRange(Dune::index_constant<sizeof...(F)>()),
-                        [&](auto i) { t.subTest(std::get<i.value>(fTuple)(fents, affordances)); });
+                        [&](auto i) { t.subTest(std::get<i.value>(fTuple)(f, fe, requirements, affordances)); });
 
   // check if element has a test functor, if yes we execute it
   if constexpr (requires { ElementTest<FEType>::test(); }) {
     auto testFunctor = ElementTest<FEType>::test();
-    t.subTest(testFunctor(fequirements, affordances));
+    t.subTest(testFunctor(f, fe, requirements, affordances));
   } else
     spdlog::info("No element test functor found for {}", Dune::className<FEType>());
 
   return t;
 }
 
-inline auto checkGradientFunctor = [](auto& fbe_unused]] auto& fe, [[maybe_unused]] auto& req,
-                                      [[maybe_unused]] auto& affordance) {
+inline auto checkGradientFunctor = [](auto& f, auto&, auto& req,auto&) {
   return checkGradientOfElement(f, req);
 };
 inline auto checkHessianFunctor  = [](auto& f, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req,

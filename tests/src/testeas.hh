@@ -12,14 +12,14 @@ requires(FE::template hasSkill<Ikarus::EnhancedAssumedStrainsPre::Skill>())
 struct ElementTest<FE>
 {
   [[nodiscard]] static auto test() {
-    auto easFunctor = [](auto& f fe, auto& req, auto& affordance) {
+    auto easFunctor = [](auto& f, auto& fe, auto& req, auto& affordance) {
       const auto& localView = fe.localView();
       const auto& element   = localView.element();
       constexpr int gridDim = std::remove_cvref_t<decltype(element)>::dimension;
 
       Dune::TestSuite t("EAS specific test");
 
-      auto subOp = derivative(f
+      auto subOp = derivative(f);
       std::array<int, (gridDim == 2) ? 4 : 3> easParameters;
       if constexpr (gridDim == 2)
         easParameters = {0, 4, 5, 7};
@@ -32,12 +32,12 @@ struct ElementTest<FE>
         fe.setEASType(numberOfEASParameter);
         auto messageIfFailed = "The numbers of EAS parameters are " + std::to_string(numberOfEASParameter) + ".";
         if (numberOfEASParameter == 0) {
-          t.subTest(checkGradientOfElement(fmessageIfFailed));
-          t.subTest(checkHessianOfElement(fmessageIfFailed));
+          t.subTest(checkGradientOfElement(f, req, messageIfFailed));
+          t.subTest(checkHessianOfElement(f, req, messageIfFailed));
         }
         t.subTest(checkJacobianOfElement(subOp, req, messageIfFailed));
 
-        t.subTest(checkFEByAutoDiff(feq, affordance, messageIfFailed));
+        t.subTest(checkFEByAutoDiff(f, fe, req, affordance, messageIfFailed));
 
         decltype(auto) stiffnessMatrix = derivative(subOp)(req);
 
