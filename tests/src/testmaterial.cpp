@@ -96,12 +96,12 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
 
   t.check(utils::checkGradient(f, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << std::string("checkGradient Failed");
-t.check(utils::checkHessian(f, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
-    << std::string("checkHessian Failed");
-t.check(utils::checkJacobian(df, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
-    << std::string("checkJacobian Failed");
+  t.check(utils::checkHessian(f, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
+      << std::string("checkHessian Failed");
+  t.check(utils::checkJacobian(df, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
+      << std::string("checkJacobian Failed");
 
-return t;
+  return t;
 }
 
 template <typename Material>
