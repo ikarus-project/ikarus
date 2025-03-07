@@ -25,9 +25,9 @@
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/utils/differentiablefunction.hh>
+#include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/dirichletvalues.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 
 using Dune::TestSuite;
@@ -81,14 +81,11 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   auto sparseAssembler = makeSparseFlatAssembler(fes, dirichletValues);
 
-  Eigen::VectorXd d;
-  d.setZero(basis.flat().size());
-  double lambda = 0.0;
-
-  auto req = typename FEType::Requirement(d, lambda);
-
+  auto req           = typename FEType::Requirement(basis);
+  const auto& d      = req.globalSolution();
+  const auto& lambda = req.parameter();
   sparseAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics);
-  auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseAssembler, DBCOption::Reduced);
+  auto f = Ikarus::DifferentiableFunctionFactory::op(sparseAssembler, DBCOption::Reduced);
 
   const double gradTol = 1e-8;
 
@@ -112,9 +109,9 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   auto lc = Ikarus::LoadControl(tr, 1, {0, 50});
   lc.subscribeAll(vtkWriter);
-  const auto controlInfo = lc.run();
-  nonLinOp.template update<0>();
-  const auto maxDisp = std::ranges::max(d);
+  const auto controlInfo = lc.run(req);
+  auto actualEnergy      = f(req);
+  const auto maxDisp     = std::ranges::max(d);
   double energyExpected;
   if (std::is_same_v<Grid, Grids::Yasp>)
     energyExpected = -2.9605187645668578078;
@@ -131,19 +128,19 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   else /* std::is_same_v<Grid, Grids::Iga> */
     maxDispExpected = 0.061647849558021668159;
 
-  std::cout << std::setprecision(20) << nonLinOp.value() << std::endl;
+  std::cout << std::setprecision(20) << actualEnergy << std::endl;
   std::cout << "Maxdisp: " << maxDisp << std::endl;
   if constexpr (std::is_same_v<Material, Materials::StVenantKirchhoff>) {
-    t.check(Dune::FloatCmp::eq(energyExpected, nonLinOp.value()), "energyExpected == nonLinOp.value()")
-        << "energyExpected: " << energyExpected << "\nnonLinOp.value(): " << nonLinOp.value();
+    t.check(Dune::FloatCmp::eq(energyExpected, actualEnergy), "energyExpected == actualEnergy")
+        << "energyExpected: " << energyExpected << "\n actualEnergy: " << actualEnergy;
 
     t.check(std::abs(maxDispExpected - maxDisp) < 1e-12, "maxDispExpected-maxDisp")
         << "\nmaxDispExpected: \n"
         << maxDispExpected << "\nmaxDisp: \n"
         << maxDisp;
   } else { // using a Neohooke material yields a lower energy and larger displacements
-    t.check(Dune::FloatCmp::gt(energyExpected, nonLinOp.value()), "energyExpected > nonLinOp.value()")
-        << "energyExpected: " << energyExpected << "\nnonLinOp.value(): " << nonLinOp.value();
+    t.check(Dune::FloatCmp::gt(energyExpected, actualEnergy), "energyExpected > actualEnergy")
+        << "energyExpected: " << energyExpected << "\n actualEnergy: " << actualEnergy;
 
     t.check(maxDispExpected < maxDisp, "maxDispExpected<maxDisp") << "maxDispExpected: \n"
                                                                   << maxDispExpected << "\nmaxDisp: \n"
@@ -182,9 +179,9 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
       << "Test resultName: " << resultFunction5->name() << "should be PK2StressFull";
   t.check(resultFunction5->ncomps() == 6) << "Test result comps: " << resultFunction5->ncomps() << "should be 6";
 
-  nonLinOp.template update<1>();
+  auto grad = derivative(f)(req);
   t.check(controlInfo.success, "Successful result");
-  t.check(gradTol >= nonLinOp.derivative().norm(), "Gradient Tolerance should be larger than actual tolerance");
+  t.check(gradTol >= grad.norm(), "Gradient Tolerance should be larger than actual tolerance");
   return t;
 }
 

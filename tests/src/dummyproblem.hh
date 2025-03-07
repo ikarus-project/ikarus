@@ -81,27 +81,23 @@ struct DummyProblem
           return std::move(fes);
         }()),
         sparseAssembler_{std::make_shared<SparseAssmblerT>(fes_, dirichletValues_)},
-        requirement_(typename LinearElastic::Requirement())
+        requirement_(typename LinearElastic::Requirement(basis_))
 
   {
-    D_Glob_ = Eigen::VectorXd::Zero(basis_.flat().size());
-
-    auto lambdaLoad = 1.0;
-    requirement_.insertGlobalSolution(D_Glob_).insertParameter(lambdaLoad);
-
+    requirement_.parameter() = 1.0;
     sparseAssembler_->bind(requirement_);
-    sparseAssembler_->bind(Ikarus::DBCOption::Full);
-
-    auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(
+    auto f = Ikarus::DifferentiableFunctionFactory::op(
         sparseAssembler_,
         Ikarus::AffordanceCollection(Ikarus::VectorAffordance::forces, Ikarus::MatrixAffordance::stiffness));
 
-    const auto& K    = nonLinOp.derivative();
-    const auto& Fext = nonLinOp.value();
+    const auto& K    = derivative(f)(requirement_);
+    const auto& Fext = f(requirement_);
 
     auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
     linSolver.compute(K);
-    linSolver.solve(D_Glob_, -Fext);
+    linSolver.solve(requirement_.globalSolution(), -Fext);
+    sparseAssembler_->bind(requirement_); // the requirement has changed therefore, we have to bind again
+    sparseAssembler_->bind(Ikarus::DBCOption::Full);
   }
 
   const auto& grid() { return *grid_; }
@@ -120,5 +116,4 @@ private:
   std::vector<LinearElastic> fes_;
   std::shared_ptr<SparseAssmblerT> sparseAssembler_;
   typename LinearElastic::Requirement requirement_{};
-  Eigen::VectorXd D_Glob_;
 };

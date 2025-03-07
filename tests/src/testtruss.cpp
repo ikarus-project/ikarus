@@ -83,11 +83,12 @@ static auto vonMisesTrussTest() {
   Eigen::VectorXd d;
   d.setZero(basis.flat().size());
 
-  auto req = FEType::Requirement();
-  req.insertGlobalSolution(d).insertParameter(lambda);
+  auto req = FEType::Requirement(basis);
   denseFlatAssembler->bind(req, AffordanceCollections::elastoStatics, DBCOption::Full);
 
-  auto pointLoad = [&](const auto&, const auto&, auto, auto, Eigen::VectorXd& vec) -> void { vec[3] -= -lambda; };
+  auto pointLoad = [&](const auto&, const auto&, auto, auto, Eigen::VectorXd& vec) -> void {
+    vec[3] -= -req.parameter();
+  };
   denseFlatAssembler->bind(pointLoad);
 
   /// Test tangent stiffness matrix for element 0 for geometrically linear case
@@ -121,12 +122,11 @@ static auto vonMisesTrussTest() {
 
   /// Create Observer to write information of the non-linear solver
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-  auto nonLinOp                = Ikarus::NonLinearOperatorFactory::op(denseFlatAssembler);
+  auto f                       = Ikarus::DifferentiableFunctionFactory::op(denseFlatAssembler);
 
-  t.check(utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkGradient(f, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
-      << "Check Hessian failed";
+  t.check(utils::checkHessian(f, req, {.draw = false, .writeSlopeStatementIfFailed = true})) << "Check Hessian failed";
 
   constexpr int loadSteps = 10;
 
@@ -148,11 +148,11 @@ static auto vonMisesTrussTest() {
 
   /// Create loadcontrol
   auto lc = LoadControl(nr, loadSteps, {0, 0.5});
-  lc.nonlinearSolver().subscribeAll(nonLinearSolverObserver);
+  lc.nonLinearSolver().subscribeAll(nonLinearSolverObserver);
   lc.subscribeAll({vtkWriter, lvkObserver});
 
   /// Execute!
-  auto controlInfo = lc.run();
+  auto controlInfo = lc.run(req);
   t.check(controlInfo.success == true) << "Load control failed to converge";
 
   Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
@@ -222,11 +222,12 @@ static auto truss3dTest() {
   auto denseFlatAssembler = makeDenseFlatAssembler(fes, dirichletValues);
 
   double lambda = 1.0;
-  Eigen::VectorXd d;
-  d.setZero(basis.flat().size());
+  Eigen::VectorXd dI;
+  dI.setZero(basis.flat().size());
 
   auto req = FEType::Requirement();
-  req.insertGlobalSolution(d).insertParameter(lambda);
+  req.insertGlobalSolution(dI).insertParameter(lambda);
+  auto& d = req.globalSolution();
   denseFlatAssembler->bind(req, AffordanceCollections::elastoStatics, DBCOption::Full);
   const auto& K = denseFlatAssembler->matrix();
   auto R        = denseFlatAssembler->vector();

@@ -8,6 +8,7 @@ install(
         basis.hh
         concepts.hh
         defaultfunctions.hh
+        derivativetraits.hh
         dirichletvalues.hh
         eigendunetransformations.hh
         eigensparseaddon.hh
@@ -19,8 +20,8 @@ install(
         linearalgebrahelper.hh
         makeenum.hh
         math.hh
-        nonlinearoperator.hh
-        nonlinopfactory.hh
+        differentiablefunction.hh
+        differentiablefunctionfactory.hh
         polyfit.hh
         pythonautodiffdefinitions.hh
         tensorutils.hh

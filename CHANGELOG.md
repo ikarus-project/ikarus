@@ -78,6 +78,8 @@ SPDX-License-Identifier: LGPL-3.0-or-later
         - Eleven different volumetric functions are included.
     - An AutoDiff-based material model is included mainly to test these hyperelastic material models. It can be found in the `Experimental` namespace.
     - All materials are now in a separate namespace, `Ikarus::Materials`.
+- The solution vector and parameter are now stored internally within the FE requirements instead of being passed by reference.
+  This change ensures better encapsulation and simplifies the usage of finite elements. ([#356](https://github.com/ikarus-project/ikarus/pull/356))
 
 ## Release v0.4 (Ganymede)
 

@@ -11,9 +11,9 @@
 
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
+#include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
 
 using namespace Ikarus;
 using namespace Ikarus::Materials;
@@ -84,21 +84,21 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
                                                   << moduliV;
   }
 
-  auto f  = [&](auto& xv) { return mat.template storedEnergy<strainTag>(xv); };
-  auto df = [&](auto& xv) { return (mat.template stresses<strainTag>(xv) * strainDerivativeFactor).eval(); };
+  auto fl  = [&](auto& xv) { return mat.template storedEnergy<strainTag>(xv); };
+  auto dfl = [&](auto& xv) { return (mat.template stresses<strainTag>(xv) * strainDerivativeFactor).eval(); };
 
-  auto ddf = [&](auto& xv) {
+  auto ddfl = [&](auto& xv) {
     return (mat.template tangentModuli<strainTag>(xv) * strainDerivativeFactor * strainDerivativeFactor).eval();
   };
 
-  auto nonLinOp    = Ikarus::NonLinearOperator(functions(f, df, ddf), parameter(ev));
-  auto subNonLinOp = nonLinOp.template subOperator<1, 2>();
+  auto f  = Ikarus::makeDifferentiableFunction(functions(fl, dfl, ddfl), ev);
+  auto df = derivative(f);
 
-  t.check(utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkGradient(f, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << std::string("checkGradient Failed");
-  t.check(utils::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkHessian(f, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << std::string("checkHessian Failed");
-  t.check(utils::checkJacobian(subNonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkJacobian(df, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << std::string("checkJacobian Failed");
 
   return t;

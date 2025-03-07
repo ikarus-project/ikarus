@@ -19,6 +19,7 @@
 #include <Eigen/Core>
 
 #include <ikarus/finiteelements/feresulttypes.hh>
+#include <ikarus/utils/basis.hh>
 #include <ikarus/utils/makeenum.hh>
 
 namespace Ikarus {
@@ -205,73 +206,77 @@ namespace AffordanceCollections {
                                                       VectorAffordance::forces, MatrixAffordance::stiffness);
 }
 
-namespace Impl {
-  template <typename T>
-  struct DeduceTypes
-  {
-    using InputType       = T&;
-    using StorageType     = std::reference_wrapper<T>;
-    using ReturnType      = T&;
-    using ConstReturnType = const T&;
-  };
-
-  template <typename T>
-  struct DeduceTypes<std::reference_wrapper<T>>
-  {
-    using InputType       = T&;
-    using StorageType     = std::reference_wrapper<T>;
-    using ReturnType      = T&;
-    using ConstReturnType = const T&;
-  };
-
-  template <typename T>
-  struct DeduceTypes<Eigen::Ref<T>>
-  {
-    using InputType   = Eigen::Ref<T>&;
-    using StorageType = Eigen::Ref<T>;
-
-    using ReturnType      = Eigen::Ref<T>&;
-    using ConstReturnType = const Eigen::Ref<T>&;
-  };
-} // namespace Impl
-
 /**
  * \class FERequirements
  * \brief Class representing the requirements for finite element calculations.
  *
  * This class defines the requirements for finite element calculations, including the types of solution vectors
- * and parameters needed. It provides methods to add affordances, insert parameters, and manage global solution
- * vectors.
+ * and parameters needed.
  *
- * \tparam SV Type of the solution vector, defaulting to <Eigen::VectorXd.
+ * \tparam sol The finite element solution tag.
+ * \tparam para The finite element parameter tag.
+ * \tparam SV Type of the solution vector, defaulting to Eigen::VectorXd.
  * \tparam PM Type of the parameter, defaulting to double.
- *
  */
 template <FESolutions sol, FEParameter para, typename SV = Eigen::VectorXd, typename PM = double>
 class FERequirements
 {
 public:
-  static constexpr FESolutions globalSolutionTag = sol;
-  static constexpr FEParameter parameterTag      = para;
+  using SolutionVectorType = SV; ///< Type of the solution vector.
+  using ParameterType      = PM; ///< Type of the parameter.
 
-private:
-  using SVHelper                  = Impl::DeduceTypes<std::remove_cvref_t<SV>>;
-  using PMHelper                  = Impl::DeduceTypes<std::remove_cvref_t<PM>>;
-  using SolutionVectorReturnType  = SVHelper::ReturnType;
-  using ParameterReturnType       = PMHelper::ReturnType;
-  using SolutionVectorStorageType = SVHelper::StorageType;
-  using ParameterStorageType      = PMHelper::StorageType;
-  using SolutionVectorInputType   = SVHelper::InputType;
-  using ParameterInputType        = PMHelper::InputType;
-
-public:
-  using SolutionVectorType = SV;
-  using ParameterType      = PM;
-
+  /**
+   * \brief Default constructor.
+   */
   FERequirements() = default;
-  FERequirements(SolutionVectorInputType solVec, ParameterInputType parameter)
-      : sol_{solVec},
-        parameter_{parameter} {}
+
+  /**
+   * \brief Constructor initializing the solution vector and parameter.
+   *
+   * \param solVec Solution vector.
+   * \param parameter Parameter value.
+   */
+  template <typename SV2 = SV, typename PM2 = PM>
+  FERequirements(SV2&& solVec, PM2&& parameter)
+      : sol_(std::make_unique<SV>(std::forward<SV2>(solVec))),
+        parameter_(std::make_unique<PM>(std::forward<PM2>(parameter))) {}
+
+  /**
+   * \brief Constructor from a basis
+   * \tparam PB The type of the basis.
+   * \param basis the basis
+   */
+  template <typename PB>
+  FERequirements(const Ikarus::BasisHandler<PB>& basis)
+      : sol_(std::make_unique<SV>(SV::Zero(basis.flat().size()))),
+        parameter_(std::make_unique<PM>(0.0)) {}
+
+  /**
+   * \brief Copy constructor.
+   *
+   * Performs a deep copy of the solution vector and parameter.
+   *
+   * \param other The object to copy from.
+   */
+  FERequirements(const FERequirements& other)
+      : sol_(other.sol_ ? std::make_unique<SV>(*other.sol_) : nullptr),
+        parameter_(other.parameter_ ? std::make_unique<PM>(*other.parameter_) : nullptr) {}
+
+  /**
+   * \brief Copy assignment operator.
+   *
+   * Performs a deep copy of the solution vector and parameter.
+   *
+   * \param other The object to assign from.
+   * \return Reference to the updated FERequirements instance.
+   */
+  FERequirements& operator=(const FERequirements& other) {
+    if (this != &other) {
+      sol_       = other.sol_ ? std::make_unique<SV>(*other.sol_) : nullptr;
+      parameter_ = other.parameter_ ? std::make_unique<PM>(*other.parameter_) : nullptr;
+    }
+    return *this;
+  }
 
   /**
    * \brief Insert a parameter into the requirements.
@@ -281,21 +286,22 @@ public:
    * \param val Reference to the raw parameter value.
    * \return Reference to the updated FERequirements instance.
    */
-  FERequirements& insertParameter(ParameterInputType val) {
-    parameter_ = val;
+  FERequirements& insertParameter(const PM& val) {
+    parameter_ = std::make_unique<PM>(val);
     return *this;
   }
 
   /**
    * \brief Insert a global solution vector into the requirements.
    *
-   * This function inserts the specified global solution vector into the requirements.
+   * This function inserts the specified global solution vector into the requirements and deletes the old one.
    *
    * \param solVec Reference to the raw global solution vector.
    * \return Reference to the updated FERequirements instance.
    */
-  FERequirements& insertGlobalSolution(SolutionVectorInputType solVec) {
-    sol_ = solVec;
+  template <typename SV2 = SolutionVectorType>
+  FERequirements& insertGlobalSolution(SV2&& solVec) {
+    sol_ = std::make_unique<SV>(std::forward<SV2>(solVec));
     return *this;
   }
 
@@ -303,60 +309,74 @@ public:
    * \brief Get the global solution vector.
    *
    * \return Reference to the raw global solution vector.
-   *
    */
-  SolutionVectorReturnType globalSolution() { return sol_.value(); }
+  const SolutionVectorType& globalSolution() const {
+    if (!sol_)
+      DUNE_THROW(Dune::InvalidStateException, "Solution vector is not initialized.");
+    return *sol_;
+  }
 
   /**
-   * \brief Get the  global solution vector.
-   *   *
-   * \return Const reference to the global solution vector.
+   * \brief Get the global solution vector.
    *
+   * \return Reference to the raw global solution vector.
    */
-  SVHelper::ConstReturnType globalSolution() const { return sol_.value(); }
+  SV& globalSolution() {
+    if (!sol_)
+      DUNE_THROW(Dune::InvalidStateException, "Solution vector is not initialized.");
 
-  /**
-   * \brief Get the parameter value.
-   *
-   *
-   * \return Const reference to the parameter value.
-   *
-   */
-  PMHelper::ConstReturnType parameter() const {
-    return parameter_.value();
-    ;
+    return *sol_;
   }
 
   /**
    * \brief Get the parameter value.
    *
    * \return Reference to the parameter value.
-   *
    */
-  ParameterReturnType parameter() { return parameter_.value(); }
+  const PM& parameter() const {
+    if (!parameter_)
+      DUNE_THROW(Dune::InvalidStateException, "Parameter is not initialized.");
+
+    return *parameter_;
+  }
 
   /**
-   * \brief Tells if the class contains all needed values
+   * \brief Get the parameter value.
    *
-   * \return Bool if the all values are assigned
-   *
+   * \return Reference to the parameter value.
    */
-  bool populated() const { return sol_.has_value() and parameter_.has_value(); }
+  PM& parameter() {
+    if (!parameter_)
+      DUNE_THROW(Dune::InvalidStateException, "Parameter is not initialized.");
+
+    return *parameter_;
+  }
+
+  /**
+   * \brief Tells if the class contains all needed values.
+   *
+   * \return Bool indicating if all values are assigned.
+   */
+  bool populated() const { return sol_ and parameter_; }
+
+  /**
+   * \brief Enables the usage of the class as a solution vector.
+   *
+   * \tparam T The type of the value to add to the solution vector.
+   * \param rhs The value to add to the solution vector.
+   * \return Reference to the updated solution vector.
+   */
+  template <typename T>
+  SV& operator+=(const T& rhs) {
+    if (!sol_)
+      DUNE_THROW(Dune::InvalidStateException, "Solution vector is not initialized.");
+    *sol_ += rhs;
+    return *sol_;
+  }
 
 private:
-  std::optional<SolutionVectorStorageType> sol_;
-  std::optional<ParameterStorageType> parameter_;
-};
-
-template <FESolutions sol, FEParameter para, bool wrapWithRef = false, typename SV = Eigen::VectorXd,
-          typename PM = double>
-struct FERequirementsFactory
-{
-private:
-  using typeEigen = std::conditional_t<wrapWithRef and Ikarus::Concepts::EigenMatrix<SV>, Eigen::Ref<SV>, SV>;
-
-public:
-  using type = FERequirements<sol, para, typeEigen, PM>;
+  std::unique_ptr<SV> sol_;       ///< Unique pointer to the solution vector.
+  std::unique_ptr<PM> parameter_; ///< Unique pointer to the parameter.
 };
 
 } // namespace Ikarus

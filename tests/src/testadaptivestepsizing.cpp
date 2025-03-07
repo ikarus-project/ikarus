@@ -21,10 +21,10 @@
 #include <ikarus/finiteelements/mechanics/kirchhoffloveshell.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/utils/differentiablefunction.hh>
+#include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
 #include <ikarus/utils/observer/controllogger.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
@@ -131,12 +131,10 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   auto sparseAssembler = makeSparseFlatAssembler(fes, dirichletValues);
 
-  Eigen::VectorXd d;
-  d.setZero(basis.flat().size());
-  double lambda = 0.0;
+  auto req     = typename FEType::Requirement(basis);
+  auto& d      = req.globalSolution();
+  auto& lambda = req.parameter();
 
-  auto req = fes[0].createRequirement();
-  req.insertGlobalSolution(d).insertParameter(lambda);
   sparseAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics);
 
   auto linSolver = LinearSolver(SolverTypeTag::sd_SimplicialLDLT);
@@ -159,8 +157,8 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
 
   auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   auto pathFollowingObserver   = std::make_shared<ControlLogger>();
-  crWSS.nonlinearSolver().subscribeAll(nonLinearSolverObserver);
-  crWoSS.nonlinearSolver().subscribeAll(nonLinearSolverObserver);
+  crWSS.nonLinearSolver().subscribeAll(nonLinearSolverObserver);
+  crWoSS.nonLinearSolver().subscribeAll(nonLinearSolverObserver);
 
   t.checkThrow<Dune::InvalidStateException>(
       [&]() { nonLinearSolverObserver->update(Ikarus::NonLinearSolverMessages::BEGIN); },
@@ -190,23 +188,26 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
         auto dass2                 = AdaptiveStepSizing::IterationBased{};
         auto nr3                   = nrFactory.create(sparseAssembler);
         auto crWSS2                = Ikarus::PathFollowing(nr3, loadSteps, stepSize, pft, dass2);
-        const auto controlInfoWSS2 = crWSS2.run();
+        const auto controlInfoWSS2 = crWSS2.run(req);
       },
       "IterationBased should fail for targetIterations being 0");
 
-  resetNonLinearOperatorParametersToZero(crWSS.nonlinearSolver().nonLinearOperator());
-  const auto controlInfoWSS = crWSS.run();
+  d.setZero();
+  lambda                    = 0.0;
+  const auto controlInfoWSS = crWSS.run(req);
   const double tolDisp      = 1e-13;
   const double tolLoad      = 1e-12;
   checkScalars(t, std::ranges::max(d), expectedResults[0][0], message1 + " <Max Displacement>", tolDisp);
   checkScalars(t, lambda, expectedResults[0][1], message1 + " <Lambda>", tolLoad);
-  resetNonLinearOperatorParametersToZero(crWSS.nonlinearSolver().nonLinearOperator());
+  d.setZero();
+  lambda = 0.0;
 
-  const auto controlInfoWoSS = crWoSS.run();
+  const auto controlInfoWoSS = crWoSS.run(req);
 
   checkScalars(t, std::ranges::max(d), expectedResults[1][0], message2 + " <Max Displacement>", tolDisp);
   checkScalars(t, lambda, expectedResults[1][1], message2 + " <Lambda>", tolLoad);
-  resetNonLinearOperatorParametersToZero(crWSS.nonlinearSolver().nonLinearOperator());
+  d.setZero();
+  lambda = 0.0;
 
   const int controlInfoWSSIterations =
       std::accumulate(controlInfoWSS.solverInfos.begin(), controlInfoWSS.solverInfos.end(), 0,
@@ -226,9 +227,9 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   checkSolverInfos(t, expectedIterations[0], controlInfoWSS, loadSteps, message1);
   checkSolverInfos(t, expectedIterations[1], controlInfoWoSS, loadSteps, message2);
 
-  auto nonLinOp = NonLinearOperatorFactory::op(sparseAssembler);
-  t.check(utils::checkGradient(nonLinOp, {.draw = false})) << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp, {.draw = false})) << "Check hessian failed";
+  auto f = DifferentiableFunctionFactory::op(sparseAssembler);
+  t.check(utils::checkGradient(f, req, {.draw = false})) << "Check gradient failed";
+  t.check(utils::checkHessian(f, req, {.draw = false})) << "Check hessian failed";
 
   return t;
 }

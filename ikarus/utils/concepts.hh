@@ -176,14 +176,14 @@ namespace Concepts {
    * \concept PathFollowingStrategy
    * \brief Concept defining the requirements for a path-following strategy.
    * \tparam PF Type representing the path-following strategy.
-   * \tparam NLO Type representing the non-linear operator.
+   * \tparam F Type representing the non-linear operator.
    * \tparam SA Type representing the subsidiary arguments.
    */
-  template <typename PF, typename NLO, typename SA>
-  concept PathFollowingStrategy = requires(PF pft, NLO nop, SA args) {
+  template <typename PF, typename F, typename SA>
+  concept PathFollowingStrategy = requires(PF pft, F nop, SA args, typename F::Domain req) {
     { pft(args) } -> std::same_as<void>;
-    { pft.initialPrediction(nop, args) } -> std::same_as<void>;
-    { pft.intermediatePrediction(nop, args) } -> std::same_as<void>;
+    { pft.initialPrediction(req, nop, args) } -> std::same_as<void>;
+    { pft.intermediatePrediction(req, nop, args) } -> std::same_as<void>;
   };
 
   /**
@@ -194,12 +194,13 @@ namespace Concepts {
    * \tparam NLSI The non-linear solver information type.
    * \tparam SA The subsidiary arguments type.
    */
-  template <typename ASS, typename NLSI, typename SA, typename NonLinearOperator>
-  concept AdaptiveStepSizingStrategy = requires(ASS adaptiveStepSizing, NLSI info, SA args, NonLinearOperator nop) {
-    { adaptiveStepSizing(info, args, nop) } -> std::same_as<void>;
-    { adaptiveStepSizing.targetIterations() } -> std::same_as<int>;
-    { adaptiveStepSizing.setTargetIterations(std::declval<int>()) } -> std::same_as<void>;
-  };
+  template <typename ASS, typename NLSI, typename SA, typename DifferentiableFunction>
+  concept AdaptiveStepSizingStrategy =
+      requires(ASS adaptiveStepSizing, NLSI info, SA args, DifferentiableFunction nop) {
+        { adaptiveStepSizing(info, args, nop) } -> std::same_as<void>;
+        { adaptiveStepSizing.targetIterations() } -> std::same_as<int>;
+        { adaptiveStepSizing.setTargetIterations(std::declval<int>()) } -> std::same_as<void>;
+      };
 
   /**
    * \concept LinearSolverCheck
@@ -210,7 +211,7 @@ namespace Concepts {
    * \tparam V The vector type.
    */
   template <typename LS, typename M, typename V>
-  concept LinearSolverCheck = requires(LS& linearSolver, M& A, V& vec) {
+  concept LinearSolverCheck = requires(LS linearSolver, M A, V vec) {
     linearSolver.analyzePattern(A);
     linearSolver.factorize(A);
     linearSolver.solve(vec, vec);
@@ -225,12 +226,11 @@ namespace Concepts {
    */
   template <typename NLS>
   concept NonLinearSolverCheckForPathFollowing = requires {
-    std::tuple_size<typename NLS::NonLinearOperator::ParameterValues>::value == 2;
-    not(std::is_same_v<typename NLS::NonLinearOperator::ValueType, double> and
-        ((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix,
-                                                  typename NLS::NonLinearOperator::DerivativeType>::value) or
-         (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix,
-                                                     typename NLS::NonLinearOperator::DerivativeType>::value)));
+    not(std::is_same_v<typename NLS::DifferentiableFunction::Domain, double> and
+        ((traits::isSpecializationTypeAndNonTypes<
+             Eigen::Matrix, typename NLS::DifferentiableFunction::Traits::template Range<1>>::value) or
+         (traits::isSpecializationTypeNonTypeAndType<
+             Eigen::SparseMatrix, typename NLS::DifferentiableFunction::Traits::template Range<1>>::value)));
   };
 
   /**

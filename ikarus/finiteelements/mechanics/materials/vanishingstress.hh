@@ -15,7 +15,8 @@
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/utils/concepts.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
+#include <ikarus/utils/differentiablefunction.hh>
+#include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::Materials {
 
@@ -163,7 +164,7 @@ private:
    * \brief Reduces stress components to satisfy the vanishing stress condition.
    * \tparam Derived The derived type of the input matrix.
    * \param Eraw The input strain matrix.
-   * \return std::pair<NonLinearOperator, decltype(auto)> The stress reduction result.
+   * \return std::pair<DifferentiableFunction, decltype(auto)> The stress reduction result.
    */
   template <typename Derived>
   auto reduceStress(const Eigen::MatrixBase<Derived>& Eraw) const {
@@ -177,20 +178,22 @@ private:
         fixedDiagonalVoigtIndices[ri++] = i;
     }
 
-    auto f = [&](auto&) {
+    auto f = [&](const auto&) {
       auto S = matImpl_.template stresses<Underlying::strainTag, true>(E);
       return S(fixedDiagonalVoigtIndices).eval();
     };
-    auto df = [&](auto&) {
+    auto df = [&](const auto&) {
       auto moduli = (matImpl_.template tangentModuli<Underlying::strainTag, true>(E)).eval();
       return (moduli(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices) / Underlying::derivativeFactor).eval();
     };
 
-    auto Er    = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
-    auto nonOp = Ikarus::NonLinearOperator(functions(f, df), parameter(Er));
+    auto Er = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
+
+    Er.setZero();
+    auto nonOp = Ikarus::makeDifferentiableFunction(functions(f, df), Er);
 
     auto linearSolver   = [](auto& r, auto& A) { return (A.inverse() * r).eval(); };
-    auto updateFunction = [&](auto& /* Ex33 */, auto& ecomps) {
+    auto updateFunction = [&](auto&, const auto& ecomps) {
       for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
         auto indexPair = fromVoigt(i);
         E(indexPair[0], indexPair[1]) += ecomps(ri++);
@@ -206,7 +209,7 @@ private:
     };
 
     auto nr = createNonlinearSolver(std::move(nrs), nonOp);
-    if (!static_cast<bool>(nr->solve()))
+    if (!static_cast<bool>(nr->solve(Er)))
       DUNE_THROW(Dune::MathError, "The stress reduction of material " << nameImpl() << " was unsuccessful\n"
                                                                       << "The strains are\n"
                                                                       << E << "\n The stresses are\n"

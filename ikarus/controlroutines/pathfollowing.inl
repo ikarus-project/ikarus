@@ -15,7 +15,7 @@
 #include <ikarus/controlroutines/controlinfos.hh>
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
+#include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/observer/observer.hh>
 #include <ikarus/utils/observer/observermessages.hh>
 
@@ -23,22 +23,22 @@ namespace Ikarus {
 
 template <typename NLS, typename PF, typename ASS>
 requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
-ControlInformation PathFollowing<NLS, PF, ASS>::run() {
+ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   ControlInformation info;
-  auto& nonOp = nonLinearSolver_->nonLinearOperator();
+  auto& residual = nonLinearSolver_->residual();
   this->notify(ControlMessages::CONTROL_STARTED, pathFollowingType_.name());
 
   SubsidiaryArgs subsidiaryArgs;
 
   info.totalIterations    = 0;
   subsidiaryArgs.stepSize = stepSize_;
-  subsidiaryArgs.DD.resizeLike(nonOp.firstParameter());
+  subsidiaryArgs.DD.resizeLike(req.globalSolution());
   subsidiaryArgs.DD.setZero();
 
   /// Initializing solver
   this->notify(ControlMessages::STEP_STARTED, 0, subsidiaryArgs.stepSize);
-  pathFollowingType_.initialPrediction(nonOp, subsidiaryArgs);
-  auto solverInfo = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
+  pathFollowingType_.initialPrediction(req, residual, subsidiaryArgs);
+  auto solverInfo = nonLinearSolver_->solve(req, pathFollowingType_, subsidiaryArgs);
   info.solverInfos.push_back(solverInfo);
   info.totalIterations += solverInfo.iterations;
   if (not solverInfo.success)
@@ -50,13 +50,13 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run() {
   for (int ls = 1; ls < steps_; ++ls) {
     subsidiaryArgs.currentStep = ls;
 
-    adaptiveStepSizing_(solverInfo, subsidiaryArgs, nonOp);
+    adaptiveStepSizing_(solverInfo, subsidiaryArgs, residual);
 
     this->notify(ControlMessages::STEP_STARTED, subsidiaryArgs.currentStep, subsidiaryArgs.stepSize);
 
-    pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs);
+    pathFollowingType_.intermediatePrediction(req, residual, subsidiaryArgs);
 
-    solverInfo = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
+    solverInfo = nonLinearSolver_->solve(req, pathFollowingType_, subsidiaryArgs);
 
     info.solverInfos.push_back(solverInfo);
     info.totalIterations += solverInfo.iterations;

@@ -5,7 +5,7 @@ classDiagram
   GridView <-- Grid
   GlobalBasis <-- GridView
   Assembler <-- GlobalBasis
-  NonlinearOperator <-- Assembler
+  DifferentiableFunction <-- Assembler
   Assembler <-- FiniteElement
   FiniteElement <-- FERequirements
   FERequirements <|-- ResultRequirements
@@ -14,7 +14,7 @@ classDiagram
   Localfunction <-- Localbasis
   GlobalBasis <--> Localbasis
   Localfunction <-- Manifold
-  NonlinearSolver <-- NonlinearOperator
+  NonlinearSolver <-- DifferentiableFunction
   NonlinearSolver <-- LinearSolver
   Controlroutine <-- NonlinearSolver
   VTKWriter <-- Controlroutine
@@ -115,7 +115,7 @@ classDiagram
   class NonlinearSolver{
     +setup()
     +solve()
-    +nonLinearOperator()
+    +differentiableFunction()
   }
 
   class GlobalBasis{
@@ -139,12 +139,9 @@ classDiagram
     +compute()
     +solve()
   }
-  class NonlinearOperator{
-    +value()
+  class DifferentiableFunction{
+    +operator()
     +derivative()
-    +secondDerivative()
-    +nthDerivative<n>()
-    +subOperator()
 }
 
   class Localfunction{
@@ -170,7 +167,7 @@ classDiagram
     +size()
   }
 
-click NonlinearOperator href "../nonlinearOperator/"
+click DifferentiableFunction href "../differentiablefunction/"
 click LinearSolver href "../solvers/#linear-solver"
 click NonlinearSolver href "../solvers/#non-linear-solver"
 click FiniteElement href "../finiteElements/"

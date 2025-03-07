@@ -16,6 +16,12 @@ template <class T>
 class shared_ptr;
 }
 
+namespace Eigen {
+
+template <typename Derived>
+class SparseMatrixBase;
+}
+
 #include <dune/common/hybridutilities.hh>
 namespace Ikarus::traits {
 
@@ -462,5 +468,15 @@ struct ChangeArgTypeAtPos<std::function<R(Args...)>, Pos, NewType>
   using NewFunctionType  = TupleToFunctionType_t<R, NewArgsTuple>;
 };
 #endif
+
+/**
+ * @brief Concept to check if a type is an Eigen SparseMatrix.
+ *
+ * This concept checks if the given type is derived from Eigen::SparseMatrixBase.
+ *
+ * @tparam T The type to check.
+ */
+template <typename T>
+concept EigenSparseMatrix = std::is_base_of_v<Eigen::SparseMatrixBase<T>, T>;
 
 } // namespace Ikarus::traits
