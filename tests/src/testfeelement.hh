@@ -133,9 +133,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
   return t;
 }
 
-inline auto checkGradientFunctor = [](auto& f, auto&, auto& req,auto&) {
-  return checkGradientOfElement(f, req);
-};
+inline auto checkGradientFunctor = [](auto& f, auto&, auto& req, auto&) { return checkGradientOfElement(f, req); };
 inline auto checkHessianFunctor  = [](auto& f, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req,
                                      [[maybe_unused]] auto& affordance) { return checkHessianOfElement(f, req); };
 inline auto checkJacobianFunctor = [](auto& f, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req,
