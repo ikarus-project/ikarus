@@ -13,7 +13,7 @@
  * \param row The row index.
  * \param col The column index.
  * \return The linear index.
- * @note The function assumes that `IsRowMajor`, `rows()`, `cols()`, `m_outerIndex`, `m_innerNonZeros`,
+ * \note The function assumes that `IsRowMajor`, `rows()`, `cols()`, `m_outerIndex`, `m_innerNonZeros`,
  * and `m_data` are accessible within the scope.
  */
 inline Index getLinearIndex(Index row, Index col) const {

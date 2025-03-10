@@ -108,7 +108,7 @@ public:
 
   /**
    * \brief Convenient function to bind the local view to the element.
-   * @param  element The element to be bounded
+   * \param  element The element to be bounded
    */
   void bind(const GridElement& element) {
     this->localView_.bind(element);
