@@ -12,9 +12,10 @@
 namespace Ikarus {
 template <typename NLS>
 ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
+  using enum ControlMessages;
   ControlInformation info({false});
   decltype(auto) nonOp = nonLinearSolver_->residual();
-  this->notify(ControlMessages::CONTROL_STARTED, static_cast<std::string>(this->name()));
+  this->notify(CONTROL_STARTED, static_cast<std::string>(this->name()));
   auto& loadParameter = x.parameter();
 
   loadParameter = 0.0;
@@ -27,7 +28,7 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
   this->notify(SOLUTION_CHANGED);
   this->notify(STEP_ENDED);
 
-  auto state     = typename LoadControl::State{.parameter = loadParameter};
+  auto state     = typename LoadControl::State{.domain = x};
   state.stepSize = stepSize_;
 
   for (int ls = 0; ls < loadSteps_; ++ls) {

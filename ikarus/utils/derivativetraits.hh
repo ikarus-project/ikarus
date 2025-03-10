@@ -22,7 +22,9 @@ namespace Impl {
   template <typename... Args>
   struct Functions;
 } // namespace Impl
+
 #ifndef DOXYGEN
+
 enum class FEParameter;
 enum class FESolutions;
 template <FESolutions sol, FEParameter para, typename SV, typename PM>
@@ -43,7 +45,9 @@ public:
                   "This type should not be instantiated. check that your arguments satisfies the template below");
   }
 };
+
 #endif
+
 template <typename... DerivativeArgs, typename Arg>
 struct DerivativeTraitsFromCallables<Impl::Functions<DerivativeArgs...>, Arg>
 {
@@ -73,6 +77,8 @@ struct DerivativeTraitsFromCallables<Impl::Functions<DerivativeArgs...>, Arg>
   template <int I>
   using Range = std::tuple_element_t<I, Ranges>;
 
+  constexpr static int numberOfRanges = std::tuple_size_v<Ranges>;
+
   template <int I>
   using RawRange = std::tuple_element_t<I, RawRanges>;
 
@@ -80,13 +86,14 @@ struct DerivativeTraitsFromCallables<Impl::Functions<DerivativeArgs...>, Arg>
   struct DerivativeTraits
   {
   private:
-    static constexpr int indexOfSignatureImpl = traits::Index<Signature, RawSignatures>::value + 1;
-    static constexpr int indexOfSignature     = traits::Index<Signature, RawSignatures>::value + 1;
+    // static constexpr int indexOfSignatureImpl = traits::Index<Signature, RawSignatures>::value + 1;
+    static constexpr int indexOfSignature = traits::Index<Signature, RawSignatures>::value + 1;
 
   public:
     using Range = std::tuple_element_t<indexOfSignature, Ranges>;
   };
 };
+
 template <typename... DerivativeArgs, typename Arg>
 DerivativeTraitsFromCallables(const Impl::Functions<DerivativeArgs...>& derivativesFunctions, Arg&& parameterI)
     -> DerivativeTraitsFromCallables<Impl::Functions<DerivativeArgs...>, Arg>;

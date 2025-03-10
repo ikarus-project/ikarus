@@ -120,7 +120,6 @@ static auto vonMisesTrussTest() {
   auto nr = nrFactory.create(denseFlatAssembler);
 
   /// Create Observer to write information of the non-linear solver
-  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
   auto f                       = Ikarus::DifferentiableFunctionFactory::op(denseFlatAssembler);
 
   t.check(utils::checkGradient(f, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
@@ -148,7 +147,7 @@ static auto vonMisesTrussTest() {
 
   auto nonLinearSolverObserver = NonLinearSolverLogger();
 
-  nonLinearSolverObserver.subscribeTo(lc.nonlinearSolver());
+  nonLinearSolverObserver.subscribeTo(lc.nonLinearSolver());
   vtkWriter.subscribeTo(lc);
   lvkObserver.subscribeTo(lc);
 

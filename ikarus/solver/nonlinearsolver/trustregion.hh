@@ -167,9 +167,9 @@ struct Stats
 * \tparam UF Type of the update function
 */
 template <typename F, PreConditioner preConditioner, typename UF>
-class TrustRegion : public IObservable<NonLinearSolverMessages>
-template <typename NLO, PreConditioner preConditioner, typename UF>
-class TrustRegion : public NonlinearSolverBase<NLO>
+class TrustRegion : public NonlinearSolverBase<F>
+// template <typename NLO, PreConditioner preConditioner, typename UF>
+// class TrustRegion : public NonlinearSolverBase<NLO>
 {
 public:
   using Settings = TRSettings; ///< Type of the settings for the TrustRegion solver
@@ -231,7 +231,7 @@ public:
     stats_.gradNorm = norm(g);
     truncatedConjugateGradient_.analyzePattern(h);
 
-    auto solverState = typename TrustRegion::State{.correction = eta_, .solution = x};
+    auto solverState = typename TrustRegion::State{.domain = x, .correction = eta_};
 
     innerInfo_.Delta = settings_.Delta0;
     spdlog::info(

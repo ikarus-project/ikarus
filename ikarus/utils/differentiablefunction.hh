@@ -44,6 +44,7 @@ template <typename... Args>
 auto functions(Args&&... args) {
   return Impl::Functions<std::remove_cvref_t<Args>...>{std::forward_as_tuple(std::forward<Args>(args)...)};
 }
+
 #ifndef DOXYGEN
 template <class Signature, template <class> class DerivativeTraits, class... F>
 class DifferentiableFunction;
