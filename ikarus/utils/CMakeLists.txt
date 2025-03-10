@@ -9,6 +9,7 @@ install(
         concepts.hh
         defaultfunctions.hh
         derivativetraits.hh
+        differentiablefunction.hh
         dirichletvalues.hh
         eigendunetransformations.hh
         eigensparseaddon.hh
