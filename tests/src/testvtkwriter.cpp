@@ -9,15 +9,15 @@
 #include <memory>
 #include <type_traits>
 
-#include "dune/common/indices.hh"
-#include "dune/functions/functionspacebases/subspacebasis.hh"
 #include <dune/common/float_cmp.hh>
 #include <dune/common/fvector.hh>
+#include <dune/common/indices.hh>
 #include <dune/common/test/testsuite.hh>
 #include <dune/common/tuplevector.hh>
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/grid/common/entity.hh>
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/yaspgrid.hh>

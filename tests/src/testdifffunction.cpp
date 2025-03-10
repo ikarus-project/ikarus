@@ -15,7 +15,7 @@
 #include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/observer/nonlinearsolverlogger.hh>
+#include <ikarus/utils/listener/nonlinearsolverlogger.hh>
 
 using namespace Ikarus;
 using Dune::TestSuite;
@@ -248,8 +248,7 @@ static auto secondOrderVectorValuedOperatorNonlinearAutodiff() {
   Ikarus::NewtonRaphson nr(subOperator, [&](auto& r, auto& A_) { return A_.inverse() * r; });
 
   const Eigen::Vector3d xSol(-4.9131804394348836888, 2.0287578381104342236, 2.0287578381104342236);
-  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-  nr.subscribeAll(nonLinearSolverObserver);
+  auto nonLinearSolverObserver = NonLinearSolverLogger().subscribeTo(nr);
 
   t.subTest(checkNewtonRaphson(nr, x, eps, maxIter, 5, xSol));
 
