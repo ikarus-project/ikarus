@@ -99,7 +99,7 @@ struct FiniteStrain : public Material<FiniteStrain<FM>>
       if constexpr (!Concepts::EigenVector<Derived>) {
         updateState(C);
         mp_->secondPiolaKirchhoffStress(stress_);
-        return toMatrix(stress_);
+        return toMatrix(stress_).eval();
       } else
         static_assert(!Concepts::EigenVector<Derived>,
                       "MuesliFiniteStrain can only be called with a matrix and not a vector in Voigt notation");
@@ -159,7 +159,7 @@ private:
   template <typename Derived>
   void updateState(const Eigen::MatrixBase<Derived>& C) const {
     Impl::checkPositiveOrAbort(C.determinant());
-    toistensor(strain_, transformStrain<strainTag, StrainTags::deformationGradient>(C));
+    toitensor(strain_, transformStrain<strainTag, StrainTags::deformationGradient>(C));
     mp_->updateCurrentState(0.0, strain_);
   }
 };

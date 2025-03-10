@@ -52,7 +52,7 @@ inline void addTag(muesli::materialProperties& mpm, const std::string& tagName, 
 }
 
 /**
- * \brief Converts the entries of a Eigen::Matrix to a provided muesli::tensor (symmetric 2nd order tensor).
+ * \brief Converts the entries of a Eigen::Matrix to a provided muesli::istensor (symmetric 2nd order tensor).
  *
  * \tparam Derived the derived Eigen::Matrix type.
  * \param it provided istensor.
@@ -62,6 +62,20 @@ template <typename Derived>
 inline void toistensor(istensor& it, const Eigen::MatrixBase<Derived>& C) {
   it = istensor(C(0, 0), C(1, 1), C(2, 2), C(1, 2), C(2, 0), C(0, 1));
 }
+
+/**
+ * \brief Converts the entries of a Eigen::Matrix to a provided muesli::istensor (symmetric 2nd order tensor).
+ *
+ * \tparam Derived the derived Eigen::Matrix type.
+ * \param it provided itensor.
+ * \param C the Eigen::Matrix that is to be converted.
+ */
+ template <typename Derived>
+ inline void toitensor(itensor& it, const Eigen::MatrixBase<Derived>& C) {
+  // std::cout << C << std::endl;
+   it = itensor(C(0, 0), C(0, 1), C(0, 2), C(1,0), C(1, 1), C(1, 2), C(2, 0), C(2,1), C(2,2));
+  //  std::cout << it << std::endl;
+ }
 
 /**
  * \brief Converts a provided muesli::istensor (symmetric 2nd order tensor) to a Eigen::Matrix.
