@@ -4,7 +4,6 @@
 #include <config.h>
 
 #include "checkfebyautodiff.hh"
-#include "testcommon.hh"
 #include "testhelpers.hh"
 
 #include <dune/common/test/testsuite.hh>
@@ -12,6 +11,7 @@
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 #include <dune/iga/nurbsbasis.hh>
+#include <dune/iga/nurbsgrid.hh>
 
 #include <Eigen/Core>
 
@@ -24,6 +24,7 @@
 #include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/dirichletvalues.hh>
+#include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/listener/controllogger.hh>
 #include <ikarus/utils/listener/controlvtkwriter.hh>
