@@ -120,7 +120,7 @@ static auto vonMisesTrussTest() {
   auto nr = nrFactory.create(denseFlatAssembler);
 
   /// Create Observer to write information of the non-linear solver
-  auto f                       = Ikarus::DifferentiableFunctionFactory::op(denseFlatAssembler);
+  auto f = Ikarus::DifferentiableFunctionFactory::op(denseFlatAssembler);
 
   t.check(utils::checkGradient(f, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check gradient failed";

@@ -21,8 +21,8 @@ class NonLinearOperator;
 /**
  * \brief State for nonlinear solvers
  *
- * \tparam Correction the type of the correction vector
- * \tparam SolutionType the type of the solution vector
+ * \tparam D the type of the domain (in most cases FERequirement)
+ * \tparam CT the type of the correction vector
  */
 template <typename D, typename CT>
 struct NonlinearSolverState
@@ -40,6 +40,21 @@ struct NonlinearSolverState
 
 namespace Impl {
 
+  template <typename SignatureTraits, int n>
+  struct CorrectionType;
+
+  template <typename SignatureTraits>
+  struct CorrectionType<SignatureTraits, 3>
+  {
+    using type = typename SignatureTraits::template Range<0>;
+  };
+
+  template <typename SignatureTraits>
+  struct CorrectionType<SignatureTraits, 4>
+  {
+    using type = typename SignatureTraits::template Range<1>;
+  };
+
   template <typename F>
   struct NonlinearSolverStateFactory
   {
@@ -47,35 +62,17 @@ namespace Impl {
     using SignatureTraits = typename F::Traits;
     using Domain          = typename SignatureTraits::Domain;
 
-    template <int n>
-    struct CorrectionType;
-
-    template <>
-    struct CorrectionType<3>
-    {
-      using type = typename SignatureTraits::template Range<0>;
-    };
-
-    template <>
-    struct CorrectionType<4>
-    {
-      using type = typename SignatureTraits::template Range<1>;
-    };
-
     constexpr static int numRanges = SignatureTraits::numberOfRanges;
-    // static_assert(numRanges == 3);
-    // using CorrectionType           = std::conditional_t<numRanges == 3, typename SignatureTraits::template Range<0>,
-    //                                                     typename SignatureTraits::template Range<1>>;
 
   public:
-    using type = NonlinearSolverState<Domain, typename CorrectionType<numRanges>::type>;
+    using type = NonlinearSolverState<Domain, typename CorrectionType<SignatureTraits, numRanges>::type>;
   };
 } // namespace Impl
 
 /**
  * \brief Helper to deduce the correct types for NonlinearSolverState
  *
- * \tparam NLO The nonlinear operator
+ * \tparam F Type of the differentiable function to solve.
  */
 template <typename F>
 using NonlinearSolverStateType = Impl::NonlinearSolverStateFactory<F>::type;

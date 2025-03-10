@@ -20,9 +20,10 @@ namespace Ikarus {
  * \tparam Args Additional message signatures can be broadcasted
  */
 template <typename F, typename... Args>
-struct NonlinearSolverBase : public Broadcasters<void(NonLinearSolverMessages), void(NonLinearSolverMessages, double),
-                                                 void(NonLinearSolverMessages, int),
-                                                 void(NonLinearSolverMessages, const NonlinearSolverStateType<F>&), Args...>
+struct NonlinearSolverBase
+    : public Broadcasters<void(NonLinearSolverMessages), void(NonLinearSolverMessages, double),
+                          void(NonLinearSolverMessages, int),
+                          void(NonLinearSolverMessages, const NonlinearSolverStateType<F>&), Args...>
 {
   using State = NonlinearSolverStateType<F>;
 };

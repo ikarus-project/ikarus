@@ -111,7 +111,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
 
   const auto controlInfo = lc.run(req);
   auto actualEnergy      = f(req);
-  const auto maxDisp = std::ranges::max(d);
+  const auto maxDisp     = std::ranges::max(d);
   double energyExpected;
   if (std::is_same_v<Grid, Grids::Yasp>)
     energyExpected = -2.9605187645668578078;

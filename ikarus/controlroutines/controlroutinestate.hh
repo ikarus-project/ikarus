@@ -21,7 +21,7 @@ class NonLinearOperator;
 /**
  * \brief State for control routines
  *
- * \tparam LoadParameter the type of the load parameter
+ * \tparam D the type of the domain (in most cases FERequirement)
  */
 template <typename D>
 struct ControlRoutineState
@@ -51,7 +51,7 @@ namespace Impl {
 /**
  * \brief Helper to deduce the correct types for ControlRoutineState
  *
- * \tparam NLO The nonlinear operator
+ * \tparam F Type of the differentiable function to solve.
  */
 template <typename F>
 using ControlRoutineStateType = Impl::ControlRoutineStateFactory<F>::type;
