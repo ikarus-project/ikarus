@@ -16,8 +16,6 @@
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/listener/nonlinearsolverlogger.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
-#include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
 using namespace Ikarus;
 using Dune::TestSuite;

@@ -3,7 +3,6 @@
 
 #include <config.h>
 
-#include "testcommon.hh"
 #include "testhelpers.hh"
 
 #include <dune/common/test/testsuite.hh>
