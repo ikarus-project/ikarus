@@ -129,7 +129,8 @@ static auto NonLinearKLShellLoadControlTR() {
 
   auto lc = ControlRoutineFactory::create(LoadControlConfig{1, 0.0, 1.0}, tr, sparseAssembler);
 
-  auto vtkWriter = ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>(basis.flat(), req.globalSolution(), 2);
+  auto vtkWriter = ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>(
+      basis.flat(), req.globalSolution(), 2);
   vtkWriter.setFileNamePrefix("TestKLShell");
   vtkWriter.setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
   vtkWriter.subscribeTo(lc);

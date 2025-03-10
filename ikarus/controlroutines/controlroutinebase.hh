@@ -16,8 +16,8 @@ namespace Ikarus {
 /**
  * \brief Base for all control routines. Defines the message interface that can be broadcasted to listeners.
  *
- * \tparam NLO The nonlinear operator
- * \tparam Args Additional message signatures can be broadcasted
+ * \tparam F Type of the differentiable function to solve.
+ * \tparam Args Additional custom message signatures, that can be broadcasted
  */
 template <typename F, typename... Args>
 struct ControlRoutineBase

@@ -190,7 +190,7 @@ private:
     auto Er = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
 
     Er.setZero();
-    auto nonOp = Ikarus::makeDifferentiableFunction(functions(f, df), Er);
+    auto diffFunction = Ikarus::makeDifferentiableFunction(functions(f, df), Er);
 
     auto linearSolver   = [](auto& r, auto& A) { return (A.inverse() * r).eval(); };
     auto updateFunction = [&](auto&, const auto& ecomps) {
@@ -203,13 +203,13 @@ private:
     int minIter = isAutoDiff ? 1 : 0;
     NewtonRaphsonConfig nrs({.tol = tol_, .maxIter = 100, .minIter = minIter}, linearSolver, updateFunction);
 
-    auto nr = createNonlinearSolver(std::move(nrs), nonOp);
+    auto nr = createNonlinearSolver(std::move(nrs), diffFunction);
     if (!static_cast<bool>(nr->solve(Er)))
       DUNE_THROW(Dune::MathError, "The stress reduction of material " << nameImpl() << " was unsuccessful\n"
                                                                       << "The strains are\n"
                                                                       << E << "\n The stresses are\n"
                                                                       << f(Er));
-    return std::make_pair(nonOp, E);
+    return std::make_pair(diffFunction, E);
   }
 
   Underlying matImpl_; ///< The underlying material model.
