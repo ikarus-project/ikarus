@@ -16,6 +16,7 @@
   #include <Eigen/Eigen>
 
   #include <ikarus/finiteelements/mechanics/materials/interface.hh>
+  #include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
   #include <ikarus/finiteelements/mechanics/materials/muesli/mueslihelpers.hh>
   #include <ikarus/utils/tensorutils.hh>
 
@@ -151,12 +152,13 @@ private:
   MaterialModel material_;
   std::unique_ptr<muesli::finiteStrainMP> mp_;
 
-  mutable istensor strain_{};
+  mutable itensor strain_{};
   mutable istensor stress_{};
   mutable itensor4 tangentModuli_{};
 
   template <typename Derived>
   void updateState(const Eigen::MatrixBase<Derived>& C) const {
+    Impl::checkPositiveOrAbort(C.determinant());
     toistensor(strain_, transformStrain<strainTag, StrainTags::deformationGradient>(C));
     mp_->updateCurrentState(0.0, strain_);
   }
