@@ -23,29 +23,28 @@ class NonLinearOperator;
  *
  * \tparam LoadParameter the type of the load parameter
  */
-template <typename LoadParameter>
+template <typename D>
 struct ControlRoutineState
 {
-  LoadParameter parameter;
+  using Domain = D;
+
+  const D& domain;
 
   int loadStep{};
   double stepSize{};
 };
 
 namespace Impl {
-  template <typename T>
-  struct ControlRoutineStateFactory;
 
-  template <typename NLO>
-  requires traits::isSpecialization<NonLinearOperator, NLO>::value
-  struct ControlRoutineStateFactory<NLO>
+  template <typename F>
+  struct ControlRoutineStateFactory
   {
   private:
-    using LastParameter =
-        const typename NLO::template ParameterValue<std::tuple_size_v<typename NLO::ParameterValues> - 1>&;
+    using SignatureTraits = typename F::Traits;
+    using Domain          = typename SignatureTraits::Domain;
 
   public:
-    using type = ControlRoutineState<LastParameter>;
+    using type = ControlRoutineState<Domain>;
   };
 } // namespace Impl
 
@@ -54,7 +53,7 @@ namespace Impl {
  *
  * \tparam NLO The nonlinear operator
  */
-template <typename NLO>
-using ControlRoutineStateType = Impl::ControlRoutineStateFactory<NLO>::type;
+template <typename F>
+using ControlRoutineStateType = Impl::ControlRoutineStateFactory<F>::type;
 
 } // namespace Ikarus

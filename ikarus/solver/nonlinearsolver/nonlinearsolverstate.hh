@@ -24,11 +24,14 @@ class NonLinearOperator;
  * \tparam Correction the type of the correction vector
  * \tparam SolutionType the type of the solution vector
  */
-template <typename Correction, typename SolutionType = Correction>
+template <typename D, typename CT>
 struct NonlinearSolverState
 {
-  Correction correction;
-  SolutionType solution;
+  using Domain         = D;
+  using CorrectionType = CT;
+
+  const Domain& domain;
+  const CorrectionType& correction;
 
   double rNorm{};
   double dNorm{};
@@ -36,22 +39,36 @@ struct NonlinearSolverState
 };
 
 namespace Impl {
-  template <typename T>
-  struct NonlinearSolverStateFactory;
 
-  template <typename NLO>
-  requires traits::isSpecialization<NonLinearOperator, NLO>::value
-  struct NonlinearSolverStateFactory<NLO>
+  template <typename F>
+  struct NonlinearSolverStateFactory
   {
   private:
-    // For NLOs which have more than 2 functions, we use the derivative as Correction (e.g. TR)
-    static constexpr bool useDerivativeType = std::tuple_size_v<typename NLO::FunctionReturnValues> > 2;
-    using CorrectionType =
-        std::conditional_t<useDerivativeType, const typename NLO::DerivativeType&, const typename NLO::ValueType&>;
-    using SolutionType = const typename NLO::template ParameterValue<0>&;
+    using SignatureTraits = typename F::Traits;
+    using Domain          = typename SignatureTraits::Domain;
+
+    template <int n>
+    struct CorrectionType;
+
+    template <>
+    struct CorrectionType<3>
+    {
+      using type = typename SignatureTraits::template Range<0>;
+    };
+
+    template <>
+    struct CorrectionType<4>
+    {
+      using type = typename SignatureTraits::template Range<1>;
+    };
+
+    constexpr static int numRanges = SignatureTraits::numberOfRanges;
+    // static_assert(numRanges == 3);
+    // using CorrectionType           = std::conditional_t<numRanges == 3, typename SignatureTraits::template Range<0>,
+    //                                                     typename SignatureTraits::template Range<1>>;
 
   public:
-    using type = NonlinearSolverState<CorrectionType, SolutionType>;
+    using type = NonlinearSolverState<Domain, typename CorrectionType<numRanges>::type>;
   };
 } // namespace Impl
 
@@ -60,7 +77,7 @@ namespace Impl {
  *
  * \tparam NLO The nonlinear operator
  */
-template <typename NLO>
-using NonlinearSolverStateType = Impl::NonlinearSolverStateFactory<NLO>::type;
+template <typename F>
+using NonlinearSolverStateType = Impl::NonlinearSolverStateFactory<F>::type;
 
 } // namespace Ikarus

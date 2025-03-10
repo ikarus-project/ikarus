@@ -16,15 +16,15 @@ namespace Ikarus {
 /**
  * \brief Base for all nonlinear solvers. Defines the message interface that can be broadcasted to listeners.
  *
- * \tparam NLO The nonlinear operator
+ * \tparam F Type of the differentiable function to solve.
  * \tparam Args Additional message signatures can be broadcasted
  */
-template <typename NLO, typename... Args>
+template <typename F, typename... Args>
 struct NonlinearSolverBase : public Broadcasters<void(NonLinearSolverMessages), void(NonLinearSolverMessages, double),
                                                  void(NonLinearSolverMessages, int),
-                                                 void(NonLinearSolverMessages, NonlinearSolverStateType<NLO>&), Args...>
+                                                 void(NonLinearSolverMessages, const NonlinearSolverStateType<F>&), Args...>
 {
-  using State = NonlinearSolverStateType<NLO>;
+  using State = NonlinearSolverStateType<F>;
 };
 
 } // namespace Ikarus

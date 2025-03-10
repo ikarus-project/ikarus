@@ -114,9 +114,7 @@ auto createNonlinearSolver(NRConfig&& config, F&& f) {
  * \ingroup solvers
  */
 template <typename F, typename LS, typename UF>
-class NewtonRaphson : public IObservable<NonLinearSolverMessages>
-template <typename NLO, typename LS, typename UF>
-class NewtonRaphson : public NonlinearSolverBase<NLO>
+class NewtonRaphson : public NonlinearSolverBase<F>
 {
 public:
   using Settings        = NRSettings;
@@ -164,7 +162,9 @@ public:
       "The solve method returns information of the solution process. You should store this information and check if "
       "it was successful")]] Ikarus::NonLinearSolverInformation
   solve(Domain& x) {
-    this->notify(NonLinearSolverMessages::INIT);
+    using enum NonLinearSolverMessages;
+    this->notify(INIT);
+
     Ikarus::NonLinearSolverInformation solverInformation;
     solverInformation.success = true;
 
@@ -176,7 +176,7 @@ public:
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
 
-    auto solverState = typename NewtonRaphson::State{.correction = correction_, .solution = x};
+    auto solverState = typename NewtonRaphson::State{.domain = x, .correction = correction_};
 
     while ((rNorm > settings_.tol && iter < settings_.maxIter) or iter < settings_.minIter) {
       this->notify(ITERATION_STARTED);
@@ -190,10 +190,10 @@ public:
         dNorm       = norm(correction_);
         updateFunction_(x, correction_);
       }
-      this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
-      this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
-      rx    = residualFunction_(x);
-      Ax    = jacobianFunction_(x);
+      this->notify(CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
+      this->notify(SOLUTION_CHANGED);
+      rx = residualFunction_(x);
+      Ax = jacobianFunction_(x);
       this->notify(CORRECTION_UPDATED, solverState);
       rNorm = norm(rx);
       this->notify(RESIDUALNORM_UPDATED, static_cast<double>(rNorm));

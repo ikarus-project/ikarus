@@ -17,9 +17,8 @@
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
-#include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/broadcaster/broadcastermessages.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
+#include <ikarus/utils/differentiablefunctionfactory.hh>
 
 namespace Ikarus {
 
@@ -132,7 +131,7 @@ auto createControlRoutine(PFConfig&& config, NLS&& nonlinearSolver) {
  */
 template <typename NLS, typename PF = ArcLength, typename ASS = AdaptiveStepSizing::NoOp>
 requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
-class PathFollowing : public ControlRoutineBase<typename NLS::NonLinearOperator>
+class PathFollowing : public ControlRoutineBase<typename NLS::DifferentiableFunction>
 
 {
 public:

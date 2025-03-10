@@ -19,14 +19,13 @@ namespace Ikarus {
  * \tparam NLO The nonlinear operator
  * \tparam Args Additional message signatures can be broadcasted
  */
-template <typename NLO, typename... Args>
+template <typename F, typename... Args>
 struct ControlRoutineBase
     : public Broadcasters<void(ControlMessages), void(ControlMessages, const std::string&),
                           void(ControlMessages, int, const std::string&), void(ControlMessages, int, double),
-                          void(ControlMessages, ControlRoutineStateType<NLO>&), Args...>
-
+                          void(ControlMessages, const ControlRoutineStateType<F>&), Args...>
 {
-  using State = ControlRoutineStateType<NLO>;
+  using State = ControlRoutineStateType<F>;
 };
 
 } // namespace Ikarus

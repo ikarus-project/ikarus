@@ -25,14 +25,9 @@
 #include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/observer/controllogger.hh>
-#include <ikarus/utils/observer/controlvtkwriter.hh>
-#include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 #include <ikarus/utils/listener/controllogger.hh>
 #include <ikarus/utils/listener/controlvtkwriter.hh>
 #include <ikarus/utils/listener/nonlinearsolverlogger.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
 
 using Dune::TestSuite;
 
@@ -167,13 +162,13 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
     auto cf2 = PathFollowingConfig(loadSteps, stepSize, pft);
     auto cf3 = PathFollowingConfig(loadSteps, stepSize, {}, dass);
   }
-  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-  auto pathFollowingObserver   = std::make_shared<ControlLogger>();
-  crWSS.nonLinearSolver().subscribeAll(nonLinearSolverObserver);
-  crWoSS.nonLinearSolver().subscribeAll(nonLinearSolverObserver);
+  // auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
+  // auto pathFollowingObserver   = std::make_shared<ControlLogger>();
+  // crWSS.nonLinearSolver().subscribeAll(nonLinearSolverObserver);
+  // crWoSS.nonLinearSolver().subscribeAll(nonLinearSolverObserver);
 
   auto nonLinearSolverObserver =
-      NonLinearSolverLogger().subscribeTo(crWSS.nonlinearSolver()).subscribeTo(crWoSS.nonlinearSolver());
+      NonLinearSolverLogger().subscribeTo(crWSS.nonLinearSolver()).subscribeTo(crWoSS.nonLinearSolver());
   auto pathFollowingObserver = ControlLogger();
 
   /// Create Observer which writes vtk files when control routines messages

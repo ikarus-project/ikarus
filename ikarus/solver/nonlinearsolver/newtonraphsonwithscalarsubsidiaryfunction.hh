@@ -121,9 +121,7 @@ auto createNonlinearSolver(NRConfig&& config, F&& f) {
  * \tparam UF Type of the update function (default is UpdateDefault).
  */
 template <typename F, typename LS, typename UF>
-class NewtonRaphsonWithSubsidiaryFunction : public IObservable<NonLinearSolverMessages>
-template <typename NLO, typename LS, typename UF>
-class NewtonRaphsonWithSubsidiaryFunction : public NonlinearSolverBase<NLO>
+class NewtonRaphsonWithSubsidiaryFunction : public NonlinearSolverBase<F>
 {
 public:
   using Settings        = NewtonRaphsonWithSubsidiaryFunctionSettings;
@@ -175,8 +173,7 @@ public:
       "The solve method returns information of the solution process. You should store this information and check if "
       "it was successful")]] NonLinearSolverInformation
   solve(Domain& req, SubsidiaryType&& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs) {
-    this->notify(NonLinearSolverMessages::INIT);
-
+    using enum NonLinearSolverMessages;
     this->notify(INIT);
 
     /// Initializations
@@ -214,6 +211,8 @@ public:
     int iter{0};
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
+
+    auto solverState = typename NewtonRaphsonWithSubsidiaryFunction::State{.domain = req, .correction = correction_};
 
     Eigen::MatrixX2<double> residual2d, sol2d;
 

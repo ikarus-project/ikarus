@@ -46,13 +46,12 @@ public:
   using Traits       = PreFE::Traits;
   using BasisHandler = typename Traits::BasisHandler;
   using FlatBasis    = typename Traits::FlatBasis;
-  using Requirement =
-      FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor, Traits::useEigenRef>::type;
-  using LocalView = typename Traits::LocalView;
-  using Geometry  = typename Traits::Geometry;
-  using GridView  = typename Traits::GridView;
-  using Element   = typename Traits::Element;
-  using Pre       = DummySkillPre;
+  using Requirement  = FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
+  using LocalView    = typename Traits::LocalView;
+  using Geometry     = typename Traits::Geometry;
+  using GridView     = typename Traits::GridView;
+  using Element      = typename Traits::Element;
+  using Pre          = DummySkillPre;
 
   explicit DummySkill(const Pre& pre) {}
 
@@ -62,8 +61,8 @@ protected:
   void subscribeToImpl(BC& bc) {
     if constexpr (std::same_as<MT, NonLinearSolverMessages>) {
       using NLSState = typename BC::State;
-      underlying().subscribe(bc, [&](NonLinearSolverMessages message, NLSState& state) {
-        this->updateState(message, state.solution, state.correction);
+      underlying().subscribe(bc, [&](NonLinearSolverMessages message, const NLSState& state) {
+        this->updateState(message, state.domain, state.correction);
       });
     } else if constexpr (std::same_as<MT, UpdateMessages>) {
       underlying().subscribe(bc, [&](UpdateMessages message, int val) { this->updateState(message, val); });
@@ -100,8 +99,14 @@ protected:
   auto calculateAtImpl(const Requirement& req, [[maybe_unused]] const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<0>) const {}
 
-  void updateState(NonLinearSolverMessages message, const Eigen::VectorXd& vec,
-                   const std::remove_reference_t<typename Traits::template VectorType<>>& correction) {
+  void updateState(NonLinearSolverMessages message, const Eigen::VectorXd& vec, const Eigen::VectorXd& correction) {
+    // We are hijacking the NLSolverMessages here to get either increment the counter or reset it to zero
+    if (message == NonLinearSolverMessages::FINISHED_SUCESSFULLY)
+      counter_ = 0;
+    else
+      counter_ = counter_ + 1;
+  }
+  void updateState(NonLinearSolverMessages message, const Requirement& req, const Eigen::VectorXd& correction) {
     // We are hijacking the NLSolverMessages here to get either increment the counter or reset it to zero
     if (message == NonLinearSolverMessages::FINISHED_SUCESSFULLY)
       counter_ = 0;
@@ -135,8 +140,8 @@ inline auto dummySkill() {
 
   return pre;
 }
-using NRStateDummy = NonlinearSolverState<const Eigen::VectorXd&, const Eigen::VectorXd&>;
-struct DummyBroadcaster : public Broadcasters<void(NonLinearSolverMessages, NRStateDummy& state),
+using NRStateDummy = NonlinearSolverState<Eigen::VectorXd, Eigen::VectorXd>;
+struct DummyBroadcaster : public Broadcasters<void(NonLinearSolverMessages, const NRStateDummy& state),
                                               void(UpdateMessages, int), void(UpdateMessages)>
 {
   using State = NRStateDummy;
@@ -235,9 +240,9 @@ int main(int argc, char** argv) {
   auto linSolver = LinearSolver(SolverTypeTag::d_LDLT);
   NewtonRaphsonConfig nrConfig({}, linSolver);
   NonlinearSolverFactory nrFactory(nrConfig);
-  auto nr       = nrFactory.create(sparseFlatAssembler);
-  auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseFlatAssembler);
-  auto lc       = ControlRoutineFactory::create(LoadControlConfig{1, 0.0, 1.0}, nr, sparseFlatAssembler);
+  auto nr = nrFactory.create(sparseFlatAssembler);
+  auto f  = Ikarus::DifferentiableFunctionFactory::op(sparseFlatAssembler);
+  auto lc = ControlRoutineFactory::create(LoadControlConfig{1, 0.0, 1.0}, nr, sparseFlatAssembler);
 
   lc.notify(Ikarus::ControlMessages::CONTROL_STARTED);
   checkMatrixAndVector(10, testLocation());
