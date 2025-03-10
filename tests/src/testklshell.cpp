@@ -32,6 +32,10 @@
 #include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/listener/controlvtkwriter.hh>
+#include <ikarus/utils/listener/nonlinearsolverlogger.hh>
+#include <ikarus/utils/nonlinearoperator.hh>
+#include <ikarus/utils/nonlinopfactory.hh>
 #include <ikarus/utils/observer/controlvtkwriter.hh>
 #include <ikarus/utils/observer/nonlinearsolverlogger.hh>
 
@@ -127,11 +131,14 @@ static auto NonLinearKLShellLoadControlTR() {
              .rho_reg   = 1e8,
              .Delta0    = 1});
 
-  auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
-      basis.flat(), req.globalSolution(), 2);
-  vtkWriter->setFileNamePrefix("TestKLShell");
-  vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
+  auto lc = ControlRoutineFactory::create(LoadControlConfig{1, 0.0, 1.0}, tr, sparseAssembler);
 
+  auto vtkWriter = ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>(basis.flat(), d, 2);
+  vtkWriter.setFileNamePrefix("TestKLShell");
+  vtkWriter.setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
+  vtkWriter.subscribeTo(lc);
+
+  const auto controlInfo = lc.run();
   auto lc = LoadControl(tr, 1, {0, 1});
   lc.subscribeAll(vtkWriter);
   const auto controlInfo = lc.run(req);

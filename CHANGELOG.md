@@ -82,6 +82,8 @@ SPDX-License-Identifier: LGPL-3.0-or-later
   This change ensures better encapsulation and simplifies the usage of finite elements. ([#356](https://github.com/ikarus-project/ikarus/pull/356))
 - Add wrapper classes for small strain and finite strain materials from the Muesli material library
   ([#337](https://github.com/ikarus-project/ikarus/pull/337))
+- `Observers` and `Observables` are replaced with `Broadcasters` and `Listeners`. Existing loggers work almost the same.
+ A noteworthy difference is that, the Broadcaster (e.g. a nonlinear solver) has to be registered to a Listener (e.g. a logger) with `logger.subscribeTo(solver)` ([#349](https://github.com/ikarus-project/ikarus/pull/349))
 
 ## Release v0.4 (Ganymede)
 

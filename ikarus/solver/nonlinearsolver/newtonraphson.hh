@@ -9,12 +9,14 @@
 #pragma once
 
 #include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/solver/nonlinearsolver/nonlinearsolverbase.hh>
+#include <ikarus/solver/nonlinearsolver/nonlinearsolverstate.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/utils/broadcaster/broadcaster.hh>
+#include <ikarus/utils/broadcaster/broadcastermessages.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
-#include <ikarus/utils/observer/observer.hh>
-#include <ikarus/utils/observer/observermessages.hh>
 
 namespace Ikarus {
 
@@ -37,9 +39,9 @@ struct NewtonRaphsonConfig
 {
   using LinearSolver   = LS;
   using UpdateFunction = UF;
-  NRSettings parameters;
-  LS linearSolver;
-  UF updateFunction;
+  NRSettings parameters{};
+  LS linearSolver{};
+  UF updateFunction{};
 
   template <typename UF2>
   auto rebindUpdateFunction(UF2&& updateFunction) const {
@@ -51,6 +53,21 @@ struct NewtonRaphsonConfig
   template <typename F>
   using Solver = NewtonRaphson<F, LS, UF>;
 };
+
+// THE CTAD is broken for designated initializers in clang 16, when we drop support this can be simplified
+#ifndef DOXYGEN
+NewtonRaphsonConfig() -> NewtonRaphsonConfig<utils::SolverDefault, utils::UpdateDefault>;
+NewtonRaphsonConfig(NRSettings) -> NewtonRaphsonConfig<utils::SolverDefault, utils::UpdateDefault>;
+
+template <typename LS>
+NewtonRaphsonConfig(NRSettings, LS) -> NewtonRaphsonConfig<LS, utils::UpdateDefault>;
+
+template <typename LS, typename UF>
+NewtonRaphsonConfig(NRSettings, LS, UF) -> NewtonRaphsonConfig<LS, UF>;
+
+template <typename UF>
+NewtonRaphsonConfig(NRSettings, utils::SolverDefault, UF) -> NewtonRaphsonConfig<utils::SolverDefault, UF>;
+#endif
 
 /**
  * \brief Function to create a NewtonRaphson solver instance.
@@ -98,6 +115,8 @@ auto createNonlinearSolver(NRConfig&& config, F&& f) {
  */
 template <typename F, typename LS, typename UF>
 class NewtonRaphson : public IObservable<NonLinearSolverMessages>
+template <typename NLO, typename LS, typename UF>
+class NewtonRaphson : public NonlinearSolverBase<NLO>
 {
 public:
   using Settings        = NRSettings;
@@ -156,8 +175,11 @@ public:
     int iter{0};
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
+
+    auto solverState = typename NewtonRaphson::State{.correction = correction_, .solution = x};
+
     while ((rNorm > settings_.tol && iter < settings_.maxIter) or iter < settings_.minIter) {
-      this->notify(NonLinearSolverMessages::ITERATION_STARTED);
+      this->notify(ITERATION_STARTED);
       if constexpr (isLinearSolver) {
         linearSolver_.factorize(Ax);
         linearSolver_.solve(correction_, -rx);
@@ -172,9 +194,10 @@ public:
       this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
       rx    = residualFunction_(x);
       Ax    = jacobianFunction_(x);
+      this->notify(CORRECTION_UPDATED, solverState);
       rNorm = norm(rx);
-      this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
-      this->notify(NonLinearSolverMessages::ITERATION_ENDED);
+      this->notify(RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
+      this->notify(ITERATION_ENDED);
       ++iter;
     }
     if (iter == settings_.maxIter)
@@ -183,7 +206,7 @@ public:
     solverInformation.residualNorm   = static_cast<double>(rNorm);
     solverInformation.correctionNorm = static_cast<double>(dNorm);
     if (solverInformation.success)
-      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter);
+      this->notify(FINISHED_SUCESSFULLY, iter);
     return solverInformation;
   }
 

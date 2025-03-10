@@ -16,8 +16,8 @@
 #include <ikarus/controlroutines/pathfollowingfunctions.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/utils/differentiablefunction.hh>
-#include <ikarus/utils/observer/observer.hh>
-#include <ikarus/utils/observer/observermessages.hh>
+#include <ikarus/utils/broadcaster/broadcastermessages.hh>
+#include <ikarus/utils/nonlinearoperator.hh>
 
 namespace Ikarus {
 
@@ -28,7 +28,9 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   auto& residual = nonLinearSolver_->residual();
   this->notify(ControlMessages::CONTROL_STARTED, pathFollowingType_.name());
 
-  SubsidiaryArgs subsidiaryArgs;
+  info.totalIterations = 0;
+  subsidiaryArgs_.setZero(nonOp.firstParameter());
+  subsidiaryArgs_.stepSize = stepSize_;
 
   info.totalIterations    = 0;
   subsidiaryArgs.stepSize = stepSize_;
@@ -43,16 +45,18 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   info.totalIterations += solverInfo.iterations;
   if (not solverInfo.success)
     return info;
-  this->notify(ControlMessages::SOLUTION_CHANGED);
-  this->notify(ControlMessages::STEP_ENDED);
+  this->notify(SOLUTION_CHANGED);
+  this->notify(STEP_ENDED);
+
+  auto state = typename PathFollowing::State{.parameter = nonOp.lastParameter()};
 
   /// Calculate predictor for a particular step
   for (int ls = 1; ls < steps_; ++ls) {
-    subsidiaryArgs.currentStep = ls;
+    subsidiaryArgs_.currentStep = ls;
 
     adaptiveStepSizing_(solverInfo, subsidiaryArgs, residual);
 
-    this->notify(ControlMessages::STEP_STARTED, subsidiaryArgs.currentStep, subsidiaryArgs.stepSize);
+    this->notify(STEP_STARTED, subsidiaryArgs_.currentStep, subsidiaryArgs_.stepSize);
 
     pathFollowingType_.intermediatePrediction(req, residual, subsidiaryArgs);
 
@@ -62,11 +66,15 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
     info.totalIterations += solverInfo.iterations;
     if (not solverInfo.success)
       return info;
-    this->notify(ControlMessages::SOLUTION_CHANGED);
-    this->notify(ControlMessages::STEP_ENDED);
+
+    state.loadStep = subsidiaryArgs_.currentStep;
+    state.stepSize = subsidiaryArgs_.stepSize;
+    this->notify(SOLUTION_CHANGED, state);
+    this->notify(SOLUTION_CHANGED);
+    this->notify(STEP_ENDED);
   }
 
-  this->notify(ControlMessages::CONTROL_ENDED, info.totalIterations, pathFollowingType_.name());
+  this->notify(CONTROL_ENDED, info.totalIterations, pathFollowingType_.name());
   info.success = true;
   return info;
 }

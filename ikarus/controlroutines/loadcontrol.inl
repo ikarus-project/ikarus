@@ -24,21 +24,27 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
   info.totalIterations += solverInfo.iterations;
   if (not solverInfo.success)
     return info;
-  this->notify(ControlMessages::SOLUTION_CHANGED);
-  this->notify(ControlMessages::STEP_ENDED);
+  this->notify(SOLUTION_CHANGED);
+  this->notify(STEP_ENDED);
+
+  auto state     = typename LoadControl::State{.parameter = loadParameter};
+  state.stepSize = stepSize_;
 
   for (int ls = 0; ls < loadSteps_; ++ls) {
-    this->notify(ControlMessages::STEP_STARTED, ls, stepSize_);
+    this->notify(STEP_STARTED, ls, stepSize_);
     loadParameter += stepSize_;
     solverInfo = nonLinearSolver_->solve(x);
     info.solverInfos.push_back(solverInfo);
     info.totalIterations += solverInfo.iterations;
     if (not solverInfo.success)
       return info;
-    this->notify(ControlMessages::SOLUTION_CHANGED);
-    this->notify(ControlMessages::STEP_ENDED);
+
+    state.loadStep = ls;
+    this->notify(SOLUTION_CHANGED, state);
+    this->notify(SOLUTION_CHANGED);
+    this->notify(STEP_ENDED);
   }
-  this->notify(ControlMessages::CONTROL_ENDED, info.totalIterations, static_cast<std::string>(this->name()));
+  this->notify(CONTROL_ENDED, info.totalIterations, static_cast<std::string>(this->name()));
   info.success = true;
   return info;
 }
