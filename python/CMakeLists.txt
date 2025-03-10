@@ -8,6 +8,7 @@ dune_python_configure_bindings(
   "."
   PACKAGENAME
   ikarus
+  REQUIRED
   CMAKE_METADATA_FLAGS
   DUNE_OPTS_FILE
   HAVE_MPI
