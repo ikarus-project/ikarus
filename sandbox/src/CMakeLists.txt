@@ -8,6 +8,7 @@ add_custom_target(AllExamples) # Create target that includes all examples
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)
   add_executable(${programName} ${programSourceFile})
+  set_property(TARGET ${programName} PROPERTY EXCLUDE_FROM_ALL 1)
   set_target_properties(${programName} PROPERTIES CXX_STANDARD 20 OUTPUT_NAME "Ikarus")
   add_dune_pythonlibs_flags(${programName})
   target_compile_options(
