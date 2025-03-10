@@ -163,10 +163,6 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
     auto cf2 = PathFollowingConfig(loadSteps, stepSize, pft);
     auto cf3 = PathFollowingConfig(loadSteps, stepSize, {}, dass);
   }
-  // auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-  // auto pathFollowingObserver   = std::make_shared<ControlLogger>();
-  // crWSS.nonLinearSolver().subscribeAll(nonLinearSolverObserver);
-  // crWoSS.nonLinearSolver().subscribeAll(nonLinearSolverObserver);
 
   auto nonLinearSolverObserver =
       NonLinearSolverLogger().subscribeTo(crWSS.nonLinearSolver()).subscribeTo(crWoSS.nonLinearSolver());
