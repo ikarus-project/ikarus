@@ -8,13 +8,13 @@
 namespace Ikarus::Python {
 
 /**
- * @brief Registers a NonLinearElasticPre class in Python.
+ * \brief Registers a NonLinearElasticPre class in Python.
  *
- * @tparam NonLinearElasticPre The NonLinearElasticPre class.
- * @tparam options Additional options for the pybind11 class.
+ * \tparam NonLinearElasticPre The NonLinearElasticPre class.
+ * \tparam options Additional options for the pybind11 class.
  *
- * @param scope Python handle to the module or class scope.
- * @param cls The pybind11 class to register.
+ * \param scope Python handle to the module or class scope.
+ * \param cls The pybind11 class to register.
  */
 template <class NonLinearElasticPre, class... options>
 void registerNonLinearElasticPre(pybind11::handle scope, pybind11::class_<NonLinearElasticPre, options...> cls) {
@@ -23,13 +23,13 @@ void registerNonLinearElasticPre(pybind11::handle scope, pybind11::class_<NonLin
 }
 
 /**
- * @brief Registers a LinearElasticPre class in Python.
+ * \brief Registers a LinearElasticPre class in Python.
  *
- * @tparam LinearElasticPre The LinearElasticPre class.
- * @tparam options Additional options for the pybind11 class.
+ * \tparam LinearElasticPre The LinearElasticPre class.
+ * \tparam options Additional options for the pybind11 class.
  *
- * @param scope Python handle to the module or class scope.
- * @param cls The pybind11 class to register.
+ * \param scope Python handle to the module or class scope.
+ * \param cls The pybind11 class to register.
  */
 template <class LinearElasticPre, class... options>
 void registerLinearElasticPre(pybind11::handle scope, pybind11::class_<LinearElasticPre, options...> cls) {
@@ -38,13 +38,13 @@ void registerLinearElasticPre(pybind11::handle scope, pybind11::class_<LinearEla
 }
 
 /**
- * @brief Registers a TrussPre class in Python.
+ * \brief Registers a TrussPre class in Python.
  *
- * @tparam TrussPre The TrussPre class.
- * @tparam options Additional options for the pybind11 class.
+ * \tparam TrussPre The TrussPre class.
+ * \tparam options Additional options for the pybind11 class.
  *
- * @param scope Python handle to the module or class scope.
- * @param cls The pybind11 class to register.
+ * \param scope Python handle to the module or class scope.
+ * \param cls The pybind11 class to register.
  */
 template <class TrussPre, class... options>
 void registerTrussPre(pybind11::handle scope, pybind11::class_<TrussPre, options...> cls) {
@@ -52,13 +52,13 @@ void registerTrussPre(pybind11::handle scope, pybind11::class_<TrussPre, options
 }
 
 /**
- * @brief Registers a KirchhoffLoveShellPre class in Python.
+ * \brief Registers a KirchhoffLoveShellPre class in Python.
  *
- * @tparam KirchhoffLoveShellPre The KirchhoffLoveShellPre class.
- * @tparam options Additional options for the pybind11 class.
+ * \tparam KirchhoffLoveShellPre The KirchhoffLoveShellPre class.
+ * \tparam options Additional options for the pybind11 class.
  *
- * @param scope Python handle to the module or class scope.
- * @param cls The pybind11 class to register.
+ * \param scope Python handle to the module or class scope.
+ * \param cls The pybind11 class to register.
  */
 template <class KirchhoffLoveShellPre, class... options>
 void registerKirchhoffLoveShellPre(pybind11::handle scope, pybind11::class_<KirchhoffLoveShellPre, options...> cls) {
@@ -67,13 +67,13 @@ void registerKirchhoffLoveShellPre(pybind11::handle scope, pybind11::class_<Kirc
 }
 
 /**
- * @brief Registers an EnhancedAssumedStrainsPre class in Python.
+ * \brief Registers an EnhancedAssumedStrainsPre class in Python.
  *
- * @tparam EASPre The EnhancedAssumedStrainsPre class.
- * @tparam options Additional options for the pybind11 class.
+ * \tparam EASPre The EnhancedAssumedStrainsPre class.
+ * \tparam options Additional options for the pybind11 class.
  *
- * @param scope Python handle to the module or class scope.
- * @param cls The pybind11 class to register.
+ * \param scope Python handle to the module or class scope.
+ * \param cls The pybind11 class to register.
  */
 template <class EASPre, class... options>
 void registerEnhancedAssumedStrainsPre(pybind11::handle scope, pybind11::class_<EASPre, options...> cls) {
@@ -81,13 +81,13 @@ void registerEnhancedAssumedStrainsPre(pybind11::handle scope, pybind11::class_<
 }
 
 /**
- * @brief Registers a NeumannBoundaryLoadPre class in Python.
+ * \brief Registers a NeumannBoundaryLoadPre class in Python.
  *
- * @tparam NeumannBoundaryLoadPre The NeumannBoundaryLoadPre class.
- * @tparam options Additional options for the pybind11 class.
+ * \tparam NeumannBoundaryLoadPre The NeumannBoundaryLoadPre class.
+ * \tparam options Additional options for the pybind11 class.
  *
- * @param scope Python handle to the module or class scope.
- * @param cls The pybind11 class to register.
+ * \param scope Python handle to the module or class scope.
+ * \param cls The pybind11 class to register.
  */
 template <class NeumannBoundaryLoadPre, class... options>
 void registerNeumannBoundaryLoadPre(pybind11::handle scope, pybind11::class_<NeumannBoundaryLoadPre, options...> cls) {
@@ -103,13 +103,13 @@ void registerNeumannBoundaryLoadPre(pybind11::handle scope, pybind11::class_<Neu
 }
 
 /**
- * @brief Registers a VolumeLoadPre class in Python.
+ * \brief Registers a VolumeLoadPre class in Python.
  *
- * @tparam VolumeLoadPre The VolumeLoadPre class.
- * @tparam options Additional options for the pybind11 class.
+ * \tparam VolumeLoadPre The VolumeLoadPre class.
+ * \tparam options Additional options for the pybind11 class.
  *
- * @param scope Python handle to the module or class scope.
- * @param cls The pybind11 class to register.
+ * \param scope Python handle to the module or class scope.
+ * \param cls The pybind11 class to register.
  */
 template <class VolumeLoadPre, class... options>
 void registerVolumeLoadPre(pybind11::handle scope, pybind11::class_<VolumeLoadPre, options...> cls) {
