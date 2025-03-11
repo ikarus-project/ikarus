@@ -7,8 +7,6 @@
 
   #include <muesli/muesli.h>
 
-  #include <dune/common/hybridutilities.hh>
-
   #include <ikarus/finiteelements/physicshelper.hh>
   #include <ikarus/utils/tensorutils.hh>
 
@@ -30,7 +28,7 @@ namespace Ikarus::Materials {
  *
  * \tparam MPT the type of the Ikarus material parameters.
  * \param mpt the Ikarus material parameters.
- * \return MaterialProperties meusli material properties with the Lambda and mu set
+ * \return MaterialProperties muesli material properties with the Lambda and mu set
  */
 template <Concepts::MPTuple MPT>
 inline muesli::materialProperties propertiesFromIkarusMaterialParameters(const MPT& mpt) {

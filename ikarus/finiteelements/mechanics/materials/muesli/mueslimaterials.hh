@@ -17,8 +17,6 @@
 
 namespace Ikarus::Materials {
 
-// Alias for small strain Muesli materials
-
 /**
  * \brief Constructs a muesli linear isotropic elastic material model based on muesli::elasticIsotropicMaterial.
  *
@@ -64,7 +62,7 @@ inline auto makeMuesliSVK(const MPT& mpt) {
 /**
  * \brief Constructs a muesli ArrudaBoyce material model based on muesli::arrudaboyceMaterial.
  *
- * \param C1 C1 parameter.
+ * \param C1 C1 parameter (mu).
  * \param lambda_m lambda_m parameter.
  * \param K the bulk modulus.
  * \param compressible tells the material to use the compressible version of ArrudaBoyce.

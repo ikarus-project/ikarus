@@ -130,7 +130,7 @@ struct Material
    *
    * \tparam tag Strain tag indicating which strain tensor components are passed.
    * \tparam Derived The underlying Eigen type.
-  * \param Eraw The strain tensor components passed in Voigt notation or matrix notation.
+   * \param Eraw The strain tensor components passed in Voigt notation or matrix notation.
    * \return Scalar return of stored energy.
    */
   template <StrainTags tag, typename Derived>

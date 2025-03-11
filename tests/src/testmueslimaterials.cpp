@@ -135,7 +135,15 @@ auto testMuesliAgainstIkarus() {
   TestSuite t("Test Muesli Materials against Ikarus Materials");
   using enum StrainTags;
 
+  auto callMaterialComparisonTest = [&](const auto& mueslimat, const auto& ikarusmat) {
+    t.subTest(compareIkarusAndMuesli<rightCauchyGreenTensor>(mueslimat, ikarusmat));
+    t.subTest(compareIkarusAndMuesli<deformationGradient>(mueslimat, ikarusmat));
+    t.subTest(compareIkarusAndMuesli<greenLagrangian>(mueslimat, ikarusmat));
+  };
+
   auto [matPar, matProp] = Testing::testMatProp();
+  auto mu                = matPar.mu;
+  auto K                 = convertLameConstants(matPar).toBulkModulus();
 
   // Linear Elasticity
   auto lin  = LinearElasticity(matPar);
@@ -146,38 +154,41 @@ auto testMuesliAgainstIkarus() {
   // NeoHooke
   auto nhm = makeMuesliNeoHooke(matPar, false);
   auto nh  = NeoHooke(matPar);
-
-  t.subTest(compareIkarusAndMuesli<rightCauchyGreenTensor>(nhm, nh));
-  t.subTest(compareIkarusAndMuesli<deformationGradient>(nhm, nh));
-  t.subTest(compareIkarusAndMuesli<greenLagrangian>(nhm, nh));
+  callMaterialComparisonTest(nhm, nh);
 
   // SVK
-  auto svk  = StVenantKirchhoff(matPar);
   auto svkm = makeMuesliSVK(matPar);
-
-  t.subTest(compareIkarusAndMuesli<rightCauchyGreenTensor>(svkm, svk));
-  t.subTest(compareIkarusAndMuesli<deformationGradient>(svkm, svk));
-  t.subTest(compareIkarusAndMuesli<greenLagrangian>(svkm, svk));
+  auto svk  = StVenantKirchhoff(matPar);
+  callMaterialComparisonTest(svkm, svk);
 
   // ArrudaBoyce
-  auto K   = convertLameConstants(matPar).toBulkModulus();
-  auto ab  = makeArrudaBoyce({matPar.mu, 0.85});
   auto abm = makeMuesliArrudaBoyce(matPar.mu, 0.85, .0, true);
-  t.subTest(compareIkarusAndMuesli<rightCauchyGreenTensor>(abm, ab));
+  auto ab  = makeArrudaBoyce({matPar.mu, 0.85});
+  callMaterialComparisonTest(abm, ab);
   testDeviatoricPart(t, abm);
 
+  // Yeoh
+  auto yaohMatPar = std::array{mu / 2.0, mu / 6.0, mu / 3.0};
+  auto yeohm      = makeMuesliYeoh(yaohMatPar, 0.0);
+  auto yeoh       = makeYeoh(yaohMatPar);
+  callMaterialComparisonTest(yeohm, yeoh);
+  testDeviatoricPart(t, yeohm);
+
+  // NeoHooke Deviatoric
+  auto nhDevi  = makeOgden<1, PrincipalStretchTags::deviatoric>({mu}, {2.0}, K, VF3{});
+  auto nhDevim = makeMuesliNeoHooke(matPar, true);
+  callMaterialComparisonTest(nhDevim, nhDevi);
+
   // Test 2D Case
-  auto nhplaneStrain   = planeStrain(nh);
-  auto nhplanseStrainm = planeStrain(nhm);
-  t.subTest(compareIkarusAndMuesli<rightCauchyGreenTensor>(nhplanseStrainm, nhplaneStrain));
-  t.subTest(compareIkarusAndMuesli<greenLagrangian>(nhplanseStrainm, nhplaneStrain));
+  auto nhplaneStrain  = planeStrain(nh);
+  auto nhplaneStrainm = planeStrain(nhm);
+  callMaterialComparisonTest(nhplaneStrainm, nhplaneStrain);
 
   auto nhplaneStress  = planeStress(nh);
   auto nhplaneStressm = planeStress(nhm);
-  t.subTest(compareIkarusAndMuesli<rightCauchyGreenTensor>(nhplaneStressm, nhplaneStress));
-  t.subTest(compareIkarusAndMuesli<greenLagrangian>(nhplaneStressm, nhplaneStress));
+  callMaterialComparisonTest(nhplaneStress, nhplaneStressm);
 
-  // Test name Funciton
+  // Test name Function
   t.check(svkm.name() == "FiniteStrain: SvkMaterial");
   t.check(nhm.name() == "FiniteStrain: NeohookeanMaterial");
   t.check(linm.name() == "SmallStrain: ElasticIsotropicMaterial");

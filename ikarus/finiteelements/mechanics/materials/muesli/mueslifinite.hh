@@ -28,7 +28,6 @@ namespace Ikarus::Materials {
  * \file ikarus/finiteelements/mechanics/materials/interface.hh.
  *
  * \tparam FM muesli material model implementation
- * \remark Please cite \cite portillo_muesli_2017 if you use any materials from the muesli library
  */
 template <typename FM>
 requires(std::is_base_of_v<muesli::finiteStrainMaterial, FM>)
@@ -62,7 +61,6 @@ struct FiniteStrain : public Material<FiniteStrain<FM>>
       : materialParameter_{mpt},
         material_{Dune::className<FM>(), mpt},
         mp_{material_.createMaterialPoint()} {}
-
 
   /**
    * \brief Returns the material parameters stored in the material
@@ -159,7 +157,7 @@ private:
 
   template <typename Derived>
   void updateState(const Eigen::MatrixBase<Derived>& C) const {
-    // Impl::checkPositiveOrAbort(C.determinant());
+    Impl::checkPositiveOrAbort(C.determinant());
     toitensor(strain_, transformStrain<strainTag, StrainTags::deformationGradient>(C));
     mp_->updateCurrentState(0.0, strain_);
   }

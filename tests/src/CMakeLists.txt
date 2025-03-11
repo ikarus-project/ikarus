@@ -40,7 +40,7 @@ set(programSourceFiles
     testvtkwriter.cpp
     testhyperelasticity.cpp
     testmaterialswithad.cpp
-    testmaterialswithmuesli.cpp
+    testmueslimaterials.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
@@ -85,7 +85,7 @@ set(TEST_DEPENDING_ON_IGA testklshell testadaptivestepsizing)
 
 set(TEST_NEED_MORE_TIME testadaptivestepsizing)
 
-set(TEST_DEPENDING_ON_MUESLI testmaterialswithmuesli)
+set(TEST_DEPENDING_ON_MUESLI testmueslimaterials)
 
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)
