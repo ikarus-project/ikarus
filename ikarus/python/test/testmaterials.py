@@ -452,4 +452,4 @@ if __name__ == "__main__":
     checkVoigtTransformations()
     checkMaterialConstructors()
 
-    # instantiateMuesliMaterials()
+    instantiateMuesliMaterials()

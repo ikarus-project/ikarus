@@ -97,8 +97,9 @@ struct FiniteStrain : public Material<FiniteStrain<FM>>
     if constexpr (!voigt) {
       if constexpr (!Concepts::EigenVector<Derived>) {
         updateState(C);
-        mp_->secondPiolaKirchhoffStress(stress_);
-        return toEigenMatrix(stress_).eval();
+        istensor stress;
+        mp_->secondPiolaKirchhoffStress(stress);
+        return toEigenMatrix(stress).eval();
       } else
         static_assert(!Concepts::EigenVector<Derived>,
                       "MuesliFiniteStrain can only be called with a matrix and not a vector in Voigt notation");
@@ -119,9 +120,10 @@ struct FiniteStrain : public Material<FiniteStrain<FM>>
     if constexpr (!voigt) {
       if constexpr (!Concepts::EigenVector<Derived>) {
         updateState(C);
+        itensor4 tangentModuli;
 
-        mp_->convectedTangent(tangentModuli_);
-        return toEigenTensor(tangentModuli_);
+        mp_->convectedTangent(tangentModuli);
+        return toEigenTensor(tangentModuli);
       } else
         static_assert(!Concepts::EigenVector<Derived>,
                       "MuesliFiniteStrain can only be called with a matrix and not a vector in Voigt notation");
@@ -151,15 +153,11 @@ private:
   MaterialModel material_;
   std::unique_ptr<muesli::finiteStrainMP> mp_;
 
-  mutable itensor strain_{};
-  mutable istensor stress_{};
-  mutable itensor4 tangentModuli_{};
-
   template <typename Derived>
   void updateState(const Eigen::MatrixBase<Derived>& C) const {
     Impl::checkPositiveOrAbort(C.determinant());
-    toitensor(strain_, transformStrain<strainTag, StrainTags::deformationGradient>(C));
-    mp_->updateCurrentState(0.0, strain_);
+    auto F = toitensor(transformStrain<strainTag, StrainTags::deformationGradient>(C));
+    mp_->updateCurrentState(0.0, F);
   }
 };
 

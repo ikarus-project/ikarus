@@ -8,7 +8,6 @@ from ikarus.generator import MySimpleGenerator
 from enum import Enum
 from typing import Union
 
-# The list of supported dataCollectors
 MuesliSmallStrain = Enum("MuesliSmallStrain", ["elasticIsotropicMaterial"])
 MuesliFiniteStrain = Enum(
     "MuesliFiniteStrain",

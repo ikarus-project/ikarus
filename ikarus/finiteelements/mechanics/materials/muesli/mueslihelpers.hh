@@ -18,7 +18,7 @@ namespace Ikarus::Concepts {
  * \tparam MAT the material type
  */
 template <typename MAT>
-concept MuesliMaterialImplementation = requires { std::is_base_of_v<muesli::material, MAT>; };
+concept MuesliMaterialImplementation = std::is_base_of_v<muesli::material, MAT>;
 } // namespace Ikarus::Concepts
 
 namespace Ikarus::Materials {
@@ -52,24 +52,19 @@ inline void addTag(muesli::materialProperties& mpm, const std::string& tagName, 
 /**
  * \brief Converts the entries of a Eigen::Matrix to a provided muesli::istensor (symmetric 2nd order tensor).
  *
- * \param it provided istensor.
  * \param C the Eigen::Matrix that is to be converted.
  */
-inline void toistensor(istensor& it, const Eigen::Matrix<double, 3, 3>& C) {
-  it = istensor(C(0, 0), C(1, 1), C(2, 2), C(1, 2), C(2, 0), C(0, 1));
+inline istensor toistensor(const Eigen::Matrix<double, 3, 3>& C) {
+  return istensor(C(0, 0), C(1, 1), C(2, 2), C(1, 2), C(2, 0), C(0, 1));
 }
 
 /**
  * \brief Converts the entries of a Eigen::Matrix to a provided muesli::itensor (2nd order tensor).
  *
- * \param it provided itensor.
  * \param C the Eigen::Matrix that is to be converted.
  */
-inline void toitensor(itensor& it, const Eigen::Matrix<double, 3, 3>& C) {
-  it.setZero();
-  for (auto i : Dune::range(3))
-    for (auto j : Dune::range(3))
-      it(i, j) = C(i, j);
+inline itensor toitensor(const Eigen::Matrix<double, 3, 3>& C) {
+  return itensor(C(0, 0), C(0, 1), C(0, 2), C(1, 0), C(1, 1), C(1, 2), C(2, 0), C(2, 1), C(2, 2));
 }
 
 /**
@@ -94,7 +89,6 @@ inline auto toEigenMatrix(const istensor& it) {
  */
 inline auto toEigenTensor(const itensor4& it) {
   Eigen::TensorFixedSize<double, Eigen::Sizes<3, 3, 3, 3>> moduli{};
-  moduli.setZero();
   for (auto i : Dune::range(3))
     for (auto j : Dune::range(3))
       for (auto k : Dune::range(3))
