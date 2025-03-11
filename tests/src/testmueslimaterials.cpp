@@ -137,7 +137,7 @@ auto testMuesliAgainstIkarus() {
 
   auto callMaterialComparisonTest = [&](const auto& mueslimat, const auto& ikarusmat) {
     t.subTest(compareIkarusAndMuesli<rightCauchyGreenTensor>(mueslimat, ikarusmat));
-    t.subuesliTest(compareIkarusAndMuesli<deformationGradient>(mueslimat, ikarusmat));
+    t.subTest(compareIkarusAndMuesli<deformationGradient>(mueslimat, ikarusmat));
     t.subTest(compareIkarusAndMuesli<greenLagrangian>(mueslimat, ikarusmat));
   };
 
