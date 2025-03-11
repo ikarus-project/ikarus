@@ -54,42 +54,36 @@ inline void addTag(muesli::materialProperties& mpm, const std::string& tagName, 
 /**
  * \brief Converts the entries of a Eigen::Matrix to a provided muesli::istensor (symmetric 2nd order tensor).
  *
- * \tparam Derived the derived Eigen::Matrix type.
  * \param it provided istensor.
  * \param C the Eigen::Matrix that is to be converted.
  */
-template <typename Derived>
-inline void toistensor(istensor& it, const Eigen::MatrixBase<Derived>& C) {
+inline void toistensor(istensor& it, const Eigen::Matrix<double, 3, 3>& C) {
   it = istensor(C(0, 0), C(1, 1), C(2, 2), C(1, 2), C(2, 0), C(0, 1));
 }
 
 /**
- * \brief Converts the entries of a Eigen::Matrix to a provided muesli::istensor (symmetric 2nd order tensor).
+ * \brief Converts the entries of a Eigen::Matrix to a provided muesli::itensor (2nd order tensor).
  *
- * \tparam Derived the derived Eigen::Matrix type.
  * \param it provided itensor.
  * \param C the Eigen::Matrix that is to be converted.
  */
- template <typename Derived>
- inline void toitensor(itensor& it, const Eigen::MatrixBase<Derived>& C) {
-  // std::cout << C << std::endl;
-   it = itensor(C(0, 0), C(0, 1), C(0, 2), C(1,0), C(1, 1), C(1, 2), C(2, 0), C(2,1), C(2,2));
-  //  std::cout << it << std::endl;
- }
+inline void toitensor(itensor& it, const Eigen::Matrix<double, 3, 3>& C) {
+  it.setZero();
+  for (auto i : Dune::range(3))
+    for (auto j : Dune::range(3))
+      it(i, j) = C(i, j);
+}
 
 /**
  * \brief Converts a provided muesli::istensor (symmetric 2nd order tensor) to a Eigen::Matrix.
  *
- * \tparam ScalarType the ScalarType (defaults to double).
- * \tparam dim the dimension (defaults to 3).
  * \param it provided istensor.
  * \return Eigen::Matrix<ScalarType, dim, dim> converted matrix.
  */
-template <typename ScalarType = double, int dim = 3>
-inline Eigen::Matrix<ScalarType, dim, dim> toMatrix(const istensor& it) {
-  auto S = Eigen::Matrix<double, dim, dim>{};
-  for (auto i : Dune::Hybrid::integralRange(dim))
-    for (auto j : Dune::Hybrid::integralRange(dim))
+inline auto toEigenMatrix(const istensor& it) {
+  auto S = Eigen::Matrix<double, 3, 3>{};
+  for (auto i : Dune::range(3))
+    for (auto j : Dune::range(3))
       S(i, j) = it(i, j);
   return S;
 }
@@ -97,14 +91,11 @@ inline Eigen::Matrix<ScalarType, dim, dim> toMatrix(const istensor& it) {
 /**
  * \brief Converts a provided muesli::istensor4 (symmetric 4th order tensor) to a Eigen::TensorFixedSize.
  *
- * \tparam ScalarType the ScalaType (defaults to double).
- * \tparam dim the dimension (defaults to 3).
- * \param it provided istensor.
+ * \param it provided itensor.
  * \return Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>> converted tensor.
  */
-template <typename ScalarType = double, std::size_t dim = 3>
-inline auto toTensor(const itensor4& it) -> Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>> {
-  Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>> moduli{};
+inline auto toEigenTensor(const itensor4& it) {
+  Eigen::TensorFixedSize<double, Eigen::Sizes<3, 3, 3, 3>> moduli{};
   moduli.setZero();
   for (auto i : Dune::range(3))
     for (auto j : Dune::range(3))

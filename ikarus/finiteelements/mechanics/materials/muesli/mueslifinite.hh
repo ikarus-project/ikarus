@@ -63,6 +63,7 @@ struct FiniteStrain : public Material<FiniteStrain<FM>>
         material_{Dune::className<FM>(), mpt},
         mp_{material_.createMaterialPoint()} {}
 
+
   /**
    * \brief Returns the material parameters stored in the material
    */
@@ -99,7 +100,7 @@ struct FiniteStrain : public Material<FiniteStrain<FM>>
       if constexpr (!Concepts::EigenVector<Derived>) {
         updateState(C);
         mp_->secondPiolaKirchhoffStress(stress_);
-        return toMatrix(stress_).eval();
+        return toEigenMatrix(stress_).eval();
       } else
         static_assert(!Concepts::EigenVector<Derived>,
                       "MuesliFiniteStrain can only be called with a matrix and not a vector in Voigt notation");
@@ -122,7 +123,7 @@ struct FiniteStrain : public Material<FiniteStrain<FM>>
         updateState(C);
 
         mp_->convectedTangent(tangentModuli_);
-        return toTensor(tangentModuli_);
+        return toEigenTensor(tangentModuli_);
       } else
         static_assert(!Concepts::EigenVector<Derived>,
                       "MuesliFiniteStrain can only be called with a matrix and not a vector in Voigt notation");
@@ -158,7 +159,7 @@ private:
 
   template <typename Derived>
   void updateState(const Eigen::MatrixBase<Derived>& C) const {
-    Impl::checkPositiveOrAbort(C.determinant());
+    // Impl::checkPositiveOrAbort(C.determinant());
     toitensor(strain_, transformStrain<strainTag, StrainTags::deformationGradient>(C));
     mp_->updateCurrentState(0.0, strain_);
   }

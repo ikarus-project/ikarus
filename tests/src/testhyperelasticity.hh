@@ -16,6 +16,7 @@
 #include <autodiff/forward/utils/derivative.hpp>
 
 #include <ikarus/finiteelements/mechanics/materials.hh>
+#include <ikarus/finiteelements/mechanics/materials/muesli/mueslifinite.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
 #include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
@@ -190,7 +191,7 @@ auto recoverNeoHookeTest() {
   return t;
 }
 
-template <Concepts::DeviatoricFunction DEV, DeformationType def>
+template <typename DEV, DeformationType def>
 auto materialResults() {
   if constexpr (std::is_same_v<DEV, BlatzKoT<double>>) {
     return BlatzKoResults<def>();
@@ -202,7 +203,8 @@ auto materialResults() {
     return MooneyRivlinResults<def>();
   } else if constexpr (std::is_same_v<DEV, InvariantBasedT<double, 3>>) {
     return YeohResults<def>();
-  } else if constexpr (std::is_same_v<DEV, ArrudaBoyceT<double>>) {
+  } else if constexpr (std::is_same_v<DEV, ArrudaBoyceT<double>> or
+                       std::same_as<DEV, Ikarus::Materials::FiniteStrain<muesli::arrudaboyceMaterial>>) {
     return ArrudaBoyceResults<def>();
   } else if constexpr (std::is_same_v<DEV, GentT<double>>) {
     return GentResults<def>();

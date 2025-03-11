@@ -265,37 +265,37 @@ int main(int argc, char** argv) {
   std::array<double, 3> mu_og2    = {2.0 * mu / 3.0, mu / 6.0, mu / 6.0};
   std::array<double, 3> alpha_og2 = {1.23, 0.59, 0.18};
 
-  // auto ogden     = makeOgden<1, PrincipalStretchTags::total>(mu_og, alpha_og, lambda, VF3{});
-  // auto ogden2    = makeOgden<3, PrincipalStretchTags::total>(mu_og2, alpha_og2, lambda, VF2{});
-  // auto ogdenDev  = makeOgden<1, PrincipalStretchTags::deviatoric>(mu_og, alpha_og, K, VF3{});
-  // auto ogdenDev2 = makeOgden<3, PrincipalStretchTags::deviatoric>(mu_og2, alpha_og2, K, VF2{});
+  auto ogden     = makeOgden<1, PrincipalStretchTags::total>(mu_og, alpha_og, lambda, VF3{});
+  auto ogden2    = makeOgden<3, PrincipalStretchTags::total>(mu_og2, alpha_og2, lambda, VF2{});
+  auto ogdenDev  = makeOgden<1, PrincipalStretchTags::deviatoric>(mu_og, alpha_og, K, VF3{});
+  auto ogdenDev2 = makeOgden<3, PrincipalStretchTags::deviatoric>(mu_og2, alpha_og2, K, VF2{});
 
-  // t.subTest(testMaterial(ogden));
-  // t.subTest(testMaterial(ogden2));
-  // t.subTest(testMaterial(ogdenDev));
-  // t.subTest(testMaterial(ogdenDev2));
+  t.subTest(testMaterial(ogden));
+  t.subTest(testMaterial(ogden2));
+  t.subTest(testMaterial(ogdenDev));
+  t.subTest(testMaterial(ogdenDev2));
 
-  // auto mr   = makeMooneyRivlin({mu / 2.0, mu / 2.0});
-  // auto yeoh = makeYeoh({mu / 2.0, mu / 6.0, mu / 3.0});
-  // auto ab   = makeArrudaBoyce({mu, 0.85});
-  // auto gent = makeGent({mu, 2.5});
+  auto mr   = makeMooneyRivlin({mu / 2.0, mu / 2.0});
+  auto yeoh = makeYeoh({mu / 2.0, mu / 6.0, mu / 3.0});
+  auto ab   = makeArrudaBoyce({mu, 0.85});
+  auto gent = makeGent({mu, 2.5});
 
-  // t.subTest(testMaterial(mr));
-  // t.subTest(testMaterial(yeoh));
-  // t.subTest(testMaterial(ab));
-  // t.subTest(testMaterial(gent));
+  t.subTest(testMaterial(mr));
+  t.subTest(testMaterial(yeoh));
+  t.subTest(testMaterial(ab));
+  t.subTest(testMaterial(gent));
 
-  // auto psOgden  = planeStrain(ogden);
-  // auto pstOgden = planeStress(ogden2, 1e-12);
-  // auto psmr     = planeStrain(mr);
+  auto psOgden  = planeStrain(ogden);
+  auto pstOgden = planeStress(ogden2, 1e-12);
+  auto psmr     = planeStrain(mr);
 
-  // t.subTest(testMaterial(psOgden));
-  // t.subTest(testMaterial(pstOgden));
-  // t.subTest(testMaterial(psmr));
+  t.subTest(testMaterial(psOgden));
+  t.subTest(testMaterial(pstOgden));
+  t.subTest(testMaterial(psmr));
 
-  // t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::linear, LinearElasticity>());
-  // t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
-  // t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::rightCauchyGreenTensor, NeoHooke>());
+  t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::linear, LinearElasticity>());
+  t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
+  t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::rightCauchyGreenTensor, NeoHooke>());
 
 #if ENABLE_MUESLI
   // Muesli
@@ -317,7 +317,7 @@ int main(int argc, char** argv) {
   auto muesliYeoh = makeMuesliYeoh({mu / 2, mu / 6, mu / 3}, K);
   t.subTest(testMaterial(muesliYeoh));
 
-  auto muesliAB = makeMuesliArrudaBoyce(mu, 0.85, K);
+  auto muesliAB = makeMuesliArrudaBoyce(mu, 0.85, K, false);
   t.subTest(testMaterial(muesliAB));
 
   auto muesliSVKPlaneStrain = planeStrain(muesliSVK);

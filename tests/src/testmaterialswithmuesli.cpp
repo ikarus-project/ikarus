@@ -22,6 +22,15 @@ using namespace Ikarus;
 using namespace Ikarus::Materials;
 using Dune::TestSuite;
 
+namespace Testing {
+auto testMatProp() {
+  auto matPar_ = testMatPar();
+  auto matPar  = toLamesFirstParameterAndShearModulus(matPar_);
+  auto matProp = propertiesFromIkarusMaterialParameters(matPar);
+  return std::make_pair(matPar, matProp);
+}
+} // namespace Testing
+
 template <StrainTags strainTag, typename MuesliMAT, typename IkarusMAT>
 auto compareIkarusAndMuesli(const MuesliMAT& muesliMat, const IkarusMAT& ikarusMat) {
   TestSuite t(MuesliMAT::name() + " vs " + IkarusMAT::name() + " InputStrainMeasure: " + toString(strainTag));
@@ -51,73 +60,137 @@ auto compareIkarusAndMuesli(const MuesliMAT& muesliMat, const IkarusMAT& ikarusM
   return t;
 }
 
+// template <typename MAT>
+auto checkConstructors() {
+  TestSuite t("Check Constructors");
+  auto test = [&]<typename MAT>(muesli::materialProperties matPar) {
+    auto mm = MAT(matPar);
+
+    auto mm1{mm};
+    auto mm2 = mm1;
+
+    auto mm3 = std::forward<MAT>(mm);
+
+    t.check(mm1.material().check()) << testLocation();
+    t.check(mm2.material().check()) << testLocation();
+    t.check(mm3.material().check()) << testLocation();
+
+    t.check(mm1.materialPoint().get() != NULL) << testLocation();
+    t.check(mm2.materialPoint().get() != NULL) << testLocation();
+    t.check(mm3.materialPoint().get() != NULL) << testLocation();
+  };
+
+  auto [matPar, matProp] = Testing::testMatProp();
+  test.operator()<FiniteStrain<muesli::neohookeanMaterial>>(matProp);
+  test.operator()<FiniteStrain<muesli::svkMaterial>>(matProp);
+  test.operator()<SmallStrain<muesli::elasticIsotropicMaterial>>(matProp);
+
+  makeMuesliNeoHooke(YoungsModulusAndBulkModulus{1000, 500});
+  makeMuesliNeoHooke(YoungsModulusAndPoissonsRatio{1000, 0.2});
+  makeMuesliSVK(YoungsModulusAndLamesFirstParameter{1000, 500});
+
+  return t;
+}
+
+template <DeformationType def, typename DEV>
+auto testDeviatoricMaterialResultMuesli(const DEV& dev) {
+  Dune::TestSuite t("Test Deviatoric Function Results for the material model: " + dev.name() +
+                    " with deformation type as " + toString(def));
+
+  // This is more or less copied from tests/src/testhyperelasticity.hh
+  auto [energyEx, firstDerivativesEx, secondDerivativesEx] = materialResults<DEV, def>();
+  auto deformation                                         = Deformations{};
+  constexpr double lambda                                  = 1.37;
+  auto C = Materials::Impl::maybeFromVoigt(deformation.rightCauchyGreen<def>(lambda));
+
+  auto W               = dev.template storedEnergy<StrainTags::rightCauchyGreenTensor>(C);
+  auto stress          = dev.template stresses<StrainTags::rightCauchyGreenTensor, false>(C);
+  constexpr double tol = 1e-14;
+
+  // Transform firstDerivativesEx
+  Eigen::SelfAdjointEigenSolver<decltype(C)> eigensolver{};
+  eigensolver.compute(C);
+  Eigen::Vector<double, 3> principalStretches = eigensolver.eigenvalues().array().sqrt().eval();
+  auto N                                      = eigensolver.eigenvectors().eval();
+  Eigen::Vector3d SDev                        = (firstDerivativesEx.array() / principalStretches.array()).eval();
+  Eigen::Matrix3d stressEx                    = (N * SDev.asDiagonal() * N.transpose()).eval();
+
+  // Check
+  checkScalars(t, W, energyEx, testLocation() + dev.name() + ": Incorrect Energies.", tol);
+  checkApproxMatrices(t, stress, stressEx, testLocation() + dev.name() + ": Incorrect stress.", tol);
+
+  return t;
+}
+
 template <typename MAT>
-auto checkConstructors(muesli::materialProperties matPar) {
-  TestSuite t;
-  auto mm = MAT(matPar);
+auto testDeviatoricPart(TestSuite& t, const MAT& mat) {
+  t.subTest(testDeviatoricMaterialResultMuesli<DeformationType::Undeformed>(mat));
+  t.subTest(testDeviatoricMaterialResultMuesli<DeformationType::UniaxialTensile>(mat));
+  t.subTest(testDeviatoricMaterialResultMuesli<DeformationType::BiaxialTensile>(mat));
+  t.subTest(testDeviatoricMaterialResultMuesli<DeformationType::PureShear>(mat));
+  t.subTest(testDeviatoricMaterialResultMuesli<DeformationType::Random>(mat));
+}
 
-  auto mm1{mm};
-  auto mm2 = mm1;
+auto testMuesliAgainstIkarus() {
+  TestSuite t("Test Muesli Materials against Ikarus Materials");
+  using enum StrainTags;
 
-  auto mm3 = std::forward<MAT>(mm);
+  auto [matPar, matProp] = Testing::testMatProp();
 
-  t.check(mm1.material().check()) << testLocation();
-  t.check(mm2.material().check()) << testLocation();
-  t.check(mm3.material().check()) << testLocation();
+  // Linear Elasticity
+  auto lin  = LinearElasticity(matPar);
+  auto linm = SmallStrain(matPar);
 
-  t.check(mm1.materialPoint().get() != NULL) << testLocation();
-  t.check(mm2.materialPoint().get() != NULL) << testLocation();
-  t.check(mm3.materialPoint().get() != NULL) << testLocation();
+  t.subTest(compareIkarusAndMuesli<linear>(linm, lin));
+
+  // NeoHooke
+  auto nhm = makeMuesliNeoHooke(matPar, false);
+  auto nh  = NeoHooke(matPar);
+
+  t.subTest(compareIkarusAndMuesli<rightCauchyGreenTensor>(nhm, nh));
+  t.subTest(compareIkarusAndMuesli<deformationGradient>(nhm, nh));
+  t.subTest(compareIkarusAndMuesli<greenLagrangian>(nhm, nh));
+
+  // SVK
+  auto svk  = StVenantKirchhoff(matPar);
+  auto svkm = makeMuesliSVK(matPar);
+
+  t.subTest(compareIkarusAndMuesli<rightCauchyGreenTensor>(svkm, svk));
+  t.subTest(compareIkarusAndMuesli<deformationGradient>(svkm, svk));
+  t.subTest(compareIkarusAndMuesli<greenLagrangian>(svkm, svk));
+
+  // ArrudaBoyce
+  auto K   = convertLameConstants(matPar).toBulkModulus();
+  auto ab  = makeArrudaBoyce({matPar.mu, 0.85});
+  auto abm = makeMuesliArrudaBoyce(matPar.mu, 0.85, .0, true);
+  t.subTest(compareIkarusAndMuesli<rightCauchyGreenTensor>(abm, ab));
+  testDeviatoricPart(t, abm);
+
+  // Test 2D Case
+  auto nhplaneStrain   = planeStrain(nh);
+  auto nhplanseStrainm = planeStrain(nhm);
+  t.subTest(compareIkarusAndMuesli<rightCauchyGreenTensor>(nhplanseStrainm, nhplaneStrain));
+  t.subTest(compareIkarusAndMuesli<greenLagrangian>(nhplanseStrainm, nhplaneStrain));
+
+  auto nhplaneStress  = planeStress(nh);
+  auto nhplaneStressm = planeStress(nhm);
+  t.subTest(compareIkarusAndMuesli<rightCauchyGreenTensor>(nhplaneStressm, nhplaneStress));
+  t.subTest(compareIkarusAndMuesli<greenLagrangian>(nhplaneStressm, nhplaneStress));
+
+  // Test name Funciton
+  t.check(svkm.name() == "FiniteStrain: SvkMaterial");
+  t.check(nhm.name() == "FiniteStrain: NeohookeanMaterial");
+  t.check(linm.name() == "SmallStrain: ElasticIsotropicMaterial");
 
   return t;
 }
 
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
-  TestSuite t;
+  TestSuite t("Muesli Materials Test");
 
-  auto matPar_ = testMatPar();
-  auto matPar  = toLamesFirstParameterAndShearModulus(matPar_);
-  auto matProp = propertiesFromIkarusMaterialParameters(matPar);
-
-  auto lin  = LinearElasticity(matPar);
-  auto linm = SmallStrain(matPar);
-
-  t.subTest(compareIkarusAndMuesli<StrainTags::linear>(linm, lin));
-
-  auto nhm = makeMuesliNeoHooke(matPar, false);
-  auto nh  = NeoHooke(matPar);
-
-  t.subTest(compareIkarusAndMuesli<StrainTags::rightCauchyGreenTensor>(nhm, nh));
-  t.subTest(compareIkarusAndMuesli<StrainTags::deformationGradient>(nhm, nh));
-  t.subTest(compareIkarusAndMuesli<StrainTags::greenLagrangian>(nhm, nh));
-
-  auto svk  = StVenantKirchhoff(matPar);
-  auto svkm = makeMuesliSVK(matPar);
-
-  t.subTest(compareIkarusAndMuesli<StrainTags::rightCauchyGreenTensor>(svkm, svk));
-  t.subTest(compareIkarusAndMuesli<StrainTags::deformationGradient>(svkm, svk));
-  t.subTest(compareIkarusAndMuesli<StrainTags::greenLagrangian>(svkm, svk));
-
-  auto nhplaneStrain   = planeStrain(nh);
-  auto nhplanseStrainm = planeStrain(nhm);
-  t.subTest(compareIkarusAndMuesli<StrainTags::rightCauchyGreenTensor>(nhplanseStrainm, nhplaneStrain));
-
-  auto nhplaneStress  = planeStress(nh);
-  auto nhplaneStressm = planeStress(nhm);
-  t.subTest(compareIkarusAndMuesli<StrainTags::rightCauchyGreenTensor>(nhplaneStressm, nhplaneStress));
-
-  t.subTest(checkConstructors<FiniteStrain<muesli::neohookeanMaterial>>(matProp));
-  t.subTest(checkConstructors<FiniteStrain<muesli::svkMaterial>>(matProp));
-  t.subTest(checkConstructors<SmallStrain<muesli::elasticIsotropicMaterial>>(matProp));
-
-  makeMuesliNeoHooke(YoungsModulusAndBulkModulus{1000, 500});
-  makeMuesliNeoHooke(YoungsModulusAndPoissonsRatio{1000, 0.2});
-  makeMuesliSVK(YoungsModulusAndLamesFirstParameter{1000, 500});
-
-  t.check(svkm.name() == "FiniteStrain: SvkMaterial");
-  t.check(nhm.name() == "FiniteStrain: NeohookeanMaterial");
-  t.check(linm.name() == "SmallStrain: ElasticIsotropicMaterial");
+  t.subTest(checkConstructors());
+  t.subTest(testMuesliAgainstIkarus());
 
   return t.exit();
 }

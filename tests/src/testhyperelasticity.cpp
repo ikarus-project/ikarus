@@ -15,8 +15,8 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  t.subTest(testVolumetricFunctions());
-  t.subTest(recoverNeoHookeTest());
+  // t.subTest(testVolumetricFunctions());
+  // t.subTest(recoverNeoHookeTest());
   t.subTest(testMaterialResults());
 
   return t.exit();

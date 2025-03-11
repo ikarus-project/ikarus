@@ -108,7 +108,7 @@ struct SmallStrain : public Material<SmallStrain<SM>>
       if constexpr (!Concepts::EigenVector<Derived>) {
         updateState(E);
         mp_->stress(stress_);
-        return toMatrix(stress_);
+        return toEigenMatrix(stress_);
       } else
         static_assert(!Concepts::EigenVector<Derived>,
                       "MuesliSmallStrain can only be called with a matrix and not a vector in Voigt notation");
@@ -130,7 +130,7 @@ struct SmallStrain : public Material<SmallStrain<SM>>
       if constexpr (!Concepts::EigenVector<Derived>) {
         updateState(E);
         mp_->tangentTensor(tangentModuli_);
-        return toTensor(tangentModuli_);
+        return toEigenTensor(tangentModuli_);
       } else
         static_assert(!Concepts::EigenVector<Derived>,
                       "MuesliSmallStrain can only be called with a matrix and not a vector in Voigt notation");
@@ -166,7 +166,7 @@ private:
 
   template <typename Derived>
   void updateState(const Eigen::MatrixBase<Derived>& E) const {
-    toistensor(strain_, E);
+    toistensor(strain_, E.derived());
     mp_->updateCurrentState(0.0, strain_);
   }
 };
