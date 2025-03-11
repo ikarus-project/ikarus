@@ -390,11 +390,11 @@ struct FunctionTraits<T, Dune::void_t<decltype(&T::operator())>> : public Functi
 #endif
 
 /**
- * @brief Helper to replace the type at a specific position in a tuple.
+ * \brief Helper to replace the type at a specific position in a tuple.
  *
- * @tparam Tuple The tuple type.
- * @tparam Pos The position to replace.
- * @tparam NewType The new type to insert.
+ * \tparam Tuple The tuple type.
+ * \tparam Pos The position to replace.
+ * \tparam NewType The new type to insert.
  */
 template <typename Tuple, std::size_t Pos, typename NewType>
 struct ReplaceTypeAtPos;
@@ -413,20 +413,20 @@ public:
 #endif
 
 /**
- * @brief Alias template for ReplaceTypeAtPos.
+ * \brief Alias template for ReplaceTypeAtPos.
  *
- * @tparam Tuple The tuple type.
- * @tparam Pos The position to replace.
- * @tparam NewType The new type to insert.
+ * \tparam Tuple The tuple type.
+ * \tparam Pos The position to replace.
+ * \tparam NewType The new type to insert.
  */
 template <typename Tuple, std::size_t Pos, typename NewType>
 using ReplaceTypeAtPos_t = typename ReplaceTypeAtPos<Tuple, Pos, NewType>::type;
 
 /**
- * @brief Helper to convert a tuple to a function type.
+ * \brief Helper to convert a tuple to a function type.
  *
- * @tparam R The return type.
- * @tparam Tuple The tuple type representing the argument types.
+ * \tparam R The return type.
+ * \tparam Tuple The tuple type representing the argument types.
  */
 template <typename R, typename Tuple>
 struct TupleToFunctionType;
@@ -440,20 +440,20 @@ struct TupleToFunctionType<R, std::tuple<Args...>>
 #endif
 
 /**
- * @brief Alias template for TupleToFunctionType.
+ * \brief Alias template for TupleToFunctionType.
  *
- * @tparam R The return type.
- * @tparam Tuple The tuple type representing the argument types.
+ * \tparam R The return type.
+ * \tparam Tuple The tuple type representing the argument types.
  */
 template <typename R, typename Tuple>
 using TupleToFunctionType_t = typename TupleToFunctionType<R, Tuple>::type;
 
 /**
- * @brief Main function to wrap the type at position pos in a std::function.
+ * \brief Main function to wrap the type at position pos in a std::function.
  *
- * @tparam Func The std::function type.
- * @tparam Pos The position to wrap.
- * @tparam NewType The new type to wrap.
+ * \tparam Func The std::function type.
+ * \tparam Pos The position to wrap.
+ * \tparam NewType The new type to wrap.
  */
 template <typename Func, std::size_t Pos, typename NewType>
 struct ChangeArgTypeAtPos;
@@ -470,11 +470,11 @@ struct ChangeArgTypeAtPos<std::function<R(Args...)>, Pos, NewType>
 #endif
 
 /**
- * @brief Concept to check if a type is an Eigen SparseMatrix.
+ * \brief Concept to check if a type is an Eigen SparseMatrix.
  *
  * This concept checks if the given type is derived from Eigen::SparseMatrixBase.
  *
- * @tparam T The type to check.
+ * \tparam T The type to check.
  */
 template <typename T>
 concept EigenSparseMatrix = std::is_base_of_v<Eigen::SparseMatrixBase<T>, T>;

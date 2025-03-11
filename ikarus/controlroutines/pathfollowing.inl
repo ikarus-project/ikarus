@@ -4,7 +4,7 @@
 /*!
  * \file pathfollowing.inl
  * \brief Implementation of the run function
- * @ingroup  controlroutines
+ * \ingroup  controlroutines
  */
 
 #pragma once
