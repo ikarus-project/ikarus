@@ -51,7 +51,7 @@ struct TCGInfo
 namespace internal {
 
   /**
-   * @internal
+   * \internal
    * \brief Low-level truncated conjugate gradient algorithm.
    * \tparam MatrixType Type of the matrix A.
    * \tparam Rhs Type of the right-hand side vector b.
@@ -185,7 +185,7 @@ namespace internal {
 } // namespace internal
 
 /**
- * @class TruncatedConjugateGradient
+ * \class TruncatedConjugateGradient
  * \brief Iterative solver for solving linear systems using the truncated conjugate gradient method.
  * \tparam M Type of the matrix A.
  * \tparam upLo Type of the triangular part of the matrix (Lower or Upper or both).
