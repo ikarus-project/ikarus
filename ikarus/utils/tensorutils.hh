@@ -327,29 +327,44 @@ auto fromVoigt(const Eigen::Matrix<ST, size, 1, Options, maxSize, 1>& EVoigt, bo
 
 /**
  * \brief Converts a Voigt notation index to matrix indices.
- *  \ingroup tensor
+ * \ingroup tensor
+ * \tparam dim dimension (either 2d or 3d), defaults to 3
  * \param i Voigt notation index.
  * \return Matrix indices corresponding to the Voigt notation index.
- *  \details
+ * \details
  * This function converts a Voigt notation index to the corresponding matrix indices. The mapping is based on the
  * assumption that the Voigt notation indices 0, 1, and 2 represent the diagonal components `00`, `11`, and `22`,
  * respectively. The remaining Voigt notation indices (3, 4, and 5) correspond to the off-diagonal components
- * (`12` and `21`, `02` and `20`, `01` and `10`).
+ * (`12` and `21`, `02` and `20`, `01` and `10`). For 2D only `00`, `11` on the main diagonal exist and `12` and `21`
+ * for the off-diagonal.
  *
- * The function asserts that the input index is within the valid range for Voigt notation (0 to 5).
+ * The function asserts that the input index is within the valid range for Voigt notation (0 to 5) or (0 to 2) for 2d.
  */
+template <int dim = 3>
+requires(dim == 2 or dim == 3)
 constexpr std::array<size_t, 2> fromVoigt(size_t i) {
-  if (i < 3) // _00 -> 0, _11 -> 1,  _22 -> 2
-    return {i, i};
-  else if (i == 3)
-    return {1, 2};
-  else if (i == 4)
-    return {0, 2};
-  else if (i == 5)
-    return {0, 1};
-  else {
-    assert(i < 6 && "For Voigt notation the indices need to be 0 and 5.");
-    __builtin_unreachable();
+  if constexpr (dim == 3) {
+    if (i < 3) // _00 -> 0, _11 -> 1,  _22 -> 2
+      return {i, i};
+    else if (i == 3)
+      return {1, 2};
+    else if (i == 4)
+      return {0, 2};
+    else if (i == 5)
+      return {0, 1};
+    else {
+      assert(i < 6 && "For Voigt notation the indices need to be between 0 and 5.");
+      __builtin_unreachable();
+    }
+  } else {
+    if (i < 2) // _00 -> 0, _11 -> 1
+      return {i, i};
+    else if (i == 2)
+      return {0, 1};
+    else {
+      assert(i < 3 && "For Voigt notation the indices need to be between 0 and 2.");
+      __builtin_unreachable();
+    }
   }
 }
 
@@ -364,14 +379,15 @@ constexpr std::array<size_t, 2> fromVoigt(size_t i) {
  * `fromVoigt` function to map matrix indices to tensor indices. The resulting tensor is symmetric due to symmetry
  * considerations.
  */
-template <typename ScalarType>
-auto fromVoigt(const Eigen::Matrix<ScalarType, 6, 6>& CVoigt) {
-  Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> C;
+template <typename ScalarType, int size>
+auto fromVoigt(const Eigen::Matrix<ScalarType, size, size>& CVoigt) {
+  constexpr int dim = (-1 + ct_sqrt(1 + 8 * size)) / 2;
+  Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>> C;
   // size_t iR=0,jR=0;
-  for (size_t i = 0; i < 6; ++i) {
-    for (size_t j = 0; j < 6; ++j) {
-      auto firstIndices                                                       = fromVoigt(i);
-      auto secondIndices                                                      = fromVoigt(j);
+  for (size_t i = 0; i < size; ++i) {
+    for (size_t j = 0; j < size; ++j) {
+      auto firstIndices                                                       = fromVoigt<dim>(i);
+      auto secondIndices                                                      = fromVoigt<dim>(j);
       C(firstIndices[0], firstIndices[1], secondIndices[0], secondIndices[1]) = CVoigt(i, j);
     }
   }

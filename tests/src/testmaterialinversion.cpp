@@ -8,6 +8,8 @@
 
 #include <dune/common/test/testsuite.hh>
 
+#include <autodiff/forward/dual.hpp>
+
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/mechanics/materials/numericalmaterialinversion.hh>
 #include <ikarus/utils/init.hh>
@@ -18,13 +20,23 @@ using namespace Ikarus;
 
 namespace Testing {
 
+static constexpr auto allStressStates =
+    std::array{DeformationState::Undeformed, DeformationState::Uniaxial, DeformationState::Biaxial,
+               DeformationState::PureShear, DeformationState::Random};
+
+template <int dim>
 struct StressStates
 {
-  using enum DeformationState;
-  static constexpr int dim = 3;
-  using MatrixType         = Eigen::Matrix<double, dim, dim>;
+  static Eigen::Matrix<double, 3, 3> randomMatrix() {
+    return Eigen::Matrix<double, 3, 3>{
+        {  0.600872, -0.179083, -0.1193886},
+        { -0.179083,  0.859121,    -0.0358},
+        {-0.1193886,   -0.0358,          1}
+    };
+  }
 
-  static constexpr auto allStressStates = std::array{Undeformed, Uniaxial, Biaxial, PureShear, Random};
+  using enum DeformationState;
+  using MatrixType = Eigen::Matrix<double, dim, dim>;
 
   static MatrixType PK2Stress(DeformationState ST, double lambda) {
     if (ST == Undeformed)
@@ -62,7 +74,16 @@ private:
     return m;
   }
 
-  static MatrixType random(double) { return testMatrix(); }
+  static MatrixType random(double)
+  requires(dim == 3)
+  {
+    return randomMatrix();
+  }
+  static MatrixType random(double)
+  requires(dim == 2)
+  {
+    return randomMatrix().block<2, 2>(0, 0);
+  }
 };
 
 auto commonErrorMessage(double tol, const std::string& stressStateName) {
@@ -74,21 +95,68 @@ auto commonErrorMessage(double tol, const std::string& stressStateName) {
   return errorMessage;
 }
 
-template <typename Material, StrainTags tag, bool useVoigt = true>
-void testMaterialInversionMethod(TestSuite& t, const Material& material, const Eigen::Matrix3d& stressState, double tol,
+template <typename Material, StrainTags tag, int dim, bool useVoigt = true>
+void testMaterialInversionMethod(TestSuite& t, const Material& material,
+                                 const Eigen::Matrix<double, dim, dim>& stressState, double tol,
                                  const std::string& errorMessage) {
-  auto [D, strain]    = material.template materialInversion<tag, useVoigt>(stressState);
-  auto computedStress = material.template stresses<tag>(strain);
+  // Input for 2d materials only as voigt
+  auto [D, strain]    = material.template materialInversion<tag, useVoigt>(toVoigt(stressState, false));
+  auto computedStress = material.template stresses<tag>(Impl::maybeToVoigt(strain, true));
+
   checkApproxVectors(t, computedStress, toVoigt(stressState, false), errorMessage, tol);
 }
 
-template <typename Material>
-void testNumericalMaterialInversion(TestSuite& t, const Material& material, const Eigen::Matrix3d& stressState,
-                                    double tol, const std::string& errorMessage,
-                                    const Eigen::Matrix3d& initialValue = Eigen::Matrix3d::Zero()) {
+template <typename Material, int dim>
+void testNumericalMaterialInversion(
+    TestSuite& t, const Material& material, const Eigen::Matrix<double, dim, dim>& stressState, double tol,
+    const std::string& errorMessage,
+    const Eigen::Matrix<double, dim, dim>& initialValue = Eigen::Matrix<double, dim, dim>::Zero()) {
   auto [D, strain]    = numericalMaterialInversion(material, stressState, initialValue);
-  auto computedStress = material.template stresses<Material::strainTag>(strain);
+  auto computedStress = material.template stresses<Material::strainTag>(toVoigt(strain));
   checkApproxVectors(t, computedStress, toVoigt(stressState, false), errorMessage, tol);
+}
+
+template <auto n, Concepts::EigenVector6 Vec>
+auto testIndicesToBeZero(TestSuite& t, const std::array<std::size_t, n>& indicesToBeZero, const Vec& vec,
+                         const std::string& name) {
+  std::vector<size_t> indicesNotZero;
+  for (auto i : indicesToBeZero)
+    if (Dune::FloatCmp::eq(vec[i], 1e-10))
+      indicesNotZero.push_back(i);
+
+  Eigen::VectorX<size_t> indicesNotZeroEigen =
+      Eigen::Map<Eigen::VectorX<size_t>>(indicesNotZero.data(), indicesNotZero.size());
+
+  t.check(indicesNotZero.empty()) << name << " not zero at " << indicesNotZeroEigen.transpose()
+                                  << "\n Vector is: " << vec.transpose();
+}
+
+Eigen::Matrix3d planeStrainElasticity(double E, double nu) {
+  Eigen::Matrix3d C;
+  double factor = E / ((1 + nu) * (1 - 2 * nu));
+  C << 1 - nu, nu, 0, nu, 1 - nu, 0, 0, 0, (1 - 2 * nu) / 2;
+  return factor * C;
+}
+
+Eigen::Matrix3d planeStressElasticity(double E, double nu) {
+  Eigen::Matrix3d C;
+  double factor = E / (1 - nu * nu);
+  C << 1, nu, 0, nu, 1, 0, 0, 0, (1 - nu) / 2;
+  return factor * C;
+}
+
+Eigen::Matrix<double, 6, 6> elasticityTensor3D(double E, double nu) {
+  Eigen::Matrix<double, 6, 6> C;
+  double factor = E / ((1 + nu) * (1 - 2 * nu));
+  // clang-format off
+    C << 1 - nu,  nu,      nu,      0,       0,       0,
+         nu,      1 - nu,  nu,      0,       0,       0,
+         nu,      nu,      1 - nu,  0,       0,       0,
+         0,       0,       0,       (1 - 2 * nu) / 2, 0, 0,
+         0,       0,       0,       0,       (1 - 2 * nu) / 2, 0,
+         0,       0,       0,       0,       0,       (1 - 2 * nu) / 2;
+  // clang-format on
+  return factor * C;
 }
 } // namespace Testing
 
@@ -117,82 +185,102 @@ auto testMatPar(double nu, double Emod = 1000) {
   return LamesFirstParameterAndShearModulus(Lambda, mu);
 }
 
-template <typename Material>
-TestSuite testMaterial(double nu, const Eigen::Matrix3d& stressState, const std::string& stressStateName) {
+template <typename Material, int dim>
+TestSuite testMaterial(const Material& material, double nu, const Eigen::Matrix<double, dim, dim>& stressState,
+                       const std::string& stressStateName) {
   using namespace Ikarus::Materials;
   TestSuite t("Testing " + Material::name() + " with nu = " + std::to_string(nu));
 
-  double tol        = nu > 0.45 ? (std::same_as<Material, NeoHooke> ? 1e-8 : 1e-9) : 1e-12;
-  auto errorMessage = Testing::commonErrorMessage(tol, stressStateName);
+  double tol = nu > 0.45 ? (std::same_as<Material, NeoHooke> ? 1e-8 : 1e-9) : 1e-12;
+  // For plane stress we also increase the tolerance
+  if (Ikarus::traits::isSpecializationNonTypeAndTypes<Ikarus::Materials::VanishingStress, Material>::value)
+    tol = std::max(tol, 1e-9);
 
-  auto matPar = testMatPar(nu);
-  Material material(matPar);
+  const auto errorMessage = Testing::commonErrorMessage(tol, stressStateName);
 
   // --- Test using the impl method ---
-  {
+  if constexpr (dim == 3) {
     auto [D, strainMeasure] = material.materialInversionImpl(stressState);
     auto computedStress     = material.template stresses<Material::strainTag>(strainMeasure);
     checkApproxVectors(t, computedStress, toVoigt(stressState, false), errorMessage, tol);
   }
   // --- Test using the greenLagrangian strain tag ---
-  Testing::testMaterialInversionMethod<Material, Ikarus::StrainTags::greenLagrangian>(t, material, stressState, tol,
-                                                                                      errorMessage);
+  Testing::testMaterialInversionMethod<Material, Ikarus::StrainTags::greenLagrangian, dim>(t, material, stressState,
+                                                                                           tol, errorMessage);
   // --- Test using the rightCauchyGreenTensor strain tag ---
-  Testing::testMaterialInversionMethod<Material, Ikarus::StrainTags::rightCauchyGreenTensor>(t, material, stressState,
-                                                                                             tol, errorMessage);
+  Testing::testMaterialInversionMethod<Material, Ikarus::StrainTags::rightCauchyGreenTensor, dim>(
+      t, material, stressState, tol, errorMessage);
   // --- Test using the numerical approach ---
   { // Obtain Esave and pertube slightly
-    auto [_, Esave] = material.template materialInversion<Ikarus::StrainTags::greenLagrangian, false>(stressState);
+    auto [_, Esave] =
+        material.template materialInversion<Ikarus::StrainTags::greenLagrangian, false>(toVoigt(stressState, false));
     Esave.diagonal().array() += 0.1;
     Testing::testNumericalMaterialInversion(t, material, stressState, tol, errorMessage, Esave);
   }
   // --- Test using the greenLagrangian strain tag and non voigt notation---
-  Testing::testMaterialInversionMethod<Material, Ikarus::StrainTags::greenLagrangian, false>(t, material, stressState,
-                                                                                             tol, errorMessage);
+  Testing::testMaterialInversionMethod<Material, Ikarus::StrainTags::greenLagrangian, dim, false>(
+      t, material, stressState, tol, errorMessage);
 
   return t;
 }
 
-template <Concepts::Material Material>
-auto testHyperelasticMaterials(const Material& material, const Eigen::Matrix3d& stressState,
-                               const std::string& stressStateName) {
+template <Concepts::Material Material, int dim>
+auto testHyperelasticMaterials(const Material& material, const Eigen::Matrix<double, dim, dim>& stressState,
+                               const std::string& stressStateName, double tol) {
   TestSuite t("Testing " + Material::name());
-  double tol        = 1e-10;
   auto errorMessage = Testing::commonErrorMessage(tol, stressStateName);
 
   // --- Test using the numerical method directly ---
   Testing::testNumericalMaterialInversion(t, material, stressState, tol, errorMessage);
   // --- Test using the greenLagrangian strain tag ---
-  Testing::testMaterialInversionMethod<Material, Ikarus::StrainTags::greenLagrangian>(t, material, stressState, tol,
-                                                                                      errorMessage);
+  Testing::testMaterialInversionMethod<Material, Ikarus::StrainTags::greenLagrangian, dim>(t, material, stressState,
+                                                                                           tol, errorMessage);
   // --- Test using the rightCauchyGreenTensor strain tag ---
-  Testing::testMaterialInversionMethod<Material, Ikarus::StrainTags::rightCauchyGreenTensor>(t, material, stressState,
-                                                                                             tol, errorMessage);
+  Testing::testMaterialInversionMethod<Material, Ikarus::StrainTags::rightCauchyGreenTensor, dim>(
+      t, material, stressState, tol, errorMessage);
   // --- Test using the greenLagrangian strain tag and non voigt notation---
-  Testing::testMaterialInversionMethod<Material, Ikarus::StrainTags::greenLagrangian, false>(t, material, stressState,
-                                                                                             tol, errorMessage);
+  Testing::testMaterialInversionMethod<Material, Ikarus::StrainTags::greenLagrangian, dim, false>(
+      t, material, stressState, tol, errorMessage);
 
   return t;
 }
 
-auto testMaterialInversions3D() {
+auto testMaterialInversionForSVKAndNH() {
   using namespace Materials;
   using namespace Testing;
   TestSuite t("Material Inversions");
 
+  auto dimRange = Dune::Hybrid::integralRange(std::integral_constant<int, 2>(), std::integral_constant<int, 4>());
+
   for (auto nu : std::array{0.0, 0.25, 0.35, 0.4999})
     for (auto lambda : std::array{-0.5, 0.5, -100., 100., -1000.})
-      for (auto stressState : StressStates::allStressStates) {
+      for (auto stressState : allStressStates) {
         if (std::fabs(lambda) > 100 && stressState == DeformationState::PureShear)
           break;
-        t.subTest(
-            testMaterial<StVenantKirchhoff>(nu, StressStates::PK2Stress(stressState, lambda), toString(stressState)));
-        t.subTest(testMaterial<NeoHooke>(nu, StressStates::PK2Stress(stressState, lambda), toString(stressState)));
+
+        auto matPar = testMatPar(nu);
+        auto svk    = StVenantKirchhoff(matPar);
+        auto nh     = NeoHooke(matPar);
+
+        /** For the VanishingStrain and VanishingStress case, by default `numericalMaterialInversion` is used.
+         *  Since then a starting value is unavailable, the test is only for smaller stress states,
+         *  such that convergence is obtained with the undeformed state being the initial value.
+         */
+        if (std::abs(lambda) < 100) {
+          t.subTest(testMaterial(planeStrain(svk), nu, StressStates<2>::PK2Stress(stressState, lambda),
+                                 toString(stressState)));
+          t.subTest(testMaterial(planeStrain(nh), nu, StressStates<2>::PK2Stress(stressState, lambda),
+                                 toString(stressState)));
+          t.subTest(testMaterial(planeStress(svk, 1e-9), nu, StressStates<2>::PK2Stress(stressState, lambda),
+                                 toString(stressState)));
+          t.subTest(testMaterial(planeStress(nh, 1e-9), nu, StressStates<2>::PK2Stress(stressState, lambda),
+                                 toString(stressState)));
+        }
       }
   return t;
 }
 
-auto testNumericalInversions3d() {
+auto testHyperelasticMaterialInversion() {
   using namespace Materials;
   using namespace Testing;
 
@@ -223,9 +311,103 @@ auto testNumericalInversions3d() {
 
   Dune::Hybrid::forEach(matTuple, [](const auto& mat) {
     for (auto lambda : std::array{-0.5, 0.5})
-      for (auto stressState : StressStates::allStressStates)
-        testHyperelasticMaterials(mat, StressStates::PK2Stress(stressState, lambda), toString(stressState));
+      for (auto stressState : allStressStates) {
+        testHyperelasticMaterials(mat, StressStates<3>::PK2Stress(stressState, lambda), toString(stressState), 1e-10);
+        testHyperelasticMaterials(planeStrain(mat), StressStates<2>::PK2Stress(stressState, lambda),
+                                  toString(stressState), 1e-10);
+        testHyperelasticMaterials(planeStress(mat, 1e-9), StressStates<2>::PK2Stress(stressState, lambda),
+                                  toString(stressState), 1e-9);
+      }
   });
+
+  return t;
+}
+
+template <Concepts::Material Material>
+auto testPlaneStrainPlaneStressConditions() {
+  using namespace Materials;
+  using namespace Testing;
+
+  auto matPar    = testMatPar(0.3);
+  auto mat3d     = Material(matPar);
+  auto mat2D_sig = planeStress(mat3d, 1e-9);
+  auto mat2D_eps = planeStrain(mat3d);
+
+  const auto GLStrain = StrainTags::greenLagrangian;
+
+  TestSuite t("Testing PlaneStrain PlaneStress Conditions " + mat3d.name());
+
+  // We start from a "random" 2d stress state
+  auto stressState                = StressStates<2>::PK2Stress(DeformationState::Random, 0.0);
+  Eigen::Vector<double, 3> Svoigt = toVoigt(stressState, false);
+
+  // Plane Stress case
+  auto [_, E_sig] = mat2D_sig.template materialInversion<GLStrain, true>(Svoigt);
+
+  // Plane Strain case
+  auto [__, E_eps] = mat2D_eps.template materialInversion<GLStrain, true>(Svoigt);
+
+  auto E_sig_full = enlargeIfReduced<decltype(mat2D_sig)>(E_sig).eval();
+  auto E_eps_full = enlargeIfReduced<decltype(mat2D_eps)>(E_eps).eval();
+
+  auto sig_sig_final = mat3d.template stresses<GLStrain, true>(E_sig_full);
+  auto sig_eps       = mat3d.template stresses<GLStrain, true>(E_eps_full);
+
+  auto [D_eps, eps_eps_final] = mat3d.template materialInversion<GLStrain, true>(sig_eps);
+
+  auto indicesToBeZero = std::array<size_t, 3>{2, 3, 4};
+  testIndicesToBeZero(t, indicesToBeZero, sig_sig_final, "sig_sig_final");
+  testIndicesToBeZero(t, indicesToBeZero, eps_eps_final, "eps_eps_final");
+
+  return t;
+}
+
+auto checkSVK() {
+  using namespace Materials;
+  using namespace Testing;
+
+  TestSuite t("Testing SVK 2D");
+
+  double nu = 0.3, Emod = 1000;
+  auto matPar    = testMatPar(nu, Emod);
+  auto mat3d     = StVenantKirchhoff(matPar);
+  auto mat2D_sig = planeStress(mat3d, 1e-9);
+  auto mat2D_eps = planeStrain(mat3d);
+  auto zero      = Eigen::Vector3d::Zero().eval();
+  auto zero3d    = Eigen::Vector<double, 6>::Zero().eval();
+
+  auto C_sig = mat2D_sig.tangentModuli<StrainTags::greenLagrangian, true>(zero);
+  auto C_eps = mat2D_eps.tangentModuli<StrainTags::greenLagrangian, true>(zero);
+
+  checkApproxMatrices(t, C_sig, planeStressElasticity(Emod, nu), "TangentModuli not same for plane stress");
+  checkApproxMatrices(t, C_eps, planeStrainElasticity(Emod, nu), "TangentModuli not same for plane strain");
+
+  auto [D_sig, _]  = mat2D_sig.template materialInversion<StrainTags::greenLagrangian, true>(zero);
+  auto [D_eps, __] = mat2D_eps.template materialInversion<StrainTags::greenLagrangian, true>(zero);
+
+  checkApproxMatrices(t, D_sig, planeStressElasticity(Emod, nu).inverse().eval(),
+                      "Inverse tangentModuli not same for plane stress");
+
+  checkApproxMatrices(t, D_eps, planeStrainElasticity(Emod, nu).inverse().eval(),
+                      "Inverse tangentModuli not same for plane strain");
+
+  auto [D_sig_numeric, ___] = mat2D_sig.template materialInversion<StrainTags::greenLagrangian, true, true>(zero);
+
+  checkApproxMatrices(t, D_sig, D_sig_numeric, "Inverse tangentModuli should be the same for numeric and non-numeric");
+
+  checkApproxMatrices(t, D_sig_numeric, planeStressElasticity(Emod, nu).inverse().eval(),
+                      "Inverse tangentModuli not same for plane stress (numeric approach)");
+
+  // 3D test
+  auto C = mat3d.tangentModuli<StrainTags::greenLagrangian, true>(zero3d);
+  checkApproxMatrices(t, C, elasticityTensor3D(Emod, nu), "TangentModuli not same for 3D");
+
+  auto [D, ____] = mat3d.template materialInversion<StrainTags::greenLagrangian, true>(zero3d);
+  checkApproxMatrices(t, D, elasticityTensor3D(Emod, nu).inverse().eval(), "Inverse tangentModuli not same for 3D");
+
+  auto [D_numeric, _____] = mat3d.template materialInversion<StrainTags::greenLagrangian, true>(zero3d);
+  checkApproxMatrices(t, D_numeric, elasticityTensor3D(Emod, nu).inverse().eval(),
+                      "Inverse tangentModuli not same for 3D (numeric approach)");
 
   return t;
 }
@@ -236,8 +418,16 @@ int main(int argc, char** argv) {
 
   t.subTest(testLambertW<double>());
   t.subTest(testLambertW<long double>());
-  t.subTest(testMaterialInversions3D());
-  t.subTest(testNumericalInversions3d());
+  t.subTest(testLambertW<autodiff::dual1st>());
+  t.subTest(testLambertW<autodiff::dual2nd>());
+
+  t.subTest(testMaterialInversionForSVKAndNH());
+  t.subTest(testHyperelasticMaterialInversion());
+
+  t.subTest(testPlaneStrainPlaneStressConditions<StVenantKirchhoff>());
+  t.subTest(testPlaneStrainPlaneStressConditions<NeoHooke>());
+
+  t.subTest(checkSVK());
 
   return t.exit();
 }

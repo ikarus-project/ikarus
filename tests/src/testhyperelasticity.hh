@@ -220,7 +220,7 @@ auto testMaterialResult(const DEV& dev) {
   auto [energyEx, firstDerivativesEx, secondDerivativesEx] = materialResults<DEV, def>();
   auto deformation                                         = Deformations{};
   constexpr double lambda                                  = 1.37;
-  auto C = Materials::Impl::maybeFromVoigt(deformation.rightCauchyGreen<def>(lambda));
+  auto C = Impl::maybeFromVoigt(deformation.rightCauchyGreen<def>(lambda));
   Eigen::SelfAdjointEigenSolver<decltype(C)> eigensolver{};
   eigensolver.compute(C, Eigen::EigenvaluesOnly);
   Eigen::Vector<double, 3> principalStretches = eigensolver.eigenvalues().array().sqrt().eval();

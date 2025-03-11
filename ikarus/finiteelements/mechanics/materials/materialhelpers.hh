@@ -28,7 +28,7 @@ struct MatrixIndexPair
   Eigen::Index col; ///< Column index.
 };
 } // namespace Ikarus::Materials
-namespace Ikarus::Materials::Impl {
+namespace Ikarus::Impl {
 
 /**
  * \brief Helper function to create an array of free Voigt indices.
@@ -37,7 +37,7 @@ namespace Ikarus::Materials::Impl {
  * \return std::array<size_t, 6 - size> The array of free Voigt indices.
  */
 template <size_t size>
-consteval auto createfreeVoigtIndices(const std::array<MatrixIndexPair, size>& fixed) {
+consteval auto createfreeVoigtIndices(const std::array<Materials::MatrixIndexPair, size>& fixed) {
   std::array<size_t, 6 - size> res{};
   std::array<size_t, size> voigtFixedIndices;
   std::ranges::transform(fixed, voigtFixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
@@ -54,7 +54,7 @@ consteval auto createfreeVoigtIndices(const std::array<MatrixIndexPair, size>& f
  * \return std::array<size_t, size> The array of fixed Voigt indices.
  */
 template <size_t size>
-consteval auto createFixedVoigtIndices(const std::array<MatrixIndexPair, size>& fixed) {
+consteval auto createFixedVoigtIndices(const std::array<Materials::MatrixIndexPair, size>& fixed) {
   std::array<size_t, size> fixedIndices;
   std::ranges::transform(fixed, fixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
   std::ranges::sort(fixedIndices);
@@ -68,7 +68,7 @@ consteval auto createFixedVoigtIndices(const std::array<MatrixIndexPair, size>& 
  * \return constexpr size_t The number of diagonal indices.
  */
 template <size_t size>
-constexpr size_t countDiagonalIndices(const std::array<MatrixIndexPair, size>& fixed) {
+constexpr size_t countDiagonalIndices(const std::array<Materials::MatrixIndexPair, size>& fixed) {
   size_t count = 0;
   for (auto v : fixed) {
     if (v.col == v.row)
@@ -86,11 +86,11 @@ constexpr size_t countDiagonalIndices(const std::array<MatrixIndexPair, size>& f
  * \return decltype(auto) The converted matrix.
  */
 template <typename Derived>
-decltype(auto) maybeFromVoigt(const Eigen::MatrixBase<Derived>& v, bool isStrain = true) {
+auto maybeFromVoigt(const Eigen::MatrixBase<Derived>& v, bool isStrain = true) {
   if constexpr (Concepts::EigenVector<Derived>) { // receiving vector means Voigt notation
-    return fromVoigt(v.derived(), isStrain);
+    return fromVoigt(v.derived(), isStrain).eval();
   } else
-    return v.derived();
+    return v.derived().eval();
 }
 
 /**
@@ -102,11 +102,11 @@ decltype(auto) maybeFromVoigt(const Eigen::MatrixBase<Derived>& v, bool isStrain
  * \return decltype(auto) The converted vector.
  */
 template <typename Derived>
-decltype(auto) maybeToVoigt(const Eigen::MatrixBase<Derived>& v, bool isStrain = false) {
+auto maybeToVoigt(const Eigen::MatrixBase<Derived>& v, bool isStrain = false) {
   if constexpr (Concepts::EigenVector<Derived>) { // receiving vector means Voigt notation
-    return v.derived();
+    return v.derived().eval();
   } else
-    return toVoigt(v.derived(), isStrain);
+    return toVoigt(v.derived(), isStrain).eval();
 }
 
 /**
@@ -199,4 +199,4 @@ inline Vector invariants(const Vector& lambda) {
 
   return invariants;
 }
-} // namespace Ikarus::Materials::Impl
+} // namespace Ikarus::Impl

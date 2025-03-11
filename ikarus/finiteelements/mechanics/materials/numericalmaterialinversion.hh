@@ -35,27 +35,36 @@ namespace Ikarus::Materials {
  */
 template <Concepts::Material Material, typename Derived>
 auto numericalMaterialInversion(const Material& mat, const Eigen::MatrixBase<Derived>& S,
-                                const Eigen::MatrixBase<Derived>& Estart = Derived::Zero().eval(), double tol = 1e-10,
-                                int maxIter = 20) {
-  static_assert(Concepts::EigenMatrix33<decltype(S)>);
-  Derived Es = Estart; // starting value
+                                const Eigen::MatrixBase<Derived>& Estart = Derived::Zero().eval(),
+                                const double tol = 1e-12, const int maxIter = 20) {
+  static_assert(Concepts::EigenMatrix33<decltype(S)> or Concepts::EigenMatrix22<decltype(S)>);
+  constexpr int dim      = Derived::CompileTimeTraits::RowsAtCompileTime;
+  constexpr int dimVoigt = (dim * (dim + 1)) / 2;
 
-  auto r = Eigen::Matrix3d::Zero().eval();
-  auto D = Eigen::Matrix<double, 6, 6>::Zero().eval();
+  using ST       = Derived::Scalar;
+  using VoigtVec = Eigen::Vector<ST, dimVoigt>;
+
+  VoigtVec Es     = toVoigt(Estart.derived()); // starting value
+  VoigtVec Svoigt = toVoigt(S.derived(), false);
+
+  auto r = VoigtVec::Zero().eval();
+  auto D = Eigen::Matrix<ST, dimVoigt, dimVoigt>::Zero().eval();
 
   for (auto i : Dune::range(maxIter)) {
-    r           = (S - mat.template stresses<StrainTags::greenLagrangian, false>(Es)).eval();
-    D           = toVoigt(mat.template tangentModuli<StrainTags::greenLagrangian, false>(Es)).inverse().eval(); // voigt
-    auto rVoigt = toVoigt(r, false);
-    Es += fromVoigt((D * rVoigt).eval());
+    r = (Svoigt - mat.template stresses<StrainTags::greenLagrangian, true>(Es)).eval();
 
-    if (rVoigt.norm() < tol)
+    if (r.norm() < tol and i > 0)
       break;
     else if (i == maxIter)
-      DUNE_THROW(Dune::MathError,
-                 "Numerical material inversion failed to converge within  the maximum number of iterations");
+      DUNE_THROW(
+          Dune::MathError,
+          "Numerical material inversion failed to converge within the maximum number of iterations for the material: " +
+              mat.name());
+
+    D = mat.template tangentModuli<StrainTags::greenLagrangian, true>(Es).inverse().eval(); // voigt
+    Es += (D * r).eval();
   }
-  return std::make_pair(D, toVoigt(transformStrain<StrainTags::greenLagrangian, Material::strainTag>(Es).eval()));
+  return std::make_pair(D, transformStrain<StrainTags::greenLagrangian, Material::strainTag>(Es).eval());
 }
 
 } // namespace Ikarus::Materials

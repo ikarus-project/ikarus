@@ -172,7 +172,7 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
     if (Dune::FloatCmp::eq(Lambda, 0.0))
       C = (I - (1.0 / mu) * S).inverse();
     else {
-      const auto A = 1 / Lambda * (mu * I - S);
+      const auto A = 1.0 / Lambda * (mu * I - S);
       const auto a = A.determinant();
       checkInvertabilityOrAbort(a);
 
@@ -191,9 +191,15 @@ private:
   template <typename ScalarType>
   void checkInvertabilityOrAbort(ScalarType a, ScalarType eps = 1e-10) const {
     const bool req1 = Dune::FloatCmp::ne(a, 0.0, eps);
-    const bool req2 = Dune::FloatCmp::gt(
-        a, -pow(static_cast<double>(dim) / 2, dim) * exp(-dim - 2 * materialParameter_.mu / materialParameter_.lambda),
-        eps);
+    const bool req2 = [&]() {
+      if constexpr (dim == 3)
+        return Dune::FloatCmp::gt(
+            a,
+            -pow(static_cast<double>(dim) / 2, dim) * exp(-dim - 2 * materialParameter_.mu / materialParameter_.lambda),
+            eps);
+      else if (dim == 2)
+        return Dune::FloatCmp::gt(a, 0.0, eps);
+    }();
     if (!(req1 && req2)) {
       std::cerr << "NeoHooke: Requirements for material law inversion not met.";
       abort();

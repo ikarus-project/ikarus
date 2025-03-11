@@ -184,7 +184,7 @@ struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ST>>
   auto materialInversionImpl(const Eigen::MatrixBase<Derived>& Sraw) const {
     auto tangentModulus = tangentModuliImpl<true>(Eigen::Matrix3<ScalarType>::Zero());
     auto D              = tangentModulus.inverse().eval();
-    decltype(auto) S    = Impl::maybeToVoigt(Sraw);
+    decltype(auto) S    = Impl::maybeToVoigt(Sraw, false);
     auto E              = (D * S).eval();
     return std::make_pair(D, E);
   }

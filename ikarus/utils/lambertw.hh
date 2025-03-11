@@ -13,7 +13,16 @@
 #include <dune/common/exceptions.hh>
 #include <dune/common/float_cmp.hh>
 
+#include <ikarus/utils/concepts.hh>
+
 namespace Ikarus::util {
+
+namespace Impl {
+  template <typename T>
+  T log1p(T x) {
+    return log(T(1.0) + x);
+  }
+} // namespace Impl
 
 /**
  * \brief Implementation of the principal branch of the Lambert-W function (branch 0 in the domain
@@ -31,10 +40,12 @@ namespace Ikarus::util {
  */
 template <typename ST = double>
 ST lambertW0(ST z, int maxIterations = 20, ST eps = std::numeric_limits<ST>::epsilon()) {
-  if (std::isnan(z))
-    return std::numeric_limits<ST>::quiet_NaN();
-  if (std::isinf(z))
-    return z;
+  if constexpr (not Concepts::AutodiffScalar<ST>) {
+    if (std::isnan(z))
+      return std::numeric_limits<ST>::quiet_NaN();
+    if (std::isinf(z))
+      return z;
+  }
 
   const ST branchPoint = -1.0 / std::exp(1.0);
 
@@ -51,7 +62,7 @@ ST lambertW0(ST z, int maxIterations = 20, ST eps = std::numeric_limits<ST>::eps
   if (Dune::FloatCmp::gt(z, ST(1.0))) {
     ST lx  = log(z);
     ST llx = log(lx);
-    x0     = lx - llx - 0.5 * log1p(-llx / lx);
+    x0     = lx - llx - 0.5 * Impl::log1p<ST>(-llx / lx);
   } else {
     x0 = 0.567 * z;
   }
@@ -68,10 +79,10 @@ ST lambertW0(ST z, int maxIterations = 20, ST eps = std::numeric_limits<ST>::eps
     const ST denom       = fPrime - ((1.0 / 2.0) * (fPrimePrime / fPrime) * f);
 
     const ST newX = x - f / denom;
-    const ST diff = std::fabs(newX - x);
+    const ST diff = abs(newX - x);
 
     // Check for convergence:
-    if (Dune::FloatCmp::le(diff, 3 * eps * std::fabs(x)) || Dune::FloatCmp::eq(diff, lastDiff))
+    if (Dune::FloatCmp::le<ST>(diff, 3 * eps * abs(x)) || Dune::FloatCmp::eq<ST>(diff, lastDiff))
       return newX;
 
     lastDiff = diff;

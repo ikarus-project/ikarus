@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
 #include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
 #include <ikarus/finiteelements/mechanics/materials/tags.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
@@ -201,24 +202,24 @@ struct Material
    *
    * \tparam tag Strain tag indicating which strain tensor components are expected as result.
    * \tparam voigt Boolean indicating whether to return Voigt-shaped result.
+   * \tparam useNumeric forces the function to use the generic numerical approach
    * \tparam Derived the type of the stress matrix
    * \param Sraw input stress matrix
    * \return pair of inverse material tangent and strain tensor
    */
-  template <StrainTags tag, bool voigt = true, typename Derived>
+  template <StrainTags tag, bool voigt = true, bool useNumeric = false, typename Derived>
   requires CorrectStrainSize<MaterialImpl, Derived>
   [[nodiscard]] auto materialInversion(const Eigen::MatrixBase<Derived>& Sraw) const {
-    decltype(auto) S = enlargeIfReduced<Material>(Sraw);
+    const auto S = Impl::maybeFromVoigt(Sraw.derived(), false).eval();
 
     auto [D, Eraw] = [&]() {
-      if constexpr (requires { impl().materialInversionImpl(S); })
+      if constexpr (requires { impl().materialInversionImpl(S); } and not useNumeric)
         return impl().materialInversionImpl(S);
       else
         return numericalMaterialInversion(impl(), S);
     }();
 
-    decltype(auto) E = transformStrain<MaterialImpl::strainTag, tag>(Eraw);
-
+    const auto E = transformStrain<MaterialImpl::strainTag, tag>(Eraw).eval();
     if constexpr (voigt)
       return std::make_pair(D, toVoigt(E));
     else
