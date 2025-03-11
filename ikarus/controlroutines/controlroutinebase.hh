@@ -19,13 +19,13 @@ namespace Ikarus {
  * \tparam F Type of the differentiable function to solve.
  * \tparam Args Additional custom message signatures, that can be broadcasted
  */
-template <typename F, typename... Args>
+template <typename F, typename S = ControlRoutineStateType<F>, typename... Args>
 struct ControlRoutineBase
     : public Broadcasters<void(ControlMessages), void(ControlMessages, const std::string&),
                           void(ControlMessages, int, const std::string&), void(ControlMessages, int, double),
-                          void(ControlMessages, const ControlRoutineStateType<F>&), Args...>
+                          void(ControlMessages, const S&), Args...>
 {
-  using State = ControlRoutineStateType<F>;
+  using State = S;
 };
 
 } // namespace Ikarus

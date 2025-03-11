@@ -28,8 +28,7 @@ struct ControlRoutineState
 {
   using Domain = D;
 
-  const D& domain;
-
+  const Domain& domain;
   int loadStep{};
   double stepSize{};
 };

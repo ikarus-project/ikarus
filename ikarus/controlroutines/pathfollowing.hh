@@ -22,8 +22,23 @@
 
 namespace Ikarus {
 
-namespace Impl {
+/**
+ * \brief State for path following control routine
+ *
+ * \tparam D the type of the domain (in most cases FERequirement)
+ */
+template <typename D>
+struct PathFollowingState
+{
+  using Domain = D;
 
+  const Domain& domain;
+  const SubsidiaryArgs& subsidiaryArgs;
+  int loadStep{};
+  double stepSize{};
+};
+
+namespace Impl {
   /**
    * \brief Checks template requirements for path-following control routines.
    *
@@ -45,7 +60,26 @@ namespace Impl {
            Concepts::NonLinearSolverCheckForPathFollowing<NLS>;
   }
 
+  template <typename F>
+  struct PathFollowingStateFactory
+  {
+  private:
+    using SignatureTraits = typename F::Traits;
+    using Domain          = typename SignatureTraits::Domain;
+
+  public:
+    using type = PathFollowingState<Domain>;
+  };
+
 } // namespace Impl
+
+/**
+ * \brief Helper to deduce the correct types for ControlRoutineState
+ *
+ * \tparam F Type of the differentiable function to solve.
+ */
+template <typename F>
+using PathFollowingStateType = Impl::PathFollowingStateFactory<F>::type;
 
 template <typename NLS, typename PF, typename ASS>
 requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
@@ -131,7 +165,8 @@ auto createControlRoutine(PFConfig&& config, NLS&& nonlinearSolver) {
  */
 template <typename NLS, typename PF = ArcLength, typename ASS = AdaptiveStepSizing::NoOp>
 requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
-class PathFollowing : public ControlRoutineBase<typename NLS::DifferentiableFunction>
+class PathFollowing : public ControlRoutineBase<typename NLS::DifferentiableFunction,
+                                                PathFollowingStateType<typename NLS::DifferentiableFunction>>
 
 {
 public:

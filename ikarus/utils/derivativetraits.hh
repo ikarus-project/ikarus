@@ -77,8 +77,6 @@ struct DerivativeTraitsFromCallables<Impl::Functions<DerivativeArgs...>, Arg>
   template <int I>
   using Range = std::tuple_element_t<I, Ranges>;
 
-  constexpr static int numberOfRanges = std::tuple_size_v<Ranges>;
-
   template <int I>
   using RawRange = std::tuple_element_t<I, RawRanges>;
 
@@ -86,7 +84,6 @@ struct DerivativeTraitsFromCallables<Impl::Functions<DerivativeArgs...>, Arg>
   struct DerivativeTraits
   {
   private:
-    // static constexpr int indexOfSignatureImpl = traits::Index<Signature, RawSignatures>::value + 1;
     static constexpr int indexOfSignature = traits::Index<Signature, RawSignatures>::value + 1;
 
   public:

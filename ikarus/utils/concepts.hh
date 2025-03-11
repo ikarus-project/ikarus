@@ -30,14 +30,20 @@ template <typename Derived>
 struct EigenBase;
 }
 
-template <typename T>
-concept EigenType = std::is_base_of_v<Eigen::MatrixBase<std::decay_t<T>>, std::decay_t<T>>;
-
 namespace Ikarus {
 
 template <typename Derived>
 auto transpose(const Eigen::EigenBase<Derived>& A);
 namespace Concepts {
+
+  /**
+   * \concept EigenType
+   * \brief Concept to check if a type is derived from Eigen::MatrixBase.
+   *
+   * \tparam T The type to check.
+   */
+  template <typename T>
+  concept EigenType = std::is_base_of_v<Eigen::MatrixBase<std::decay_t<T>>, std::decay_t<T>>;
 
   /**
    * \concept FlatInterLeavedBasis
@@ -623,6 +629,15 @@ namespace Concepts {
    */
   template <typename T>
   concept PointerOrSmartPointer = SmartPointer<T> || traits::Pointer<T>;
+
+  template <typename S>
+  concept ControlRoutineState = requires(S s) {
+    typename S::Domain;
+
+    // { s.domain } -> std::convertible_to<const typename S::Domain>;
+    { s.loadStep } -> std::convertible_to<int>;
+    { s.stepSize } -> std::convertible_to<double>;
+  };
 
 } // namespace Concepts
 

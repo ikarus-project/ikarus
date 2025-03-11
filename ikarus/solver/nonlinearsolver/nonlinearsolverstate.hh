@@ -44,13 +44,13 @@ namespace Impl {
   struct CorrectionType;
 
   template <typename SignatureTraits>
-  struct CorrectionType<SignatureTraits, 3>
+  struct CorrectionType<SignatureTraits, 1>
   {
     using type = typename SignatureTraits::template Range<0>;
   };
 
   template <typename SignatureTraits>
-  struct CorrectionType<SignatureTraits, 4>
+  struct CorrectionType<SignatureTraits, 2>
   {
     using type = typename SignatureTraits::template Range<1>;
   };
@@ -62,10 +62,10 @@ namespace Impl {
     using SignatureTraits = typename F::Traits;
     using Domain          = typename SignatureTraits::Domain;
 
-    constexpr static int numRanges = SignatureTraits::numberOfRanges;
+    constexpr static int nDerivatives = F::nDerivatives;
 
   public:
-    using type = NonlinearSolverState<Domain, typename CorrectionType<SignatureTraits, numRanges>::type>;
+    using type = NonlinearSolverState<Domain, typename CorrectionType<SignatureTraits, nDerivatives>::type>;
   };
 } // namespace Impl
 

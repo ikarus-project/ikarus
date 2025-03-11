@@ -25,6 +25,7 @@ public:
   template <typename BC>
   ControlLogger& subscribeTo(BC& bc) {
     this->subscribe(bc, [&](ControlMessages message) { this->updateImpl(message); });
+    this->subscribe(bc, [&](ControlMessages message, const BC::State& state) { this->updateImpl(message, state); });
     this->subscribe(bc, [&](ControlMessages message, const std::string& val) { this->updateImpl(message, val); });
     this->subscribe(
         bc, [&](ControlMessages message, int val1, const std::string& val2) { this->updateImpl(message, val1, val2); });
@@ -61,6 +62,14 @@ public:
    * \param val2 The double value associated with the message.
    */
   void updateImpl(ControlMessages message, int val1, double val2);
+
+  /**
+   * \brief Implementation of the update method for logging control messages with a control routine state.
+   *
+   * \param message The received control message.
+   * \param state The received control state.
+   */
+  void updateImpl(ControlMessages message, const Concepts::ControlRoutineState auto& state) { updateImpl(message); }
 
 private:
   using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;

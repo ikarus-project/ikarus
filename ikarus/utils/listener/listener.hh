@@ -59,9 +59,6 @@ struct Listener
   template <typename Broadcaster, typename Signature, typename F>
   requires(not Concepts::PointerOrSmartPointer<Broadcaster>)
   auto subscribe(Broadcaster& broadcaster, F&& f) {
-    // if constexpr (requires { broadcaster.operator->(); })
-    //   t.push_back(broadcaster->template station<Signature>().registerListener(std::forward<F>(f)));
-    // else
     t.push_back(broadcaster.template station<Signature>().registerListener(std::forward<F>(f)));
     return t.back();
   }

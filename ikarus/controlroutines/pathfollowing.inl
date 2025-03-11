@@ -33,11 +33,6 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   subsidiaryArgs_.setZero(req.globalSolution());
   subsidiaryArgs_.stepSize = stepSize_;
 
-  // info.totalIterations    = 0;
-  // subsidiaryArgs.stepSize = stepSize_;
-  // subsidiaryArgs.DD.resizeLike(req.glbalSolution());
-  // subsidiaryArgs.DD.setZero();o
-
   /// Initializing solver
   this->notify(STEP_STARTED, 0, subsidiaryArgs_.stepSize);
   pathFollowingType_.initialPrediction(req, residual, subsidiaryArgs_);
@@ -46,10 +41,11 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   info.totalIterations += solverInfo.iterations;
   if (not solverInfo.success)
     return info;
-  this->notify(SOLUTION_CHANGED);
-  this->notify(STEP_ENDED);
 
-  auto state = typename PathFollowing::State{.domain = req};
+  auto state = typename PathFollowing::State{.domain = req, .subsidiaryArgs = subsidiaryArgs_};
+
+  this->notify(SOLUTION_CHANGED, state);
+  this->notify(STEP_ENDED, state);
 
   /// Calculate predictor for a particular step
   for (int ls = 1; ls < steps_; ++ls) {
@@ -71,8 +67,7 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
     state.loadStep = subsidiaryArgs_.currentStep;
     state.stepSize = subsidiaryArgs_.stepSize;
     this->notify(SOLUTION_CHANGED, state);
-    this->notify(SOLUTION_CHANGED);
-    this->notify(STEP_ENDED);
+    this->notify(STEP_ENDED, state);
   }
 
   this->notify(CONTROL_ENDED, info.totalIterations, pathFollowingType_.name());
