@@ -80,6 +80,8 @@ SPDX-License-Identifier: LGPL-3.0-or-later
     - All materials are now in a separate namespace, `Ikarus::Materials`.
 - The solution vector and parameter are now stored internally within the FE requirements instead of being passed by reference.
   This change ensures better encapsulation and simplifies the usage of finite elements. ([#356](https://github.com/ikarus-project/ikarus/pull/356))
+- Add wrapper classes for small strain and finite strain materials from the Muesli material library
+  ([#337](https://github.com/ikarus-project/ikarus/pull/337))
 
 ## Release v0.4 (Ganymede)
 

@@ -16,6 +16,7 @@
 #include <autodiff/forward/utils/derivative.hpp>
 
 #include <ikarus/finiteelements/mechanics/materials.hh>
+#include <ikarus/finiteelements/mechanics/materials/muesli/mueslifinite.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
 #include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
@@ -190,21 +191,23 @@ auto recoverNeoHookeTest() {
   return t;
 }
 
-template <Concepts::DeviatoricFunction DEV, DeformationType def>
+template <typename DEV, DeformationType def>
 auto materialResults() {
-  if constexpr (std::is_same_v<DEV, BlatzKoT<double>>) {
+  if constexpr (std::same_as<DEV, BlatzKoT<double>>) {
     return BlatzKoResults<def>();
-  } else if constexpr (std::is_same_v<DEV, OgdenT<double, 3, PrincipalStretchTags::total>>) {
+  } else if constexpr (std::same_as<DEV, OgdenT<double, 3, PrincipalStretchTags::total>>) {
     return OgdenTotalResults<def>();
-  } else if constexpr (std::is_same_v<DEV, OgdenT<double, 3, PrincipalStretchTags::deviatoric>>) {
+  } else if constexpr (std::same_as<DEV, OgdenT<double, 3, PrincipalStretchTags::deviatoric>>) {
     return OgdenDeviatoricResults<def>();
-  } else if constexpr (std::is_same_v<DEV, InvariantBasedT<double, 2>>) {
+  } else if constexpr (std::same_as<DEV, InvariantBasedT<double, 2>>) {
     return MooneyRivlinResults<def>();
-  } else if constexpr (std::is_same_v<DEV, InvariantBasedT<double, 3>>) {
+  } else if constexpr (std::same_as<DEV, InvariantBasedT<double, 3>> or
+                       std::same_as<DEV, Ikarus::Materials::FiniteStrain<muesli::yeohMaterial>>) {
     return YeohResults<def>();
-  } else if constexpr (std::is_same_v<DEV, ArrudaBoyceT<double>>) {
+  } else if constexpr (std::same_as<DEV, ArrudaBoyceT<double>> or
+                       std::same_as<DEV, Ikarus::Materials::FiniteStrain<muesli::arrudaboyceMaterial>>) {
     return ArrudaBoyceResults<def>();
-  } else if constexpr (std::is_same_v<DEV, GentT<double>>) {
+  } else if constexpr (std::same_as<DEV, GentT<double>>) {
     return GentResults<def>();
   } else
     static_assert(Dune::AlwaysFalse<DEV>::value, "The requested deviatoric function is not implemented.");
