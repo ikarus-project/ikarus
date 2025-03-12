@@ -168,7 +168,7 @@ def checkWithStrain(strain):
 
     if len(strain) == 6:
         import copy
-        
+
         strainS = copy.deepcopy(strain)
         strainS[0] = strain[0] - 1
         strainS[1] = strain[1] - 1
