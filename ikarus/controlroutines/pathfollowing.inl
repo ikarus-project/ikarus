@@ -46,6 +46,8 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   this->notify(ControlMessages::SOLUTION_CHANGED);
   this->notify(ControlMessages::STEP_ENDED);
 
+  auto updateFunction = nonLinearSolver_.updateFunction();
+
   /// Calculate predictor for a particular step
   for (int ls = 1; ls < steps_; ++ls) {
     subsidiaryArgs.currentStep = ls;

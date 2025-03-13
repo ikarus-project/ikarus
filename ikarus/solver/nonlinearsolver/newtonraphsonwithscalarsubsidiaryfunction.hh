@@ -112,7 +112,7 @@ public:
   static constexpr bool isLinearSolver = Ikarus::Concepts::LinearSolverCheck<LS, JacobianType, CorrectionType>;
 
   ///< Type representing the update function.
-  using UpdateFunctionType     = UF;
+  using UpdateFunction     = UF;
   using DifferentiableFunction = F; ///< Type of the non-linear operator
 
   /**
@@ -249,12 +249,18 @@ public:
    */
   auto& residual() { return residualFunction_; }
 
+  /**
+   * \brief Access the update function.
+   * \return Reference to the function.
+   */
+   const UpdateFunction& updateFunction() { return updateFunction_; }
+
 private:
   DifferentiableFunction residualFunction_;
   typename DifferentiableFunction::Derivative jacobianFunction_;
   std::remove_cvref_t<CorrectionType> correction_;
   LS linearSolver_;
-  UF updateFunction_;
+  UpdateFunction updateFunction_;
   Settings settings_;
 };
 /**

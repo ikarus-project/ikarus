@@ -180,7 +180,7 @@ public:
   using EnergyType   = typename FTraits::template Range<0>; ///< Type of the scalar cost
   using GradientType = typename FTraits::template Range<1>; ///< Type of the gradient vector
   using HessianType  = typename FTraits::template Range<2>; ///< Type of the Hessian matrix
-
+  using JacobianType = HessianType;
   /**
    * \brief Constructs a TrustRegion solver instance.
    * \param f Function to solve.
@@ -407,6 +407,12 @@ public:
    * \return The residual by value.
    */
   auto residual() { return derivative(energyFunction_); }
+
+  /**
+   * \brief Access the update function.
+   * \return Reference to the function.
+   */
+   const UpdateFunction& updateFunction() { return updateFunction_; }
 
 private:
   template <class T>

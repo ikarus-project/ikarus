@@ -193,6 +193,12 @@ public:
    */
   auto& residual() { return residualFunction_; }
 
+    /**
+   * \brief Access the update function.
+   * \return Reference to the function.
+   */
+   const UpdateFunction& updateFunction() { return updateFunction_; }
+
 private:
   DifferentiableFunction residualFunction_;
   typename DifferentiableFunction::Derivative jacobianFunction_;

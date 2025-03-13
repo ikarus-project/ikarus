@@ -79,6 +79,19 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
       dirichletFlags[localView.index(localIndex)] = true;
   });
 
+      // Inhomogenious Boundary Conditions
+      auto inhomogeneousDisplacement = []<typename T>(const auto& globalCoord, const T& lambda) {
+        Eigen::Vector<T, 2> localInhomogeneous;
+        if (std::abs(globalCoord[1]) <1e-8) {
+          localInhomogeneous[0] =  0;
+          localInhomogeneous[1] =  globalCoord[0]*lambda/10000;
+        } else
+          localInhomogeneous.setZero();
+        return localInhomogeneous;
+      };
+  
+  dirichletValues.storeInhomogeneousBoundaryCondition(inhomogeneousDisplacement);
+    
   auto sparseAssembler = makeSparseFlatAssembler(fes, dirichletValues);
 
   auto req           = typename FEType::Requirement(basis);
@@ -155,6 +168,9 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   t.check(resultFunction->ncomps() == 3) << "Test result comps: " << resultFunction->ncomps() << "should be 3";
 
   vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction));
+  vtkWriter2.addPointData(
+    Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), d),
+    Dune::Vtk::FieldInfo("displacements", 2, Dune::Vtk::RangeTypes::VECTOR));
 
   auto resultFunction2 =
       makeResultFunction<ResultTypes::PK2Stress>(sparseAssembler, ResultEvaluators::PrincipalStress<2>{});
