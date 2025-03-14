@@ -12,12 +12,6 @@
 
 namespace Ikarus {
 
-// Forward declarations
-#ifndef DOXYGEN
-template <typename TypeListOne, typename TypeListTwo>
-class NonLinearOperator;
-#endif
-
 /**
  * \brief State for control routines
  *
