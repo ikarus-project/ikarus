@@ -254,7 +254,7 @@ public:
 private:
   template <typename Sk>
   auto invokeUpdateState(const Requirement& par,
-                         const std::remove_reference_t<typename Traits::template VectorType<>>& correction) const {
+                         const std::remove_reference_t<typename Traits::template VectorType<>>& correction) {
     if constexpr (requires { Sk::updateStateImpl(par, correction); })
       Sk::updateStateImpl(par, correction);
   }
@@ -270,7 +270,7 @@ public:
    * to be updated.
    */
   void updateState(const Requirement& par,
-                   const std::remove_reference_t<typename Traits::template VectorType<>>& correction) const {
+                   const std::remove_reference_t<typename Traits::template VectorType<>>& correction) {
     (invokeUpdateState<Skills<PreFE, typename PreFE::template FE<Skills...>>>(par, correction), ...);
   }
 

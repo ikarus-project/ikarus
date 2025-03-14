@@ -180,7 +180,7 @@ protected:
    * alpha is to be updated.
    */
   void updateStateImpl(const Requirement& par,
-                       const std::remove_reference_t<typename Traits::template VectorType<>>& correction) const {
+                       const std::remove_reference_t<typename Traits::template VectorType<>>& correction) {
     using ScalarType = Traits::ctype;
     easApplicabilityCheck();
     auto correctAlpha = [&]<typename EAST>(const EAST& easFunction) {
