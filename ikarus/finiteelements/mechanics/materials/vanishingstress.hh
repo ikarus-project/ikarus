@@ -189,7 +189,6 @@ private:
 
     auto Er = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
 
-    Er.setZero();
     auto nonOp = Ikarus::makeDifferentiableFunction(functions(f, df), Er);
 
     auto linearSolver   = [](auto& r, auto& A) { return (A.inverse() * r).eval(); };
@@ -199,6 +198,14 @@ private:
         E(indexPair[0], indexPair[1]) += ecomps(ri++);
       }
     };
+    // if constexpr (isAutoDiff) {
+    //   auto S = f(Er);
+    //   if (norm(S.template cast<double>()) == 0.0) {
+    //     auto C = df(Er);
+    //     updateFunction(Er, linearSolver(-S, C));
+    //     return std::make_pair(nonOp, E);
+    //   }
+    // }
 
     int minIter = isAutoDiff ? 1 : 0;
     // THE CTAD is broken for designated initializers in clang 16, when we drop support this can be simplified

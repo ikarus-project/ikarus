@@ -261,12 +261,34 @@ auto norm(const Eigen::MatrixBase<Derived>& v) {
 }
 
 /**
+ * \brief Adding free floatingPointNorm function to Eigen types this is an indirection sicne otherwise norm fails of the
+ * value is zero for autodiff types \ingroup utils \tparam Derived Type of the input Eigen matrix. \param v Input Eigen
+ * matrix. \return real of the matrix.
+ */
+template <typename Derived>
+requires(!std::floating_point<Derived>)
+auto floatingPointNorm(const Eigen::MatrixBase<Derived>& v) {
+  if constexpr (Concepts::AutodiffScalar<typename Derived::Scalar>)
+    return v.template cast<autodiff::detail::NumericType<typename Derived::Scalar>>().norm();
+  else
+    return v.norm();
+}
+
+/**
  * \brief Helper Free Function to have the same interface as for Eigen Vector Types.
  *  \ingroup utils
  * \param v Input scalar.
  * \return Absolute value of the scalar.
  */
 auto norm(const std::floating_point auto& v) { return std::abs(v); }
+
+/**
+ * \brief Helper Free Function to have the same interface as for Eigen Vector Types.
+ *  \ingroup utils
+ * \param v Input scalar.
+ * \return Absolute value of the scalar.
+ */
+auto floatingPointNorm(const std::floating_point auto& v) { return std::abs(v); }
 
 /**
  * \brief Eigen::DiagonalMatrix Product Missing in Eigen.

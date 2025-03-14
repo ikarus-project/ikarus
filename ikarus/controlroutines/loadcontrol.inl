@@ -10,7 +10,9 @@
 #pragma once
 
 #include <type_traits>
+
 #include "ikarus/utils/defaultfunctions.hh"
+
 namespace Ikarus {
 template <typename NLS>
 ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
@@ -28,28 +30,7 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
   this->notify(ControlMessages::SOLUTION_CHANGED);
   this->notify(ControlMessages::STEP_ENDED);
 
-  SolverTypeTag solverTag;
-  // initial prediction
-  if constexpr (traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, typename NLS::JacobianType>::value)
-  solverTag = SolverTypeTag::d_LDLT;
-else
-  solverTag = SolverTypeTag::sd_SimplicialLDLT;
-
-auto&& R = nonLinearSolver_->residual()(x);
-auto&& K = derivative(nonLinearSolver_->residual())(x);
-std::remove_cvref_t<typename NLS::CorrectionType> d_dir;
-auto y = x;
-nonLinearSolver_->updateFunction()(y,utils::zeroIncrementTag);
-R-= K*y.globalSolution();
-
-auto linearSolver = LinearSolver(solverTag); // for the linear predictor step
-linearSolver.analyzePattern(K);
-linearSolver.factorize(K);
-Eigen::VectorXd dispPredictor;
-linearSolver.solve(dispPredictor, -R);
-nonLinearSolver_->updateFunction()(x,dispPredictor);
-
-  // end initial prediction
+  this->initialPrediction(x);
 
   for (int ls = 0; ls < loadSteps_; ++ls) {
     this->notify(ControlMessages::STEP_STARTED, ls, stepSize_);
@@ -65,5 +46,36 @@ nonLinearSolver_->updateFunction()(x,dispPredictor);
   this->notify(ControlMessages::CONTROL_ENDED, info.totalIterations, static_cast<std::string>(this->name()));
   info.success = true;
   return info;
+}
+
+template <typename NLS>
+void LoadControl<NLS>::initialPrediction(typename NLS::Domain& x) const {
+  SolverTypeTag solverTag;
+
+  auto&& residual = nonLinearSolver_->residual();
+
+  if constexpr (traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, typename NLS::JacobianType>::value)
+    solverTag = SolverTypeTag::d_LDLT;
+  else
+    solverTag = SolverTypeTag::sd_SimplicialLDLT;
+
+  auto&& R = residual(x);
+  auto&& K = derivative(residual)(x);
+
+  auto y = x;
+  y.parameter() += stepSize_; // artificially set the lambda from the next step
+  nonLinearSolver_->updateFunction()(
+      y, utils::zeroIncrementTag); // get the inhomogeneous part of the solution of the next step
+  R -= K * (y.globalSolution() -
+            x.globalSolution()); // compute the internal forces due to the displcament increment
+                                 // F_Int_dir = K* delta_u_dir, delta_u_dir is only non-zero for the inhomogeneous part
+
+  auto linearSolver = LinearSolver(solverTag); // solve for new displacements
+  linearSolver.analyzePattern(K);
+  linearSolver.factorize(K);
+  Eigen::VectorXd dPredictor;
+  linearSolver.solve(dPredictor, -R);
+
+  x += dPredictor;
 }
 } // namespace Ikarus

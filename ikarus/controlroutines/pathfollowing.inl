@@ -37,7 +37,7 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
 
   /// Initializing solver
   this->notify(ControlMessages::STEP_STARTED, 0, subsidiaryArgs.stepSize);
-  pathFollowingType_.initialPrediction(req, residual, subsidiaryArgs);
+  pathFollowingType_.initialPrediction(req, *nonLinearSolver_, subsidiaryArgs);
   auto solverInfo = nonLinearSolver_->solve(req, pathFollowingType_, subsidiaryArgs);
   info.solverInfos.push_back(solverInfo);
   info.totalIterations += solverInfo.iterations;
@@ -45,8 +45,6 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
     return info;
   this->notify(ControlMessages::SOLUTION_CHANGED);
   this->notify(ControlMessages::STEP_ENDED);
-
-  auto updateFunction = nonLinearSolver_.updateFunction();
 
   /// Calculate predictor for a particular step
   for (int ls = 1; ls < steps_; ++ls) {
@@ -56,7 +54,7 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
 
     this->notify(ControlMessages::STEP_STARTED, subsidiaryArgs.currentStep, subsidiaryArgs.stepSize);
 
-    pathFollowingType_.intermediatePrediction(req, residual, subsidiaryArgs);
+    pathFollowingType_.intermediatePrediction(req, *nonLinearSolver_, subsidiaryArgs);
 
     solverInfo = nonLinearSolver_->solve(req, pathFollowingType_, subsidiaryArgs);
 

@@ -53,6 +53,19 @@ public:
    */
   ControlInformation run(typename NLS::Domain& x);
 
+  /**
+   * \brief Performs the initial prediction for the standard arc-length method.
+   *
+   * This method initializes the prediction step for the standard arc-length method it computes \f$\psi\f$ and
+   * computes initial \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$.
+   *
+   * \param residual The residual function.
+   * \param args The subsidiary function arguments.
+   * \param req The solution.
+   * \ingroup  controlroutines
+   */
+  void initialPrediction(typename NLS::Domain& x) const;
+
   /* \brief returns the nonlinear solver */
   NLS& nonLinearSolver() { return *nonLinearSolver_; }
 

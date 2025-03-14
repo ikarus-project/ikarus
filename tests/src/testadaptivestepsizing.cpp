@@ -147,8 +147,10 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   auto nr  = nrFactory.create(sparseAssembler);
   auto nr2 = nrFactory.create(sparseAssembler);
 
-  auto dass = AdaptiveStepSizing::IterationBased{};
-  auto nass = AdaptiveStepSizing::NoOp{};
+  add inhom stuff here
+
+      auto dass = AdaptiveStepSizing::IterationBased{};
+  auto nass     = AdaptiveStepSizing::NoOp{};
   dass.setTargetIterations(targetIterations);
 
   /// control routine with and without step sizing

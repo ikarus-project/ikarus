@@ -90,16 +90,14 @@ struct ArcLength
    * This method initializes the prediction step for the standard arc-length method it computes \f$\psi\f$ and
    * computes initial \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
+   * \tparam NLS Type of the nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    * \ingroup  controlroutines
    */
-  template <typename F>
-  requires(Ikarus::Concepts::LinearSolverCheck<Ikarus::LinearSolver, typename F::Traits::template Range<1>,
-                                               typename F::Domain::SolutionVectorType>)
-  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void initialPrediction(typename F::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     SolverTypeTag solverTag;
     using JacobianType = std::remove_cvref_t<typename F::Traits::template Range<1>>;
     static_assert((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value) or
@@ -110,10 +108,19 @@ struct ArcLength
       solverTag = SolverTypeTag::d_LDLT;
     else
       solverTag = SolverTypeTag::sd_SimplicialLDLT;
-
+    auto&& residual  = nonlinearSolver.residual();
     req.parameter()  = 1.0;
     decltype(auto) R = residual(req);
     decltype(auto) K = derivative(residual)(req);
+
+    auto y = req;
+    y.parameter() += args.stepSize; // artificially set the lambda from the next step
+    nonlinearSolver.updateFunction()(
+        y, utils::zeroIncrementTag); // get the inhomogeneous part of the solution of the next step
+    R -= K *
+         (y.globalSolution() -
+          req.globalSolution()); // compute the internal forces due to the displcament increment
+                                 // F_Int_dir = K* delta_u_dir, delta_u_dir is only non-zero for the inhomogeneous part
 
     auto linearSolver = LinearSolver(solverTag); // for the linear predictor step
     linearSolver.analyzePattern(K);
@@ -137,13 +144,13 @@ struct ArcLength
    *
    * This method updates the prediction step for the standard arc-length method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
+   * \tparam NLS Type of the nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename F>
-  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void intermediatePrediction(typename F::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     req.globalSolution() += args.DD;
     req.parameter() += args.Dlambda;
   }
@@ -187,13 +194,40 @@ struct LoadControlSubsidiaryFunction
    *
    * This method initializes the prediction step for the load control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
+   * \tparam NLS Type of the nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename F>
-  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void initialPrediction(typename F::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
+    auto&& residual = nonlinearSolver.residual();
+
+    SolverTypeTag solverTag;
+    if constexpr (traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, typename NLS::JacobianType>::value)
+      solverTag = SolverTypeTag::d_LDLT;
+    else
+      solverTag = SolverTypeTag::sd_SimplicialLDLT;
+
+    auto&& R = residual(x);
+    auto&& K = derivative(residual)(x);
+
+    auto y = req;
+    y.parameter() += args.stepSize; // artificially set the lambda from the next step
+    nonlinearSolver.updateFunction()(
+        y, utils::zeroIncrementTag); // get the inhomogeneous part of the solution of the next step
+    R -= K *
+         (y.globalSolution() -
+          req.globalSolution()); // compute the internal forces due to the displcament increment
+                                 // F_Int_dir = K* delta_u_dir, delta_u_dir is only non-zero for the inhomogeneous part
+    auto linearSolver = LinearSolver(solverTag); // solve for new displacements
+    linearSolver.analyzePattern(K);
+    linearSolver.factorize(K);
+    Eigen::VectorXd dPredictor;
+    linearSolver.solve(dPredictor, -R);
+
+    x += dPredictor;
+    args.DD         = dPredictor;
     args.Dlambda    = args.stepSize;
     req.parameter() = args.Dlambda;
   }
@@ -203,13 +237,13 @@ struct LoadControlSubsidiaryFunction
    *
    * This method updates the prediction step for the load control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
+   * \tparam NLS Type of the nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename F>
-  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void intermediatePrediction(typename F::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     req.parameter() += args.Dlambda;
   }
 
@@ -259,13 +293,13 @@ struct DisplacementControl
    *
    * This method initializes the prediction step for the displacement control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
+   * \tparam NLS Type of the nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename F>
-  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void initialPrediction(typename F::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     args.DD(controlledIndices).array() = args.stepSize;
     req.globalSolution()               = args.DD;
   }
@@ -275,13 +309,13 @@ struct DisplacementControl
    *
    * This method updates the prediction step for the displacement control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
+   * \tparam NLS Type of the nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename F>
-  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void intermediatePrediction(typename F::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     req.globalSolution() += args.DD;
   }
 
