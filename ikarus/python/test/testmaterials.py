@@ -24,26 +24,12 @@ def checkSizes(A, expected_rows, expected_cols):
     assert expected_cols == num_cols
 
 
-def checkMaterial(mat, strain, nonlinear=True, size=6):
-    if nonlinear:
-        mat.storedEnergy(materials.StrainTags.greenLagrangian, strain)
-        mat.storedEnergy(materials.StrainTags.rightCauchyGreenTensor, strain)
-        S = mat.stresses(materials.StrainTags.greenLagrangian, strain)
-        checkSizes(S, size, 1)
-        S = mat.stresses(materials.StrainTags.rightCauchyGreenTensor, strain)
-        checkSizes(S, size, 1)
-        C = mat.tangentModuli(materials.StrainTags.greenLagrangian, strain)
-        checkSizes(C, size, size)
-        C = mat.tangentModuli(materials.StrainTags.rightCauchyGreenTensor, strain)
-        checkSizes(C, size, size)
-        C = mat.tangentModuli(materials.StrainTags.greenLagrangian, strain)
-        checkSizes(C, size, size)
-    else:
-        mat.storedEnergy(materials.StrainTags.linear, strain)
-        S = mat.stresses(materials.StrainTags.linear, strain)
-        checkSizes(S, size, 1)
-        C = mat.tangentModuli(materials.StrainTags.linear, strain)
-        checkSizes(C, size, size)
+def checkMaterial(mat, strain, strainTag, size=6):
+    mat.storedEnergy(strainTag, strain)
+    S = mat.stresses(strainTag, strain)
+    checkSizes(S, size, 1)
+    C = mat.tangentModuli(strainTag, strain)
+    checkSizes(C, size, size)
 
     try:
         mat.storedEnergy(strain)
@@ -167,26 +153,87 @@ def checkWithStrain(strain):
     svk = iks.materials.StVenantKirchhoff(E=1000, nu=0.3)
     nh = iks.materials.NeoHooke(E=1000, nu=0.3)
     lin = iks.materials.LinearElasticity(E=1000, nu=0.3)
+    mlin = materials.muesliMaterial(
+        materials.MuesliSmallStrain.elasticIsotropicMaterial, E=100, nu=0.3
+    )
+    mnh = materials.muesliMaterial(
+        materials.MuesliFiniteStrain.neohookeanMaterial, E=1000, nu=0.3
+    )
+    mmoon = materials.muesliMaterial(
+        materials.MuesliFiniteStrain.mooneyMaterial, alpha=[500, 200, 200]
+    )
+    rCGT = materials.StrainTags.rightCauchyGreenTensor
+    linT = materials.StrainTags.linear
+    gtT = materials.StrainTags.greenLagrangian
 
     if len(strain) == 6:
-        checkMaterial(svk, strain)
-        checkMaterial(nh, strain)
-        checkMaterial(lin, strain, False)
-        checkMaterial(lin.asPlaneStress(), strain, False, 3)
-        checkMaterial(nh.asPlaneStress(), strain, True, 3)
-        checkMaterial(svk.asPlaneStress(), strain, True, 3)
+        import copy
 
-        checkMaterial(lin.asShellMaterial(), strain, False, 5)
-        checkMaterial(nh.asShellMaterial(), strain, True, 5)
-        checkMaterial(svk.asShellMaterial(), strain, True, 5)
+        strainS = copy.deepcopy(strain)
+        strainS[0] = strain[0] - 1
+        strainS[1] = strain[1] - 1
+        strainS[2] = strain[2] - 1
+        for strainTag in [rCGT, gtT]:
+            strainToUse = strain if strainTag is rCGT else strainS
+            checkMaterial(svk, strainToUse, strainTag)
+            checkMaterial(nh, strainToUse, strainTag)
+            checkMaterial(mnh, strainToUse, strainTag)
+            checkMaterial(mmoon, strainToUse, strainTag)
 
-        checkMaterial(lin.asBeamMaterial(), strain, False, 4)
-        checkMaterial(nh.asBeamMaterial(), strain, True, 4)
-        checkMaterial(svk.asBeamMaterial(), strain, True, 4)
+            checkMaterial(nh.asPlaneStress(), strainToUse, strainTag, 3)
+            checkMaterial(svk.asPlaneStress(), strainToUse, strainTag, 3)
+            checkMaterial(mnh.asPlaneStress(), strainToUse, strainTag, 3)
+            checkMaterial(mmoon.asPlaneStress(), strainToUse, strainTag, 3)
+
+            checkMaterial(nh.asPlaneStrain(), strainToUse, strainTag, 3)
+            checkMaterial(svk.asPlaneStrain(), strainToUse, strainTag, 3)
+            checkMaterial(mnh.asPlaneStrain(), strainToUse, strainTag, 3)
+            checkMaterial(mmoon.asPlaneStrain(), strainToUse, strainTag, 3)
+
+            checkMaterial(nh.asShellMaterial(), strainToUse, strainTag, 5)
+            checkMaterial(svk.asShellMaterial(), strainToUse, strainTag, 5)
+            checkMaterial(mnh.asShellMaterial(), strainToUse, strainTag, 5)
+            checkMaterial(mmoon.asShellMaterial(), strainToUse, strainTag, 5)
+
+            checkMaterial(nh.asBeamMaterial(), strainToUse, strainTag, 4)
+            checkMaterial(svk.asBeamMaterial(), strainToUse, strainTag, 4)
+            checkMaterial(mnh.asBeamMaterial(), strainToUse, strainTag, 4)
+            checkMaterial(mmoon.asBeamMaterial(), strainToUse, strainTag, 4)
+
+        checkMaterial(lin, strain, linT)
+        checkMaterial(mlin, strain, linT)
+
+        checkMaterial(lin.asPlaneStress(), strain, linT, 3)
+        checkMaterial(mlin.asPlaneStress(), strain, linT, 3)
+
+        checkMaterial(lin.asPlaneStrain(), strain, linT, 3)
+        checkMaterial(mlin.asPlaneStrain(), strain, linT, 3)
+
+        checkMaterial(lin.asShellMaterial(), strain, linT, 5)
+        checkMaterial(mlin.asShellMaterial(), strain, linT, 5)
+
+        checkMaterial(lin.asBeamMaterial(), strain, linT, 4)
+        checkMaterial(mlin.asBeamMaterial(), strain, linT, 4)
+
     elif len(strain) == 3:
-        checkMaterial(lin.asPlaneStress(), strain, False, 3)
-        checkMaterial(nh.asPlaneStress(), strain, True, 3)
-        checkMaterial(svk.asPlaneStress(), strain, True, 3)
+        for strainTag in [rCGT, gtT]:
+            checkMaterial(nh.asPlaneStress(), strain, strainTag, 3)
+            checkMaterial(svk.asPlaneStress(), strain, strainTag, 3)
+
+            checkMaterial(nh.asPlaneStrain(), strain, strainTag, 3)
+            checkMaterial(svk.asPlaneStrain(), strain, strainTag, 3)
+
+            checkMaterial(nh.asPlaneStrain(), strain, strainTag, 3)
+            checkMaterial(svk.asPlaneStrain(), strain, strainTag, 3)
+
+        checkMaterial(mnh.asPlaneStress(), strain, rCGT, 3)
+        checkMaterial(mmoon.asPlaneStress(), strain, rCGT, 3)
+
+        checkMaterial(lin.asPlaneStress(), strain, linT, 3)
+        checkMaterial(mlin.asPlaneStress(), strain, linT, 3)
+
+        checkMaterial(lin.asPlaneStrain(), strain, linT, 3)
+        checkMaterial(mlin.asPlaneStrain(), strain, linT, 3)
 
         check2DReducedFullEquality(
             nh.asPlaneStress(), materials.StrainTags.rightCauchyGreenTensor, strain
@@ -224,9 +271,15 @@ def checkWithStrain(strain):
         )
 
     elif len(strain) == 5:
-        checkMaterial(lin.asShellMaterial(), strain, False, 5)
-        checkMaterial(nh.asShellMaterial(), strain, True, 5)
-        checkMaterial(svk.asShellMaterial(), strain, True, 5)
+        for strainTag in [rCGT, gtT]:
+            checkMaterial(nh.asShellMaterial(), strain, strainTag, 5)
+            checkMaterial(svk.asShellMaterial(), strain, strainTag, 5)
+
+        checkMaterial(lin.asShellMaterial(), strain, linT, 5)
+        checkMaterial(mlin.asShellMaterial(), strain, linT, 5)
+
+        checkMaterial(mnh.asShellMaterial(), strain, rCGT, 5)
+        checkMaterial(mmoon.asShellMaterial(), strain, rCGT, 5)
 
         checkShellStressReducedFullEquality(
             nh.asShellMaterial(), materials.StrainTags.rightCauchyGreenTensor, strain
@@ -248,9 +301,15 @@ def checkWithStrain(strain):
         )
 
     elif len(strain) == 4:
-        checkMaterial(lin.asBeamMaterial(), strain, False, 4)
-        checkMaterial(nh.asBeamMaterial(), strain, True, 4)
-        checkMaterial(svk.asBeamMaterial(), strain, True, 4)
+        for strainTag in [rCGT, gtT]:
+            checkMaterial(nh.asBeamMaterial(), strain, strainTag, 4)
+            checkMaterial(svk.asBeamMaterial(), strain, strainTag, 4)
+
+        checkMaterial(lin.asBeamMaterial(), strain, linT, 4)
+        checkMaterial(mlin.asBeamMaterial(), strain, linT, 4)
+
+        checkMaterial(mnh.asBeamMaterial(), strain, rCGT, 4)
+        checkMaterial(mmoon.asBeamMaterial(), strain, rCGT, 4)
 
         checkBeamStressReducedFullEquality(
             nh.asBeamMaterial(), materials.StrainTags.rightCauchyGreenTensor, strain
@@ -331,6 +390,7 @@ def checkVoigtTransformations():
 def checkMaterialConstructors():
     # Check different constructors (no physical meaning)
     iks.materials.StVenantKirchhoff(E=1000, mu=500)
+    iks.materials.StVenantKirchhoff(E=1000, nu=0.3)
     iks.materials.StVenantKirchhoff(E=1000, K=500)
     iks.materials.StVenantKirchhoff(E=1000, Lambda=500)
     iks.materials.StVenantKirchhoff(K=1000, Lambda=500)
@@ -344,6 +404,36 @@ def checkMaterialConstructors():
     s2 = svk2.stresses(materials.StrainTags.greenLagrangian, strain)
 
     assert np.allclose(s1, s2)
+
+
+def instantiateMuesliMaterials():
+
+    materials.muesliMaterial(
+        materials.MuesliSmallStrain.elasticIsotropicMaterial, E=100, nu=0.3
+    )
+    materials.muesliMaterial(materials.MuesliFiniteStrain.svkMaterial, E=100, nu=0.3)
+    materials.muesliMaterial(
+        materials.MuesliFiniteStrain.neohookeanMaterial, E=100, nu=0.3
+    )
+    materials.muesliMaterial(
+        materials.MuesliFiniteStrain.mooneyMaterial, alpha=[500, 200, 200]
+    )
+    materials.muesliMaterial(
+        materials.MuesliFiniteStrain.mooneyMaterial,
+        alpha=[0.2, 0.3, 0.4],
+        incompressible=True,
+    )
+    materials.muesliMaterial(
+        materials.MuesliFiniteStrain.arrudaboyceMaterial, C1=500, lambda_m=200, K=200
+    )
+    mm = materials.muesliMaterial(
+        materials.MuesliFiniteStrain.yeohMaterial,
+        C=[100, 200, 300],
+        K=400,
+        compressible=False,
+    )
+
+    mm.printDescription()
 
 
 if __name__ == "__main__":
@@ -365,3 +455,5 @@ if __name__ == "__main__":
     checkStrainTransformation()
     checkVoigtTransformations()
     checkMaterialConstructors()
+
+    instantiateMuesliMaterials()

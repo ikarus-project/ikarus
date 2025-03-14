@@ -12,34 +12,38 @@
 #include <dune/common/tuplevector.hh>
 
 #include <ikarus/finiteelements/fetraits.hh>
+#include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
+#include <ikarus/utils/broadcaster/broadcastermessages.hh>
+#include <ikarus/utils/functionhelper.hh>
+#include <ikarus/utils/listener/listener.hh>
 
 namespace Ikarus {
 /**
- * @brief CRTP mixin class for finite elements with additional skills.
+ * \brief CRTP mixin class for finite elements with additional skills.
  *
  * This mixin class is designed for finite elements and provides the ability to include additional skills
  * through the CRTP (Curiously Recurring Template Pattern).
  *
- * @tparam PreFE The base finite element class.
- * @tparam Skills A template parameter pack for additional skills to be mixed into the finite element.
+ * \tparam PreFE The base finite element class.
+ * \tparam Skills A template parameter pack for additional skills to be mixed into the finite element.
  */
 template <typename PreFE, template <typename, typename> class... Skills>
-struct FEMixin : Skills<PreFE, typename PreFE::template FE<Skills...>>...
+struct FEMixin : public Listener, Skills<PreFE, typename PreFE::template FE<Skills...>>...
 {
   /**
-   * @brief Constructor for the FEMixin class.
+   * \brief Constructor for the FEMixin class.
    *
-   * @param skillsArgs Variadic arguments for initializing the additional skills.
+   * \param skillsArgs Variadic arguments for initializing the additional skills.
    */
   explicit FEMixin(typename Skills<PreFE, typename PreFE::template FE<Skills...>>::Pre&&... skillsArgs)
       : Skills<PreFE, typename PreFE::template FE<Skills...>>(
             std::forward<typename Skills<PreFE, typename PreFE::template FE<Skills...>>::Pre>(skillsArgs))... {}
 
   /**
-   * @brief Checks if the mixin class has a specific skill.
+   * \brief Checks if the mixin class has a specific skill.
    *
-   * @tparam Skill The skill to check for.
-   * @return True if the skill is present, false otherwise.
+   * \tparam Skill The skill to check for.
+   * \return True if the skill is present, false otherwise.
    */
   template <template <typename, typename> class Skill>
   static consteval bool hasSkill() {
@@ -58,7 +62,7 @@ private:
 
 public:
   /**
-   * @brief Type alias for the supported result types by the mixin.
+   * \brief Type alias for the supported result types by the mixin.
    */
   using SupportedResultTypes =
       decltype(std::tuple_cat(computeSupportedResultTypes<Skills<PreFE, typename PreFE::template FE<Skills...>>>()...));
@@ -91,9 +95,9 @@ public:
   static constexpr int worldDim = Traits::worlddim;
 
   /**
-   * @brief Create a Requirement object.
+   * \brief Create a Requirement object.
    *
-   * @return The created Requirement object.
+   * \return The created Requirement object.
    */
   static auto createRequirement() { return Requirement(); }
 
@@ -135,12 +139,12 @@ public:
   using Skills<PreFE, typename PreFE::template FE<Skills...>>::calculateAtImpl...;
 
   /**
-   * @brief Calculate the element values at a specific location for a given ResultType.
+   * \brief Calculate the element values at a specific location for a given ResultType.
    *
-   * @tparam RT The ResultType to calculate.
-   * @param req The Requirement object specifying the requirements for the calculation.
-   * @param local The local coordinates where the calculation is performed.
-   * @return The calculated result as specified by the ResultType.
+   * \tparam RT The ResultType to calculate.
+   * \param req The Requirement object specifying the requirements for the calculation.
+   * \param local The local coordinates where the calculation is performed.
+   * \return The calculated result as specified by the ResultType.
    */
   template <template <typename, int, int> class RT>
   requires requires(FEMixin m, const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local) {
@@ -166,17 +170,17 @@ private:
 
 public:
   /**
-   * @brief Call all bind functions if the skill implements it
+   * \brief Call all bind functions if the skill implements it
    */
   void bind() { (invokeBind<Skills<PreFE, typename PreFE::template FE<Skills...>>>(), ...); }
 
   /**
-   * @brief Calculate the scalar value in each skill and joins them by `+`.
+   * \brief Calculate the scalar value in each skill and joins them by `+`.
    *
-   * @tparam ScalarType The scalar type for the calculation.
-   * @param par The Requirement object specifying the requirements for the calculation.
-   * @param dx Optional vector used in the calculation.
-   * @return The calculated scalar value.
+   * \tparam ScalarType The scalar type for the calculation.
+   * \param par The Requirement object specifying the requirements for the calculation.
+   * \param dx Optional vector used in the calculation.
+   * \return The calculated scalar value.
    */
   template <typename ScalarType = double>
   requires implementsCalculateScalarImpl
@@ -199,12 +203,12 @@ private:
 
 public:
   /**
-   * @brief Calculate the vector for each skill
+   * \brief Calculate the vector for each skill
    *
-   * @tparam ScalarType The scalar type for the calculation.
-   * @param par The Requirement object specifying the requirements for the calculation.
-   * @param force The vector to store the calculated result.
-   * @param dx Optional vector used in the calculation.
+   * \tparam ScalarType The scalar type for the calculation.
+   * \param par The Requirement object specifying the requirements for the calculation.
+   * \param force The vector to store the calculated result.
+   * \param dx Optional vector used in the calculation.
    */
   template <typename ScalarType>
   requires implementsCalculateVectorImpl
@@ -227,12 +231,12 @@ private:
 
 public:
   /**
-   * @brief Calculate the matrix for each skill
+   * \brief Calculate the matrix for each skill
    *
-   * @tparam ScalarType The scalar type for the calculation.
-   * @param par The Requirement object specifying the requirements for the calculation.
-   * @param K The matrix to store the calculated result.
-   * @param dx Optional vector used in the calculation.
+   * \tparam ScalarType The scalar type for the calculation.
+   * \param par The Requirement object specifying the requirements for the calculation.
+   * \param K The matrix to store the calculated result.
+   * \param dx Optional vector used in the calculation.
    */
   template <typename ScalarType>
   requires implementsCalculateMatrixImpl
@@ -244,25 +248,56 @@ public:
      ...);
   }
 
+private:
+  template <typename Sk, typename BC, typename MT>
+  auto invokeSubscribeTo(BC& bc) {
+    // For Clang-16: we need the this-> otherwise the code in the if clause will never be called. For Gcc-12.2: with the
+    // this-> it throws a compiler error in certain cases
+#if defined(__clang__)
+    if constexpr (requires { this->Sk::template subscribeToImpl<MT>(bc); }) {
+#else
+    if constexpr (requires { Sk::template subscribeToImpl<MT>(bc); }) {
+#endif
+      Sk::template subscribeToImpl<MT>(bc);
+    }
+  }
+
+public:
+  /**
+   * \brief Subscribes the elements to listen to functions provided from the skills emitted by the given broadcaster
+   *
+   * \tparam MT the message type (for example NonlinerSolverMessages or ControlMessages)
+   * \tparam BC the type of the broadcaster
+   * \param bc the broadcaster (for example a nonlinearsolver or control routine)
+   * \return auto
+   */
+  template <typename MT, typename BC>
+  auto subscribeTo(BC& bc) {
+    (invokeSubscribeTo<Skills<PreFE, typename PreFE::template FE<Skills...>>, traits::MaybeDereferencedType<BC>, MT>(
+         utils::maybeDeref(bc)),
+     ...);
+    return *this;
+  }
+
 protected:
   /**
-   * @brief Get a reference to the underlying finite element object.
+   * \brief Get a reference to the underlying finite element object.
    *
-   * @return A reference to the underlying finite element object.
+   * \return A reference to the underlying finite element object.
    */
   const auto& underlying() const { return static_cast<const typename PreFE::template FE<Skills...>&>(*this); }
   /**
-   * @brief Get a reference to the underlying finite element object.
+   * \brief Get a reference to the underlying finite element object.
    *
-   * @return A reference to the underlying finite element object.
+   * \return A reference to the underlying finite element object.
    */
   auto& underlying() { return static_cast<typename PreFE::template FE<Skills...>&>(*this); }
 };
 
 /**
- * @brief Struct representing a collection of skills.
+ * \brief Struct representing a collection of skills.
  *
- * @tparam ARGS Variadic template parameters representing the skills.
+ * \tparam ARGS Variadic template parameters representing the skills.
  */
 template <typename... ARGS>
 struct Skills
@@ -272,11 +307,11 @@ struct Skills
 };
 
 /**
- * @brief Function to create a Skills instance with the given skills.
+ * \brief Function to create a Skills instance with the given skills.
  *
- * @tparam Args Variadic template parameters representing the skills.
- * @param args Variadic arguments representing the skills.
- * @return A Skills instance containing the specified skills.
+ * \tparam Args Variadic template parameters representing the skills.
+ * \param args Variadic arguments representing the skills.
+ * \return A Skills instance containing the specified skills.
  */
 template <typename... Args>
 auto skills(const Args&... args) {
@@ -284,13 +319,13 @@ auto skills(const Args&... args) {
 }
 
 /**
- * @brief Function to merge two Skills instances.
+ * \brief Function to merge two Skills instances.
  *
- * @tparam Args1 Variadic template parameters representing the skills of the first instance.
- * @tparam Args2 Variadic template parameters representing the skills of the second instance.
- * @param sk1 The first Skills instance.
- * @param sk2 The second Skills instance.
- * @return A new Skills instance containing the merged skills.
+ * \tparam Args1 Variadic template parameters representing the skills of the first instance.
+ * \tparam Args2 Variadic template parameters representing the skills of the second instance.
+ * \param sk1 The first Skills instance.
+ * \param sk2 The second Skills instance.
+ * \return A new Skills instance containing the merged skills.
  */
 template <typename... Args1, typename... Args2>
 auto merge(const Skills<Args1...>& sk1, const Skills<Args2...>& sk2) {

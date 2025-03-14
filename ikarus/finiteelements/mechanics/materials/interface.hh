@@ -16,7 +16,7 @@
 #include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/traits.hh>
 
-namespace Ikarus {
+namespace Ikarus::Materials {
 
 #ifndef DOXYGEN
 template <class MImpl>
@@ -85,6 +85,8 @@ struct Material
    */
   static constexpr bool isReduced = traits::isSpecializationNonTypeAndTypes<VanishingStress, MaterialImpl>::value or
                                     traits::isSpecializationNonTypeAndTypes<VanishingStrain, MaterialImpl>::value;
+
+  static constexpr bool isLinear = MI::strainTag == StrainTags::linear;
 
   /**
    * \brief Const accessor to the underlying material (CRTP).
@@ -225,4 +227,4 @@ private:
   }
 };
 
-} // namespace Ikarus
+} // namespace Ikarus::Materials

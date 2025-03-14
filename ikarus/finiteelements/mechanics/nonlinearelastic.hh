@@ -60,17 +60,16 @@ template <typename PreFE, typename FE, typename PRE>
 class NonLinearElastic : public ResultTypeBase<ResultTypes::PK2Stress, ResultTypes::PK2StressFull>
 {
 public:
-  using Traits    = PreFE::Traits;
-  using Basis     = typename Traits::Basis;
-  using FlatBasis = typename Traits::FlatBasis;
-  using Requirement =
-      FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor, Traits::useEigenRef>::type;
-  using LocalView = typename Traits::LocalView;
-  using Geometry  = typename Traits::Geometry;
-  using GridView  = typename Traits::GridView;
-  using Element   = typename Traits::Element;
-  using Material  = PRE::Material;
-  using Pre       = PRE;
+  using Traits      = PreFE::Traits;
+  using Basis       = typename Traits::Basis;
+  using FlatBasis   = typename Traits::FlatBasis;
+  using Requirement = FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
+  using LocalView   = typename Traits::LocalView;
+  using Geometry    = typename Traits::Geometry;
+  using GridView    = typename Traits::GridView;
+  using Element     = typename Traits::Element;
+  using Material    = PRE::Material;
+  using Pre         = PRE;
 
   using LocalBasisType = decltype(std::declval<LocalView>().tree().child(0).finiteElement().localBasis());
 

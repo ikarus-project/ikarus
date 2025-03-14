@@ -5,12 +5,14 @@
 install(
   FILES interface.hh
         linearelasticity.hh
-        neohooke.hh
         strainconversions.hh
         svk.hh
         tags.hh
         vanishingstress.hh
         vanishingstrain.hh
-        vanishinghelpers.hh
+        materialhelpers.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/materials
 )
+add_subdirectory(hyperelastic)
+
+add_subdirectory(muesli)

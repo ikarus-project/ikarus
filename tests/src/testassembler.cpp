@@ -60,8 +60,9 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
       return fext;
     };
 
-    auto linMat = Ikarus::LinearElasticity(Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 100, .nu = 0.2}));
-    auto sk     = skills(linearElastic(planeStress(linMat)), volumeLoad<2>(vL));
+    auto linMat =
+        Ikarus::Materials::LinearElasticity(Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 100, .nu = 0.2}));
+    auto sk = skills(linearElastic(Ikarus::Materials::planeStress(linMat)), volumeLoad<2>(vL));
 
     using FEType = decltype(makeFE(basis, sk));
     std::cout << Dune::className<FEType>() << std::endl;
@@ -114,11 +115,8 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
     // AssemblerManipulator<VectorAssembler> vectorFlatAssemblerAM(fes, dirichletValues);
     // AssemblerManipulator<DenseAssembler> denseFlatAssemblerAM(fes, dirichletValues);
 
-    Eigen::VectorXd d(basis.flat().size());
-    d.setRandom();
-    double load = 0.0;
-
-    auto req = typename FEType::Requirement(d, load);
+    auto req = typename FEType::Requirement(basis);
+    req.globalSolution().setRandom();
 
     const auto& KRawDense = denseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Raw);
     const auto& KRaw      = sparseFlatAssembler.matrix(req, MatrixAffordance::stiffness, DBCOption::Raw);

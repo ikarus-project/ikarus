@@ -18,7 +18,7 @@
 #include <dune/vtk/types.hh>
 #include <dune/vtk/vtkreader.hh>
 
-#include "ikarus/finiteelements/feresulttypes.hh"
+#include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/io/resultfunction.hh>
 #include <ikarus/utils/init.hh>

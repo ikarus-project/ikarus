@@ -44,6 +44,18 @@ struct SubsidiaryArgs
   Eigen::VectorX<double> dfdDD; ///< The derivative of the subsidiary function with respect to DD.
   double dfdDlambda;            ///< The derivative of the subsidiary function with respect to Dlambda.
   int currentStep;              ///< The current step index in the control routine.
+
+  void setZero(const Concepts::EigenType auto& firstParameter) {
+    stepSize = 0.0;
+    DD.resizeLike(firstParameter);
+    DD.setZero();
+    Dlambda = 0.0;
+    f       = 0.0;
+    dfdDD.resizeLike(firstParameter);
+    dfdDD.setZero();
+    dfdDlambda  = 0.0;
+    currentStep = 0;
+  }
 };
 
 /**
@@ -90,15 +102,18 @@ struct ArcLength
    * This method initializes the prediction step for the standard arc-length method it computes \f$\psi\f$ and
    * computes initial \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$.
    *
-   * \tparam NLO Type of the nonlinear operator.
-   * \param nonLinearOperator The nonlinear operator.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
+   * \param req The solution.
    * \ingroup  controlroutines
    */
-  template <typename NLO>
-  void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
+  template <typename F>
+  requires(Ikarus::Concepts::LinearSolverCheck<Ikarus::LinearSolver, typename F::Traits::template Range<1>,
+                                               typename F::Domain::SolutionVectorType>)
+  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
     SolverTypeTag solverTag;
-    using JacobianType = std::remove_cvref_t<typename NLO::DerivativeType>;
+    using JacobianType = std::remove_cvref_t<typename F::Traits::template Range<1>>;
     static_assert((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value) or
                       (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix, JacobianType>::value),
                   "Linear solver not implemented for the chosen derivative type of the non-linear operator");
@@ -108,16 +123,9 @@ struct ArcLength
     else
       solverTag = SolverTypeTag::sd_SimplicialLDLT;
 
-    nonLinearOperator.lastParameter() = 1.0; // lambda =1.0
-    nonLinearOperator.template update<0>();
-    const auto& R = nonLinearOperator.value();
-    const auto& K = nonLinearOperator.derivative();
-
-    static constexpr bool isLinearSolver =
-        Ikarus::Concepts::LinearSolverCheck<decltype(LinearSolver(solverTag)), typename NLO::DerivativeType,
-                                            typename NLO::ValueType>;
-    static_assert(isLinearSolver,
-                  "Initial predictor step in the standard arc-length method doesn't have a linear solver");
+    req.parameter()  = 1.0;
+    decltype(auto) R = residual(req);
+    decltype(auto) K = derivative(residual)(req);
 
     auto linearSolver = LinearSolver(solverTag); // for the linear predictor step
     linearSolver.analyzePattern(K);
@@ -132,8 +140,8 @@ struct ArcLength
     args.DD      = args.DD * args.stepSize / s;
     args.Dlambda = args.stepSize / s;
 
-    nonLinearOperator.firstParameter() = args.DD;
-    nonLinearOperator.lastParameter()  = args.Dlambda;
+    req.globalSolution() = args.DD;
+    req.parameter()      = args.Dlambda;
   }
 
   /**
@@ -141,14 +149,15 @@ struct ArcLength
    *
    * This method updates the prediction step for the standard arc-length method.
    *
-   * \tparam NLO Type of the nonlinear operator.
-   * \param nonLinearOperator The nonlinear operator.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
+   * \param req The solution.
    */
-  template <typename NLO>
-  void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
-    nonLinearOperator.firstParameter() += args.DD;
-    nonLinearOperator.lastParameter() += args.Dlambda;
+  template <typename F>
+  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+    req.globalSolution() += args.DD;
+    req.parameter() += args.Dlambda;
   }
 
   /** \brief The name of the PathFollowing method. */
@@ -190,14 +199,15 @@ struct LoadControlSubsidiaryFunction
    *
    * This method initializes the prediction step for the load control method.
    *
-   * \tparam NLO Type of the nonlinear operator.
-   * \param nonLinearOperator The nonlinear operator.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
+   * \param req The solution.
    */
-  template <typename NLO>
-  void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
-    args.Dlambda                      = args.stepSize;
-    nonLinearOperator.lastParameter() = args.Dlambda;
+  template <typename F>
+  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+    args.Dlambda    = args.stepSize;
+    req.parameter() = args.Dlambda;
   }
 
   /**
@@ -205,13 +215,14 @@ struct LoadControlSubsidiaryFunction
    *
    * This method updates the prediction step for the load control method.
    *
-   * \tparam NLO Type of the nonlinear operator.
-   * \param nonLinearOperator The nonlinear operator.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
+   * \param req The solution.
    */
-  template <typename NLO>
-  void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
-    nonLinearOperator.lastParameter() += args.Dlambda;
+  template <typename F>
+  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+    req.parameter() += args.Dlambda;
   }
 
   /** \brief The name of the PathFollowing method. */
@@ -260,14 +271,15 @@ struct DisplacementControl
    *
    * This method initializes the prediction step for the displacement control method.
    *
-   * \tparam NLO Type of the nonlinear operator.
-   * \param nonLinearOperator The nonlinear operator.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
+   * \param req The solution.
    */
-  template <typename NLO>
-  void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
+  template <typename F>
+  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
     args.DD(controlledIndices).array() = args.stepSize;
-    nonLinearOperator.firstParameter() = args.DD;
+    req.globalSolution()               = args.DD;
   }
 
   /**
@@ -275,13 +287,14 @@ struct DisplacementControl
    *
    * This method updates the prediction step for the displacement control method.
    *
-   * \tparam NLO Type of the nonlinear operator.
-   * \param nonLinearOperator The nonlinear operator.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
+   * \param req The solution.
    */
-  template <typename NLO>
-  void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
-    nonLinearOperator.firstParameter() += args.DD;
+  template <typename F>
+  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+    req.globalSolution() += args.DD;
   }
 
   /** \brief The name of the PathFollowing method. */

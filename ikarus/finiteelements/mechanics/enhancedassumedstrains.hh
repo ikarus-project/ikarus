@@ -50,13 +50,12 @@ template <typename PreFE, typename FE>
 class EnhancedAssumedStrains
 {
 public:
-  using Traits = PreFE::Traits;
-  using Requirement =
-      FERequirementsFactory<FESolutions::displacement, FEParameter::loadfactor, Traits::useEigenRef>::type;
-  using LocalView = typename Traits::LocalView;
-  using Geometry  = typename Traits::Geometry;
-  using GridView  = typename Traits::GridView;
-  using Pre       = EnhancedAssumedStrainsPre;
+  using Traits      = PreFE::Traits;
+  using Requirement = FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
+  using LocalView   = typename Traits::LocalView;
+  using Geometry    = typename Traits::Geometry;
+  using GridView    = typename Traits::GridView;
+  using Pre         = EnhancedAssumedStrainsPre;
 
   /**
    * \brief Constructor for Enhanced Assumed Strains elements.
@@ -127,6 +126,7 @@ public:
       easVariant_(calculateAtContribution);
       return resultWrapper;
     }
+    DUNE_THROW(Dune::NotImplemented, "The requested result type is not supported");
   }
 
   /**

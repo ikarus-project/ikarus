@@ -13,20 +13,24 @@
 
 #include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
+#if ENABLE_MUESLI
+  #include <ikarus/finiteelements/mechanics/materials/muesli/mueslimaterials.hh>
+#endif
 #include <ikarus/io/resultevaluators.hh>
 #include <ikarus/utils/init.hh>
 
 using Dune::TestSuite;
 
 int main(int argc, char** argv) {
+  Ikarus::init(argc, argv);
+  TestSuite t("LinearElasticity");
+
   using namespace Ikarus;
   using namespace ResultTypes;
   using namespace ResultEvaluators;
-
-  init(argc, argv);
-  TestSuite t("LinearElasticity");
-
   using namespace Dune::Functions::BasisFactory;
+  using namespace Ikarus::Materials;
+
   auto firstOrderLagrangePrePower2Basis         = power<2>(lagrange<1>(), FlatInterleaved());
   auto secondOrderLagrangePrePower2Basis        = power<2>(lagrange<2>(), FlatInterleaved());
   auto firstOrderLagrangePrePower3Basis         = power<3>(lagrange<1>(), FlatInterleaved());
@@ -36,19 +40,30 @@ int main(int argc, char** argv) {
   constexpr auto unDistorted                    = CornerDistortionFlag::unDistorted;
 
   // Test cube 2D
-  auto linearElasticFunc3D = [](const YoungsModulusAndPoissonsRatio& parameter) {
-    LinearElasticity lin(toLamesFirstParameterAndShearModulus(parameter));
-    return linearElastic(lin);
+  auto linearElasticFunc3D = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
+    LinearElasticity lin(Ikarus::toLamesFirstParameterAndShearModulus(parameter));
+    return Ikarus::linearElastic(lin);
   };
-  auto linearElasticFuncPlaneStress = [](const YoungsModulusAndPoissonsRatio& parameter) {
-    LinearElasticity lin(toLamesFirstParameterAndShearModulus(parameter));
+#if ENABLE_MUESLI
+  auto linearElasticFuncPlaneStress_Muesli = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
+    auto lin   = makeMuesliLinearElasticity(parameter);
     auto linPS = planeStress(lin);
-    return linearElastic(linPS);
+    return Ikarus::linearElastic(linPS);
   };
-  auto linearElasticFuncPlaneStrain = [](const YoungsModulusAndPoissonsRatio& parameter) {
-    LinearElasticity lin(toLamesFirstParameterAndShearModulus(parameter));
+  auto linearElasticFunc3D_Muesli = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
+    auto lin = makeMuesliLinearElasticity(parameter);
+    return Ikarus::linearElastic(lin);
+  };
+#endif
+  auto linearElasticFuncPlaneStress = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
+    LinearElasticity lin(Ikarus::toLamesFirstParameterAndShearModulus(parameter));
+    auto linPS = planeStress(lin);
+    return Ikarus::linearElastic(linPS);
+  };
+  auto linearElasticFuncPlaneStrain = [](const Ikarus::YoungsModulusAndPoissonsRatio& parameter) {
+    LinearElasticity lin(Ikarus::toLamesFirstParameterAndShearModulus(parameter));
     auto linPS = planeStrain(lin);
-    return linearElastic(linPS);
+    return Ikarus::linearElastic(linPS);
   };
 
   // Plane stress
@@ -98,6 +113,17 @@ int main(int argc, char** argv) {
       checkResultFunctionFunctorFactory<linearStressFull, Triaxiality>(linearTriaxialityStressResultsOfSquare),
       checkResultFunctionFunctorFactory<linearStressFull, PrincipalStress<3>>(linearPrincipalStressResultsOfSquare)));
 
+#if ENABLE_MUESLI
+  t.subTest(testFEElement(
+      firstOrderLagrangePrePower2Basis, "LinearElastic", unDistorted, Dune::ReferenceElements<double, 2>::cube(),
+      linearElasticFuncPlaneStress_Muesli, Ikarus::skills(), Ikarus::AffordanceCollections::elastoStatics,
+      checkCalculateAtFunctorFactory<Ikarus::ResultTypes::linearStress>(linearStressResultsOfSquare),
+      checkCalculateAtFunctorFactory<Ikarus::ResultTypes::linearStress, false>(linearStressResultsOfSquare),
+      checkResultFunctionFunctorFactory<Ikarus::ResultTypes::linearStress>(linearStressResultsOfSquare),
+      checkResultFunctionFunctorFactory<Ikarus::ResultTypes::linearStress, Ikarus::ResultEvaluators::VonMises>(
+          linearVonMisesResultsOfSquare)));
+#endif
+
   // Test simplex 2D
   t.subTest(testFEElement(firstOrderLagrangePrePower2Basis, "LinearElastic", randomlyDistorted,
                           Dune::ReferenceElements<double, 2>::simplex(), linearElasticFuncPlaneStress, skills(),
@@ -133,6 +159,13 @@ int main(int argc, char** argv) {
                           Dune::ReferenceElements<double, 3>::cube(), linearElasticFunc3D, skills(),
                           AffordanceCollections::elastoStatics, checkGradientFunctor, checkHessianFunctor,
                           checkJacobianFunctor, checkFEByAutoDiffFunctor));
+
+#if ENABLE_MUESLI
+  t.subTest(testFEElement(firstOrderLagrangePrePower3Basis, "LinearElastic", randomlyDistorted,
+                          Dune::ReferenceElements<double, 3>::cube(), linearElasticFunc3D_Muesli, Ikarus::skills(),
+                          Ikarus::AffordanceCollections::elastoStatics, checkGradientFunctor, checkHessianFunctor,
+                          checkJacobianFunctor));
+#endif
 
   t.subTest(testFEElement(
       firstOrderLagrangePrePower3Basis, "LinearElastic", unDistorted, Dune::ReferenceElements<double, 3>::cube(),

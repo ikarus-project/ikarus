@@ -87,15 +87,6 @@ def linElasticTest(easBool):
     assert req.parameter() == lambdaLoad
     req.insertGlobalSolution(d)
 
-    d2 = req.globalSolution()
-
-    # check that is really the same data address
-    assert ("{}".format(hex(d2.__array_interface__["data"][0]))) == (
-        "{}".format(hex(d.__array_interface__["data"][0]))
-    )
-    assert len(d2) == len(d)
-    assert (d2 == d).all()
-
     forces = np.zeros(8)
     stiffness = np.zeros((8, 8))
     fes[0].calculateVector(req, iks.VectorAffordance.forces, forces)
