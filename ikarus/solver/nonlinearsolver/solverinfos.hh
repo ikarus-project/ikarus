@@ -3,7 +3,7 @@
 
 /**
  * \file solverinfos.hh
- * \brief Implementation of the Newton-Raphson method for solving nonlinear equations.
+ * \brief Implementation of the solver information returned by the nonlinear solvers.
  */
 
 #pragma once

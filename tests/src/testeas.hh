@@ -6,9 +6,10 @@
 #include "testcommon.hh"
 
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
+#include <ikarus/finiteelements/mechanics/materials.hh>
 
 template <typename FE>
-requires(FE::template hasSkill<Ikarus::EnhancedAssumedStrainsPre::Skill>())
+requires(FE::template hasEAS<Ikarus::StrainTags::linear>)
 struct ElementTest<FE>
 {
   [[nodiscard]] static auto test() {
@@ -30,7 +31,7 @@ struct ElementTest<FE>
 
       for (auto& numberOfEASParameter : easParameters) {
         fe.setEASType(numberOfEASParameter);
-        auto messageIfFailed = "The numbers of EAS parameters are " + std::to_string(numberOfEASParameter) + ".";
+        auto messageIfFailed = "The number of EAS parameters are " + std::to_string(numberOfEASParameter) + ".";
         if (numberOfEASParameter == 0) {
           t.subTest(checkGradientOfElement(f, req, messageIfFailed));
           t.subTest(checkHessianOfElement(f, req, messageIfFailed));
