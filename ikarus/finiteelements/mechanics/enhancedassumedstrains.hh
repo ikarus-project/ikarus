@@ -64,7 +64,7 @@ public:
   using LocalView   = typename Traits::LocalView;
   using Geometry    = typename Traits::Geometry;
   using GridView    = typename Traits::GridView;
-  using Pre         = EnhancedAssumedStrainsPre;
+  using Pre         = EnhancedAssumedStrainsPre<ES>;
 
   static constexpr auto enhancedStrain = ES;
 

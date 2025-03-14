@@ -236,21 +236,10 @@ public:
       return RTWrapperType<RT>{};
     if constexpr (isSameResultType<RT, ResultTypes::linearStress> or
                   isSameResultType<RT, ResultTypes::linearStressFull>) {
-      const auto eps     = strainFunction(req);
-      auto epsVoigt      = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
-      decltype(auto) mat = [&]() -> decltype(auto) {
-        if constexpr (isSameResultType<RT, ResultTypes::linearStressFull> and requires { mat_.underlying(); })
-          return mat_.underlying();
-        else
-          return mat_;
-      }();
-      return RTWrapper{mat.template stresses<StrainTags::linear>(enlargeIfReduced<Material>(epsVoigt))};
-      // 
       const auto rFunction = resultFunction<RT>();
       const auto eps       = strainFunction(req);
       auto epsVoigt        = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
       return rFunction(epsVoigt);
-      // TODO 
     }
   }
 
