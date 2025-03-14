@@ -31,7 +31,7 @@ jobs:
         config:
           - {
               name: "Clang-16-Debug",
-              container: "ikarusproject/ikarus-dev-clang:latest",
+              container: "ikarusproject/ikarus-dev-clang-debian12:latest",
               config: Debug,
               compilerC: clang-16,
               compilerCxx: clang++-16,
@@ -40,7 +40,7 @@ jobs:
             }
           - {
               name: "Clang-16-Release",
-              container: "ikarusproject/ikarus-dev-clang:latest",
+              container: "ikarusproject/ikarus-dev-clang-debian12:latest",
               config: Release,
               compilerC: clang-16,
               compilerCxx: clang++-16,
@@ -49,7 +49,7 @@ jobs:
             }
           - {
               name: "Clang-16-Python-Release",
-              container: "ikarusproject/ikarus-dev-clang:latest",
+              container: "ikarusproject/ikarus-dev-clang-debian12:latest",
               config: Release,
               compilerC: clang-16,
               compilerCxx: clang++-16,
@@ -58,7 +58,7 @@ jobs:
             }
           - {
               name: "Clang-16-Python-Debug",
-              container: "ikarusproject/ikarus-dev-clang:latest",
+              container: "ikarusproject/ikarus-dev-clang-debian12:latest",
               config: Debug,
               compilerC: clang-16,
               compilerCxx: clang++-16,
@@ -66,8 +66,80 @@ jobs:
               testRegex: "python",
             }
           - {
+              name: "Clang-17-Debug",
+              container: "ikarusproject/ikarus-dev-clang-debian13:latest",
+              config: Debug,
+              compilerC: clang-17,
+              compilerCxx: clang++-17,
+              lib: "-stdlib=libc++",
+              testRegex: "cpp_quick",
+            }
+          - {
+              name: "Clang-17-Release",
+              container: "ikarusproject/ikarus-dev-clang-debian13:latest",
+              config: Release,
+              compilerC: clang-17,
+              compilerCxx: clang++-17,
+              lib: "-stdlib=libc++",
+              testRegex: "cpp",
+            }
+          - {
+              name: "Clang-17-Python-Release",
+              container: "ikarusproject/ikarus-dev-clang-debian13:latest",
+              config: Release,
+              compilerC: clang-17,
+              compilerCxx: clang++-17,
+              lib: "-stdlib=libc++",
+              testRegex: "python",
+            }
+          - {
+              name: "Clang-17-Python-Debug",
+              container: "ikarusproject/ikarus-dev-clang-debian13:latest",
+              config: Debug,
+              compilerC: clang-17,
+              compilerCxx: clang++-17,
+              lib: "-stdlib=libc++",
+              testRegex: "python",
+            }
+          - {
+              name: "Clang-18-Debug",
+              container: "ikarusproject/ikarus-dev-clang-debian13:latest",
+              config: Debug,
+              compilerC: clang-18,
+              compilerCxx: clang++-18,
+              lib: "-stdlib=libc++",
+              testRegex: "cpp_quick",
+            }
+          - {
+              name: "Clang-18-Release",
+              container: "ikarusproject/ikarus-dev-clang-debian13:latest",
+              config: Release,
+              compilerC: clang-18,
+              compilerCxx: clang++-18,
+              lib: "-stdlib=libc++",
+              testRegex: "cpp",
+            }
+          - {
+              name: "Clang-18-Python-Release",
+              container: "ikarusproject/ikarus-dev-clang-debian13:latest",
+              config: Release,
+              compilerC: clang-18,
+              compilerCxx: clang++-18,
+              lib: "-stdlib=libc++",
+              testRegex: "python",
+            }
+          - {
+              name: "Clang-18-Python-Debug",
+              container: "ikarusproject/ikarus-dev-clang-debian13:latest",
+              config: Debug,
+              compilerC: clang-18,
+              compilerCxx: clang++-18,
+              lib: "-stdlib=libc++",
+              testRegex: "python",
+            }
+          - {
               name: "Gcc-12-Debug",
-              container: "ikarusproject/ikarus-dev-gcc:latest",
+              container: "ikarusproject/ikarus-dev-gcc-debian12:latest",
               config: Debug,
               compilerC: gcc-12,
               compilerCxx: g++-12,
@@ -76,7 +148,7 @@ jobs:
             }
           - {
               name: "Gcc-12-Release",
-              container: "ikarusproject/ikarus-dev-gcc:latest",
+              container: "ikarusproject/ikarus-dev-gcc-debian12:latest",
               config: Release,
               compilerC: gcc-12,
               compilerCxx: g++-12,
@@ -85,7 +157,7 @@ jobs:
             }
           - {
               name: "Gcc-12-Python-Release",
-              container: "ikarusproject/ikarus-dev-gcc:latest",
+              container: "ikarusproject/ikarus-dev-gcc-debian12:latest",
               config: Release,
               compilerC: gcc-12,
               compilerCxx: g++-12,
@@ -94,13 +166,49 @@ jobs:
             }
           - {
             name: "Gcc-12-Python-Debug",
-            container: "ikarusproject/ikarus-dev-gcc:latest",
+            container: "ikarusproject/ikarus-dev-gcc-debian12:latest",
             config: Debug,
             compilerC: gcc-12,
             compilerCxx: g++-12,
             lib: "",
             testRegex: "python",
-          }
+            }
+          - {
+              name: "Gcc-14-Debug",
+              container: "ikarusproject/ikarus-dev-gcc-debian13:latest",
+              config: Debug,
+              compilerC: gcc-14,
+              compilerCxx: g++-14,
+              lib: "",
+              testRegex: "cpp_quick",
+            }
+          - {
+              name: "Gcc-14-Release",
+              container: "ikarusproject/ikarus-dev-gcc-debian13:latest",
+              config: Release,
+              compilerC: gcc-14,
+              compilerCxx: g++-14,
+              lib: "",
+              testRegex: "cpp",
+            }
+          - {
+              name: "Gcc-14-Python-Release",
+              container: "ikarusproject/ikarus-dev-gcc-debian13:latest",
+              config: Release,
+              compilerC: gcc-14,
+              compilerCxx: g++-14,
+              lib: "",
+              testRegex: "python",
+            }
+          - {
+            name: "Gcc-14-Python-Debug",
+            container: "ikarusproject/ikarus-dev-gcc-debian13:latest",
+            config: Debug,
+            compilerC: gcc-14,
+            compilerCxx: g++-14,
+            lib: "",
+            testRegex: "python",
+            }
     container:
       image: ${{ matrix.config.container }}
       options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
