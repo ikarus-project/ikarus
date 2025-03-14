@@ -37,6 +37,15 @@ auto transpose(const Eigen::EigenBase<Derived>& A);
 namespace Concepts {
 
   /**
+   * \concept EigenType
+   * \brief Concept to check if a type is derived from Eigen::MatrixBase.
+   *
+   * \tparam T The type to check.
+   */
+  template <typename T>
+  concept EigenType = std::is_base_of_v<Eigen::MatrixBase<std::decay_t<T>>, std::decay_t<T>>;
+
+  /**
    * \concept FlatInterLeavedBasis
    * \brief Concept to check if a basis uses FlatInterleaved indexing strategy.
    *
@@ -605,5 +614,54 @@ namespace Concepts {
   template <typename T>
   concept AutodiffScalar = Impl::is_dual<T>::value;
 
+  /**
+   \concept SmartPointer
+   \brief Concept to check if the type is either a unique_ptr or a shared_ptr.
+   \tparam T The type to be checked.
+   */
+  template <typename T>
+  concept SmartPointer = traits::isSharedPtr<T>::value || traits::isUniquePtr<T>::value;
+
+  /**
+   \concept SmartPointer
+   \brief Concept to check if the type is either a smart pointer or a raw pointer.
+   \tparam T The type to be checked.
+   */
+  template <typename T>
+  concept PointerOrSmartPointer = SmartPointer<T> || traits::Pointer<T>;
+
+  template <typename S>
+  concept ControlRoutineState = requires(S s) {
+    typename S::Domain;
+
+    // { s.domain } -> std::convertible_to<const typename S::Domain>;
+    { s.loadStep } -> std::convertible_to<int>;
+    { s.stepSize } -> std::convertible_to<double>;
+  };
+
 } // namespace Concepts
+
+namespace traits {
+#ifndef DOXYGEN
+
+  // Primary template: for non-pointer types.
+  template <typename T, bool = Concepts::PointerOrSmartPointer<T>>
+  struct MaybeDereference
+  {
+    using type = T;
+  };
+
+  // Specialization: for pointer (or smart pointer) types.
+  template <typename T>
+  struct MaybeDereference<T, true>
+  {
+    // We know T is pointer-like, so *std::declval<T&>() is well-formed.
+    using type = std::remove_reference_t<decltype(*std::declval<T&>())>;
+  };
+#endif
+
+  template <typename T>
+  using MaybeDereferencedType = typename MaybeDereference<T>::type;
+
+} // namespace traits
 } // namespace Ikarus

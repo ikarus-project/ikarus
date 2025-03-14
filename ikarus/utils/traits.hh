@@ -8,13 +8,9 @@
 
 #pragma once
 #include <functional>
+#include <memory>
 #include <tuple>
 #include <type_traits>
-
-namespace std {
-template <class T>
-class shared_ptr;
-}
 
 namespace Eigen {
 
@@ -147,6 +143,24 @@ struct isSharedPtr<std::shared_ptr<T>> : std::true_type
 };
 #endif
 
+/**
+ * \brief Type trait to check if a type is a isUniquePtr.
+ * \ingroup traits
+ * \tparam T Class to check.
+ */
+template <typename T>
+struct isUniquePtr : std::false_type
+{
+};
+
+#ifndef DOXYGEN
+
+template <typename T, typename Deleter>
+struct isUniquePtr<std::unique_ptr<T, Deleter>> : std::true_type
+{
+};
+#endif
+
 template <typename T>
 class remove_pointer
 {
@@ -187,6 +201,11 @@ template <template <auto, typename...> class Type, typename>
 struct isSpecializationNonTypeAndTypes : std::false_type
 {
 };
+
+template <template <auto, auto, typename...> class Type, typename>
+struct isSpecializationNonTypeNonTypeAndTypes : std::false_type
+{
+};
 #endif
 
 /**
@@ -200,6 +219,21 @@ struct isSpecializationNonTypeAndTypes : std::false_type
  */
 template <template <auto, typename...> class Type, auto T, typename... N>
 struct isSpecializationNonTypeAndTypes<Type, Type<T, N...>> : std::true_type
+{
+};
+
+/**
+ * \brief Type trait to check if a class is a specialization of a template with two non-type parameter and types.
+ *
+ * \ingroup traits
+ *
+ * \tparam Type Template class with a non-type parameter and types.
+ * \tparam T First non-type parameter.
+ * \tparam R Second non-type parameter.
+ * \tparam N Types used to instantiate the template.
+ */
+template <template <auto, auto, typename...> class Type, auto T, auto R, typename... N>
+struct isSpecializationNonTypeNonTypeAndTypes<Type, Type<T, R, N...>> : std::true_type
 {
 };
 
@@ -343,8 +377,9 @@ struct FunctionTraits;
 template <typename R, typename... Args>
 struct FunctionTraits<R (*)(Args...)>
 {
-  using return_type = R;
-  using ArgsTuple   = std::tuple<Args...>;
+  using return_type   = R;
+  using ArgsTuple     = std::tuple<Args...>;
+  using FreeSignature = R(Args...);
 
   template <int i>
   using args_type                        = typename std::tuple_element<i, ArgsTuple>::type;
@@ -357,8 +392,9 @@ struct FunctionTraits<R (*)(Args...)>
 template <typename R, typename C, typename... Args>
 struct FunctionTraits<R (C::*)(Args...) const>
 {
-  using return_type = R;
-  using ArgsTuple   = std::tuple<Args...>;
+  using return_type   = R;
+  using ArgsTuple     = std::tuple<Args...>;
+  using FreeSignature = R(Args...);
 
   template <int i>
   using args_type                        = typename std::tuple_element<i, ArgsTuple>::type;
@@ -371,8 +407,9 @@ struct FunctionTraits<R (C::*)(Args...) const>
 template <typename R, typename C, typename... Args>
 struct FunctionTraits<R (C::*)(Args...)>
 {
-  using return_type = R;
-  using ArgsTuple   = std::tuple<Args...>;
+  using return_type   = R;
+  using ArgsTuple     = std::tuple<Args...>;
+  using FreeSignature = R(Args...);
 
   template <int i>
   using args_type                        = typename std::tuple_element<i, ArgsTuple>::type;

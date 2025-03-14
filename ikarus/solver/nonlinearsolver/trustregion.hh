@@ -19,11 +19,12 @@
 #include <Eigen/Sparse>
 
 #include <ikarus/linearalgebra/truncatedconjugategradient.hh>
+#include <ikarus/solver/nonlinearsolver/nonlinearsolverbase.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/utils/broadcaster/broadcaster.hh>
+#include <ikarus/utils/broadcaster/broadcastermessages.hh>
 #include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
-#include <ikarus/utils/observer/observer.hh>
-#include <ikarus/utils/observer/observermessages.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
@@ -166,7 +167,9 @@ struct Stats
 * \tparam UF Type of the update function
 */
 template <typename F, PreConditioner preConditioner, typename UF>
-class TrustRegion : public IObservable<NonLinearSolverMessages>
+class TrustRegion : public NonlinearSolverBase<F>
+// template <typename NLO, PreConditioner preConditioner, typename UF>
+// class TrustRegion : public NonlinearSolverBase<NLO>
 {
 public:
   using Settings = TRSettings; ///< Type of the settings for the TrustRegion solver
@@ -227,6 +230,8 @@ public:
     stats_.energy   = e;
     stats_.gradNorm = norm(g);
     truncatedConjugateGradient_.analyzePattern(h);
+
+    auto solverState = typename TrustRegion::State{.domain = x, .correction = eta_};
 
     innerInfo_.Delta = settings_.Delta0;
     spdlog::info(
@@ -368,6 +373,10 @@ public:
         logState();
 
       info_.randomPredictionString = "";
+
+      solverState.dNorm = stats_.etaNorm;
+      solverState.rNorm = stats_.gradNorm;
+      this->notify(NonLinearSolverMessages::CORRECTION_UPDATED, solverState);
 
       if (info_.acceptProposal) {
         stats_.energy = stats_.energyProposal;

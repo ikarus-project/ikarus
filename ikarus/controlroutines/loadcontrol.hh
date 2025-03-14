@@ -10,11 +10,41 @@
 
 #include <memory>
 
+#include <dune/common/hybridutilities.hh>
+
 #include <ikarus/controlroutines/controlinfos.hh>
-#include <ikarus/utils/observer/observer.hh>
-#include <ikarus/utils/observer/observermessages.hh>
+#include <ikarus/controlroutines/controlroutinebase.hh>
+#include <ikarus/controlroutines/controlroutinefactory.hh>
+#include <ikarus/utils/broadcaster/broadcaster.hh>
 
 namespace Ikarus {
+
+template <typename NLS>
+class LoadControl;
+
+/**
+ * \struct LoadControlConfig
+ * \brief Config for the Load-Control control routine
+ */
+struct LoadControlConfig
+{
+  int loadSteps{};
+  double tbegin{};
+  double tEnd{};
+};
+
+/**
+ * \brief Function to create a load control instance
+ *
+ * \tparam NLS Type of the nonlinear solver
+ * \param config the provided config for the load control
+ * \param nonlinearSolver the provided nonlinearsolver
+ * \return LoadControl the newly created load control instance
+ */
+template <typename NLS>
+auto createControlRoutine(const LoadControlConfig& config, NLS&& nonlinearSolver) {
+  return LoadControl(std::forward<NLS>(nonlinearSolver), config.loadSteps, std::array{config.tbegin, config.tEnd});
+}
 
 /**
  * \class LoadControl
@@ -26,7 +56,7 @@ namespace Ikarus {
  * \tparam NLS Type of the nonlinear solver used in the control routine.
  */
 template <typename NLS>
-class LoadControl : public IObservable<ControlMessages>
+class LoadControl : public ControlRoutineBase<typename NLS::DifferentiableFunction>
 {
 public:
   /** \brief The name of the LoadControl method. */

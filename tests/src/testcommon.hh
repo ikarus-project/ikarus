@@ -16,8 +16,8 @@
 #include <dune/grid/yaspgrid.hh>
 #include <dune/vtk/vtkwriter.hh>
 
-#include "ikarus/assembler/simpleassemblers.hh"
-#include "ikarus/utils/dirichletvalues.hh"
+#include <ikarus/assembler/simpleassemblers.hh>
+#include <ikarus/utils/dirichletvalues.hh>
 
 #if HAVE_DUNE_IGA
   #include <dune/iga/nurbsgrid.hh>

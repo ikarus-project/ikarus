@@ -28,7 +28,7 @@
 #include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/dirichletvalues.hh>
-#include <ikarus/utils/observer/controlvtkwriter.hh>
+#include <ikarus/utils/listener/controlvtkwriter.hh>
 
 using Dune::TestSuite;
 
@@ -102,13 +102,13 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   Ikarus::NonlinearSolverFactory trFactory(trConfig);
   auto tr = trFactory.create(sparseAssembler);
 
-  auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
-      basis.flat(), d, 2);
-  vtkWriter->setFileNamePrefix("Test2DSolid");
-  vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
+  auto vtkWriter = ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>(basis.flat(), d, 2);
+  vtkWriter.setFileNamePrefix("Test2DSolid");
+  vtkWriter.setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
 
-  auto lc = Ikarus::LoadControl(tr, 1, {0, 50});
-  lc.subscribeAll(vtkWriter);
+  auto lc = ControlRoutineFactory::create(LoadControlConfig{1, 0, 50}, tr, sparseAssembler);
+  vtkWriter.subscribeTo(lc);
+
   const auto controlInfo = lc.run(req);
   auto actualEnergy      = f(req);
   const auto maxDisp     = std::ranges::max(d);
