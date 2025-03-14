@@ -188,11 +188,12 @@ public:
         correction_ = -linearSolver_(rx, Ax);
         dNorm       = norm(correction_);
       }
+      this->notify(CORRECTION_UPDATED, solverState);
+      updateFunction_(x, correction_);
       this->notify(CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
       this->notify(SOLUTION_CHANGED);
-      rx = residualFunction_(x);
-      Ax = jacobianFunction_(x);
-      this->notify(CORRECTION_UPDATED, solverState);
+      rx    = residualFunction_(x);
+      Ax    = jacobianFunction_(x);
       rNorm = norm(rx);
       this->notify(RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
       this->notify(ITERATION_ENDED);

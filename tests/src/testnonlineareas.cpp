@@ -30,11 +30,10 @@
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/functionhelper.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
-#include <ikarus/utils/observer/controllogger.hh>
-#include <ikarus/utils/observer/controlvtkwriter.hh>
-#include <ikarus/utils/observer/nonlinearsolverlogger.hh>
+#include <ikarus/utils/listener/controllogger.hh>
+#include <ikarus/utils/listener/controlvtkwriter.hh>
+#include <ikarus/utils/listener/genericlistener.hh>
+#include <ikarus/utils/listener/nonlinearsolverlogger.hh>
 
 using namespace Ikarus;
 using Dune::TestSuite;
@@ -96,24 +95,33 @@ auto cantileverBeamTest(const MAT& reducedMat) {
 
   AffordanceCollection elastoStaticsNoScalar(VectorAffordance::forces, MatrixAffordance::stiffness);
 
-  auto nonOp = NonLinearOperatorFactory::op(sparseAssemblerAM, elastoStaticsNoScalar, sparseAssemblerAM->dBCOption());
+  auto nonOp =
+      DifferentiableFunctionFactory::op(sparseAssemblerAM, elastoStaticsNoScalar, sparseAssemblerAM->dBCOption());
 
   constexpr double tol = 1e-10;
 
   auto nrConfig =
       Ikarus::NewtonRaphsonConfig<decltype(linSolver)>{.parameters = {.tol = tol}, .linearSolver = linSolver};
-  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-  auto pathFollowingObserver   = std::make_shared<ControlLogger>();
-  auto vtkWriter =
-      std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(basis.flat(), d);
-  vtkWriter->setFileNamePrefix("CantileverNonlinearEAS");
-  vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
-  auto nr = createNonlinearSolver(nrConfig, nonOp);
-  auto lc = LoadControl(nr, 20, {0, 1});
-  nr->subscribeAll(nonLinearSolverObserver);
-  lc.subscribeAll({pathFollowingObserver, vtkWriter});
+  NonlinearSolverFactory nrFactory(nrConfig);
+  auto nr = nrFactory.create(sparseAssemblerAM);
 
-  const auto controlInfo = lc.run();
+  // Only when creating the control routine via the Factory, the elements get registered for correction update
+  // automatically.
+  auto lc = ControlRoutineFactory::create(LoadControlConfig{20, 0.0, 1.0}, nr, sparseFlatAssembler);
+
+  auto nonLinearSolverObserver = NonLinearSolverLogger();
+  auto controlLogger           = ControlLogger();
+  auto vtkWriter = ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>(basis.flat(), d);
+  vtkWriter.setFileNamePrefix("CantileverNonlinearEAS");
+  vtkWriter.setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
+
+  nonLinearSolverObserver.subscribeTo(lc.nonLinearSolver());
+  vtkWriter.subscribeTo(lc);
+  controlLogger.subscribeTo(lc);
+
+  const auto controlInfo = lc.run(req);
+  d                      = req.globalSolution();
+  lambda                 = req.parameter();
 
   double expectedLambda  = 1.0;
   int expectedIterations = 80;
@@ -158,11 +166,11 @@ int main(int argc, char** argv) {
   auto reducedMatSVK = planeStrain(matSVK);
   auto reducedMatNH  = planeStrain(matNH);
 
-  // easAutoDiffTest<2>(t, reducedMatSVK);
-  // easAutoDiffTest<3>(t, matSVK);
+  easAutoDiffTest<2>(t, reducedMatSVK);
+  easAutoDiffTest<3>(t, matSVK);
 
-  // easAutoDiffTest<2>(t, reducedMatNH);
-  // easAutoDiffTest<3>(t, matNH);
+  easAutoDiffTest<2>(t, reducedMatNH);
+  easAutoDiffTest<3>(t, matNH);
 
   t.subTest(cantileverBeamTest(reducedMatSVK));
   t.subTest(cantileverBeamTest(reducedMatNH));

@@ -18,6 +18,7 @@
   #include <ikarus/finiteelements/ferequirements.hh>
   #include <ikarus/finiteelements/mechanics/materials/tags.hh>
   #include <ikarus/finiteelements/mechanics/strainenhancements/easvariants.hh>
+  #include <ikarus/utils/broadcaster/broadcastermessages.hh>
   #include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {
@@ -269,6 +270,17 @@ protected:
       }
     };
     easVariant_(calculateForceContribution);
+  }
+
+  template <typename MT, typename BC>
+  void subscribeToImpl(BC& bc) {
+    if constexpr (std::same_as<MT, NonLinearSolverMessages>) {
+      using NLSState = typename BC::State;
+      underlying().subscribe(bc, [&](NonLinearSolverMessages message, const NLSState& state) {
+        if (message == NonLinearSolverMessages::CORRECTION_UPDATED)
+          this->updateStateImpl(state.domain, state.correction);
+      });
+    }
   }
 
 private:
