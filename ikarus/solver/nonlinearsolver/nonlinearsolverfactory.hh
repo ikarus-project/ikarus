@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <type_traits>
 #include <utility>
 
 #include <ikarus/assembler/dirichletbcenforcement.hh>
@@ -55,13 +56,29 @@ struct NonlinearSolverFactory
     auto f        = DifferentiableFunctionFactory::op(assembler);
     using fTraits = typename decltype(f)::Traits;
 
-    using CorrectionType = typename fTraits::template Range<1>;
+    using CorrectionType = std::remove_cvref_t<typename fTraits::template Range<1>>;
     using Domain         = typename fTraits::Domain;
-    auto updateF         = [assembler, setting = settings]<typename D, typename C>(D& x, const C& b) {
-      if (assembler->dBCOption() == DBCOption::Reduced) {
-        setting.updateFunction(x, assembler->createFullVector(b));
-      } else
-        setting.updateFunction(x, b);
+
+    auto updateF = [assembler, setting = settings]<typename D, typename C>(D& x, const C& b) {
+      if constexpr (not std::is_same_v<C, utils::ZeroIncrementTag>) {
+        // the right-hand side is reduced
+        if (assembler->dBCOption() == DBCOption::Reduced and assembler.reducedSize() == b.size()) {
+          setting.updateFunction(x, assembler->createFullVector(b));
+        } else if (assembler.reducedSize() == x.size() and
+                   assembler.size() == b.size()) // the right-hand side is full but x is reduced
+        {
+          setting.updateFunction(x, assembler->createReducedVector(b));
+        } else
+          setting.updateFunction(x, b);
+      }
+      // updates due to inhomogenious bcs
+      if constexpr (requires { x.parameter(); }) {
+        auto& dv              = assembler->dirichletValues();
+        CorrectionType newInc = CorrectionType::Zero(dv.size());
+        dv.evaluateInhomogeneousBoundaryCondition(newInc, x.parameter());
+        dv.setZeroAtFixedDofs(x.globalSolution());
+        setting.updateFunction(x, newInc);
+      }
     };
     auto settingsNew = settings.rebindUpdateFunction(std::move(updateF));
     return createNonlinearSolver(std::move(settingsNew), std::move(f));
