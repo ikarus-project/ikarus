@@ -117,7 +117,7 @@ struct ArcLength
                            // solution to get the correct prediction
     reqPredictor.parameter() += dlambda;
 
-    nonlinearSolver.updateFunction()(req, predictorForNewLoadLevel(nonlinearSolver, req, reqPredictor) / dlambda);
+    req += predictorForNewLoadLevel(nonlinearSolver, req, reqPredictor) / dlambda;
 
     auto DD2 = req.globalSolution().squaredNorm();
 
@@ -195,7 +195,7 @@ struct LoadControlSubsidiaryFunction
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     auto reqPredictor = req;
     reqPredictor.parameter() += args.stepSize;
-    nonlinearSolver.updateFunction()(req, predictorForNewLoadLevel(nonlinearSolver, req, reqPredictor));
+    req += predictorForNewLoadLevel(nonlinearSolver, req, reqPredictor);
     args.DD         = req.globalSolution();
     args.Dlambda    = args.stepSize;
     req.parameter() = args.Dlambda;

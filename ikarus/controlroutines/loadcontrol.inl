@@ -61,6 +61,6 @@ template <typename NLS>
 void LoadControl<NLS>::initialPrediction(typename NLS::Domain& x) const {
   auto y = x;
   y.parameter() += stepSize_;
-  nonLinearSolver_->updateFunction()(x, predictorForNewLoadLevel(*nonLinearSolver_, x, y));
+  x += predictorForNewLoadLevel(*nonLinearSolver_, x, y);
 }
 } // namespace Ikarus
