@@ -3,7 +3,8 @@
 
 # install headers
 install(
-  FILES loadcontrol.hh
+  FILES common.hh
+        loadcontrol.hh
         loadcontrol.inl
         pathfollowing.hh
         pathfollowing.inl
