@@ -9,6 +9,8 @@
 #pragma once
 #include "linearalgebrahelper.hh"
 
+#include <type_traits>
+
 namespace Ikarus::utils {
 /**
  * \struct SolverDefault
@@ -30,6 +32,10 @@ struct SolverDefault
   }
 };
 
+struct ZeroIncrementTag
+{
+} inline constexpr zeroIncrementTag;
+
 /**
  * \struct UpdateDefault
  * \ingroup utils
@@ -44,10 +50,12 @@ struct SolverDefault
  */
 struct UpdateDefault
 {
-  template <typename A, typename B>
-  constexpr void operator()(A&& a, B&& b) const {
-    using Ikarus::operator+=;
-    a += b;
+  template <typename A, typename B = ZeroIncrementTag>
+  constexpr void operator()(A&& a, B&& b = {}) const {
+    if constexpr (not std::is_same_v<B, ZeroIncrementTag>) {
+      using Ikarus::operator+=;
+      a += b;
+    }
   }
 };
 

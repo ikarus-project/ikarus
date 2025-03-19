@@ -83,6 +83,15 @@ public:
   Eigen::VectorXd createFullVector(Eigen::Ref<const Eigen::VectorXd> reducedVector);
 
   /**
+   * \brief Creates the reduzed-sized vector of size reducedSize and inserts the values of a full vector at the
+   * "free" degrees of freedom
+   *
+   * \param reducedVector Reference to the reduced vector.
+   * \return Eigen::VectorXd The full-sized vector.
+   */
+  Eigen::VectorXd createReducedVector(Eigen::Ref<const Eigen::VectorXd> reducedVector);
+
+  /**
    * \brief Returns the container of finite elements.
    * \return Reference to the finite element container.
    */

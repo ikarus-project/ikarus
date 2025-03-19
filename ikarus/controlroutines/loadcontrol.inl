@@ -11,6 +11,11 @@
 
 #include <ikarus/controlroutines/loadcontrol.hh>
 
+#include <type_traits>
+
+#include <ikarus/controlroutines/common.hh>
+#include <ikarus/utils/defaultfunctions.hh>
+
 namespace Ikarus {
 template <typename NLS>
 [[nodiscard(
@@ -35,6 +40,8 @@ LoadControl<NLS>::run(typename NLS::Domain& x) {
 
   state.stepSize = stepSize_;
 
+  this->initialPrediction(x);
+
   for (int ls = 0; ls < loadSteps_; ++ls) {
     state.loadStep = ls;
     this->notify(STEP_STARTED, state);
@@ -47,5 +54,12 @@ LoadControl<NLS>::run(typename NLS::Domain& x) {
   this->notify(CONTROL_ENDED, state);
   info.success = true;
   return info;
+}
+
+template <typename NLS>
+void LoadControl<NLS>::initialPrediction(typename NLS::Domain& x) const {
+  auto y = x;
+  y.parameter() += stepSize_;
+  x += predictorForNewLoadLevel(*nonLinearSolver_, x, y);
 }
 } // namespace Ikarus

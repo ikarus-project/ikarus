@@ -169,9 +169,9 @@ public:
     this->notify(INIT, state);
     solverInformation.success = true;
 
-    decltype(auto) rx              = residualFunction_(x);
-    decltype(auto) Ax              = jacobianFunction_(x);
-    auto rNorm                     = norm(rx);
+    decltype(auto) rx = residualFunction_(x);
+    decltype(auto) Ax = jacobianFunction_(x);
+    auto rNorm        = floatingPointNorm(rx);
     solverInformation.residualNorm = static_cast<double>(rNorm);
 
     decltype(rNorm) dNorm;
@@ -187,7 +187,7 @@ public:
         dNorm = correction_.norm();
       } else {
         correction_ = -linearSolver_(rx, Ax);
-        dNorm       = norm(correction_);
+        dNorm       = floatingPointNorm(correction_);
       }
       solverInformation.correctionNorm = static_cast<double>(dNorm);
 
@@ -195,13 +195,11 @@ public:
       updateFunction_(x, correction_);
       this->notify(CORRECTIONNORM_UPDATED, state);
       this->notify(SOLUTION_CHANGED, state);
-
-      rx                             = residualFunction_(x);
-      Ax                             = jacobianFunction_(x);
-      rNorm                          = norm(rx);
+      rx    = residualFunction_(x);
+      Ax    = jacobianFunction_(x);
+      rNorm = norm(rx);
       solverInformation.residualNorm = static_cast<double>(rNorm);
       this->notify(RESIDUALNORM_UPDATED, state);
-
       ++iter;
       solverInformation.iterations = iter;
       this->notify(ITERATION_ENDED, state);
@@ -219,6 +217,18 @@ public:
    * \return Reference to the function.
    */
   auto& residual() { return residualFunction_; }
+
+  /**
+   * \brief Access the function.
+   * \return Reference to the function.
+   */
+  const auto& residual() const { return residualFunction_; }
+
+  /**
+   * \brief Access the update function.
+   * \return Reference to the function.
+   */
+  const UpdateFunction& updateFunction() const { return updateFunction_; }
 
 private:
   DifferentiableFunction residualFunction_;

@@ -80,6 +80,19 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
       dirichletFlags[localView.index(localIndex)] = true;
   });
 
+  // Inhomogenious Boundary Conditions
+  auto inhomogeneousDisplacement = []<typename T>(const auto& globalCoord, const T& lambda) {
+    Eigen::Vector<T, 2> localInhomogeneous;
+    if (std::abs(globalCoord[1]) < 1e-8) {
+      localInhomogeneous[0] = 0;
+      localInhomogeneous[1] = globalCoord[0] * lambda / 1000;
+    } else
+      localInhomogeneous.setZero();
+    return localInhomogeneous;
+  };
+
+  dirichletValues.storeInhomogeneousBoundaryCondition(inhomogeneousDisplacement);
+
   auto sparseAssembler = makeSparseFlatAssembler(fes, dirichletValues);
 
   auto req           = typename FEType::Requirement(basis);
@@ -111,23 +124,45 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   vtkWriter.subscribeTo(lc);
 
   const auto controlInfo = lc.run(req);
-  auto actualEnergy      = f(req);
-  const auto maxDisp     = std::ranges::max(d);
+  if constexpr (std::is_same_v<Material, Materials::StVenantKirchhoff>) {
+    int expectedIterations =
+        std::is_same_v<Grid, Grids::Yasp> or std::is_same_v<Grid, Grids::Alu> ? 8 + 1 : 6 + 1 /* iga case*/;
+    t.check(controlInfo.totalIterations == expectedIterations)
+        << "Total iterations should be " << expectedIterations << "but is " << controlInfo.totalIterations;
+  }
+  if constexpr (std::is_same_v<Material, Materials::NeoHooke>) {
+    int expectedIterations =
+        std::is_same_v<Grid, Grids::Alu> ? 9 + 1 : (std::is_same_v<Grid, Grids::Yasp> ? 8 + 1 : 5 + 1 /* iga case*/);
+    t.check(controlInfo.totalIterations == expectedIterations)
+        << "Total iterations should be " << expectedIterations << "but is " << controlInfo.totalIterations;
+  }
+
+  // check that inhomogeneous boundary conditions are correctly applied in the final state
+  Eigen::VectorXd inhomogeneousDisplacementExpected(basis.flat().dimension());
+  dirichletValues.evaluateInhomogeneousBoundaryCondition(inhomogeneousDisplacementExpected, lambda);
+  for (int i = 0; i < basis.flat().dimension(); ++i)
+    if (std::abs(inhomogeneousDisplacementExpected[i]) > 1e-8)
+      t.check(Dune::FloatCmp::eq(d[i], inhomogeneousDisplacementExpected[i], 1e-12))
+          << "Inhomogeneous boundary condition not correctly applied. Expected: "
+          << inhomogeneousDisplacementExpected[i] << " Actual: " << d[i];
+
+  auto actualEnergy  = f(req);
+  const auto maxDisp = std::ranges::max(d);
   double energyExpected;
   if (std::is_same_v<Grid, Grids::Yasp>)
-    energyExpected = -2.9605187645668578078;
+    energyExpected = -4.3778941792945751388;
   else if (std::is_same_v<Grid, Grids::Alu>)
-    energyExpected = -2.9530594665063669702;
+    energyExpected = -4.3688160780578373377;
   else /* std::is_same_v<Grid, Grids::Iga> */
-    energyExpected = -1.4533281398929942529;
+    energyExpected = -2.8926069294919396491;
 
   double maxDispExpected;
   if (std::is_same_v<Grid, Grids::Yasp>)
-    maxDispExpected = 0.11293260007792008115;
+    maxDispExpected = 0.079028334152537280111;
   else if (std::is_same_v<Grid, Grids::Alu>)
-    maxDispExpected = 0.1123397197762363714;
+    maxDispExpected = 0.078646198489664045916;
   else /* std::is_same_v<Grid, Grids::Iga> */
-    maxDispExpected = 0.061647849558021668159;
+    maxDispExpected = 0.062227734769800618908;
 
   std::cout << std::setprecision(20) << actualEnergy << std::endl;
   std::cout << "Maxdisp: " << maxDisp << std::endl;
@@ -156,6 +191,9 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   t.check(resultFunction->ncomps() == 3) << "Test result comps: " << resultFunction->ncomps() << "should be 3";
 
   vtkWriter2.addPointData(resultFunction);
+  vtkWriter2.addPointData(
+      Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, 2>>(basis.flat(), d),
+      Dune::Vtk::FieldInfo("displacements", 2, Dune::Vtk::RangeTypes::VECTOR));
 
   auto resultFunction2 =
       makeResultFunction<ResultTypes::PK2Stress>(sparseAssembler, ResultEvaluators::PrincipalStress<2>{});

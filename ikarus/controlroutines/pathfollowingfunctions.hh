@@ -23,10 +23,9 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/controlroutines/common.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/defaultfunctions.hh>
-#include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
 /**
@@ -104,46 +103,37 @@ struct ArcLength
    * This method initializes the prediction step for the standard arc-length method it computes \f$\psi\f$ and
    * computes initial \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
+   * \tparam NLS Type of the nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    * \ingroup  controlroutines
    */
-  template <typename F>
-  requires(Ikarus::Concepts::LinearSolverCheck<Ikarus::LinearSolver, typename F::Traits::template Range<1>,
-                                               typename F::Domain::SolutionVectorType>)
-  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
-    SolverTypeTag solverTag;
-    using JacobianType = std::remove_cvref_t<typename F::Traits::template Range<1>>;
-    static_assert((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value) or
-                      (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix, JacobianType>::value),
-                  "Linear solver not implemented for the chosen derivative type of the non-linear operator");
+  template <typename NLS>
+  void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
+    // auto&& residual  = nonlinearSolver.residual();
+    auto req_old   = req;
+    double dlambda = 1; // using just lambda=1 from lectures does not work if the depenndent variable is a non-linear
+                        // function of the inhomogeneous bcs. Thats why we need the actual tangent at the current
+                        // solution to get the correct prediction
+    req.parameter() += dlambda;
 
-    if constexpr (traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value)
-      solverTag = SolverTypeTag::d_LDLT;
-    else
-      solverTag = SolverTypeTag::sd_SimplicialLDLT;
+    // reqPredictor.parameter() += dlambda;
 
-    req.parameter()  = 1.0;
-    decltype(auto) R = residual(req);
-    decltype(auto) K = derivative(residual)(req);
+    auto predictor = (predictorForNewLoadLevel(nonlinearSolver, req_old, req) / dlambda).eval();
+    // req += predictor / dlambda;
 
-    auto linearSolver = LinearSolver(solverTag); // for the linear predictor step
-    linearSolver.analyzePattern(K);
-    linearSolver.factorize(K);
-    linearSolver.solve(args.DD, -R);
-
-    const auto DD2 = args.DD.squaredNorm();
+    auto DD2 = predictor.squaredNorm();
 
     psi    = sqrt(DD2);
     auto s = sqrt(psi * psi + DD2);
 
-    args.DD      = args.DD * args.stepSize / s;
+    args.DD      = predictor * args.stepSize / s;
     args.Dlambda = args.stepSize / s;
 
-    req.globalSolution()     = args.DD;
-    req.parameter()          = args.Dlambda;
+    nonlinearSolver.updateFunction()(req.globalSolution(), args.DD);
+    req.parameter() = req_old.parameter();
+    req.parameter() += args.Dlambda;
     computedInitialPredictor = true;
   }
 
@@ -152,16 +142,16 @@ struct ArcLength
    *
    * This method updates the prediction step for the standard arc-length method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
+   * \tparam NLS Type of the nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename F>
-  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void intermediatePrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     if (not computedInitialPredictor)
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
-    req.globalSolution() += args.DD;
+    nonlinearSolver.updateFunction()(req.globalSolution(), args.DD);
     req.parameter() += args.Dlambda;
   }
 
@@ -205,16 +195,20 @@ struct LoadControlSubsidiaryFunction
    *
    * This method initializes the prediction step for the load control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
+   * \tparam NLS Type of the nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename F>
-  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
-    args.Dlambda             = args.stepSize;
-    req.parameter()          = args.Dlambda;
-    computedInitialPredictor = true;
+  template <typename NLS>
+  void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
+    auto req_old = req;
+    // reqPredictor.parameter() += args.stepSize;
+    req.parameter() += args.stepSize;
+    req += predictorForNewLoadLevel(nonlinearSolver, req_old, req);
+    args.DD      = req.globalSolution();
+    args.Dlambda = args.stepSize;
+    // req.parameter() += args.Dlambda;
   }
 
   /**
@@ -222,13 +216,13 @@ struct LoadControlSubsidiaryFunction
    *
    * This method updates the prediction step for the load control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
+   * \tparam NLS Type of the nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename F>
-  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void intermediatePrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     if (not computedInitialPredictor)
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     req.parameter() += args.Dlambda;
@@ -282,14 +276,15 @@ struct DisplacementControl
    * \brief Performs initial prediction for the displacement control method.
    *
    * This method initializes the prediction step for the displacement control method.
+    This does not work with inhomogeneous boundary conditions!
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
+   * \tparam NLS Type of the nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename F>
-  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     args.DD(controlledIndices).array() = args.stepSize;
     req.globalSolution()               = args.DD;
     computedInitialPredictor           = true;
@@ -300,13 +295,13 @@ struct DisplacementControl
    *
    * This method updates the prediction step for the displacement control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
+   * \tparam NLS Type of the nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
-  template <typename F>
-  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void intermediatePrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     if (not computedInitialPredictor)
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     req.globalSolution() += args.DD;

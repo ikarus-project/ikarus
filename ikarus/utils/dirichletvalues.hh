@@ -19,6 +19,7 @@
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
+#include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
 
 #include <Eigen/Core>
@@ -26,6 +27,7 @@
 #include <autodiff/forward/real/real.hpp>
 
 #include <ikarus/utils/concepts.hh>
+
 
 namespace Dune {
 template <class K, int N>
@@ -76,7 +78,6 @@ public:
         dirichletFlagsBackend_{dirichletFlags_} {
     dirichletFlagsBackend_.resize(basis_);
     std::fill(dirichletFlags_.begin(), dirichletFlags_.end(), false);
-    inhomogeneousBoundaryVectorDummy_.setZero(static_cast<Eigen::Index>(basis_.size()));
   }
 
   /**
@@ -152,10 +153,7 @@ public:
   /**
    * \brief Resets all degrees of freedom
    */
-  void reset() {
-    std::fill(dirichletFlags_.begin(), dirichletFlags_.end(), false);
-    inhomogeneousBoundaryVectorDummy_.setZero(static_cast<Eigen::Index>(basis_.size()));
-  }
+  void reset() { std::fill(dirichletFlags_.begin(), dirichletFlags_.end(), false); }
 
   /* \brief Returns the local basis object */
   const auto& basis() const { return basis_; }
@@ -203,6 +201,19 @@ public:
   }
 
   /**
+   * \brief Function to write zeros at fixed Dirichlet entries
+   *
+   * \param xIh The vector is expected to have full size the zeros should be written
+   * \tparam V The type of the vector
+   */
+  template <typename V>
+  void setZeroAtFixedDofs(V& xIh) const {
+    for (Eigen::Index i = 0; i < xIh.size(); ++i)
+      if (this->isConstrained(i))
+        xIh[i] = 0.0;
+  }
+
+  /**
    * \brief Function to evaluate all stored inhomogeneous Dirichlet boundary functions.
    *
    * This function evaluates all stored inhomogeneous Dirichlet boundary functions at all positions where the
@@ -211,15 +222,16 @@ public:
    * \param xIh The vector where the interpolated result should be stored
    * \param lambda The load factor
    */
-  void evaluateInhomogeneousBoundaryCondition(Eigen::VectorXd& xIh, const double& lambda) {
-    inhomogeneousBoundaryVectorDummy_.setZero();
-    xIh.resizeLike(inhomogeneousBoundaryVectorDummy_);
+  void evaluateInhomogeneousBoundaryCondition(Eigen::VectorXd& xIh, const double& lambda) const {
+    Eigen::VectorXd inhomogeneousBoundaryVectorDummy;
+    inhomogeneousBoundaryVectorDummy.setZero(this->size());
+    xIh.resizeLike(inhomogeneousBoundaryVectorDummy);
     xIh.setZero();
     for (auto& f : dirichletFunctions_) {
       interpolate(
-          basis_, inhomogeneousBoundaryVectorDummy_,
+          basis_, inhomogeneousBoundaryVectorDummy,
           [&](const auto& globalCoord) { return f.value(globalCoord, lambda); }, dirichletFlagsBackend_);
-      xIh += inhomogeneousBoundaryVectorDummy_;
+      xIh += inhomogeneousBoundaryVectorDummy;
     }
   }
 
@@ -232,20 +244,20 @@ public:
    * \param xIh The vector where the interpolated result should be stored
    * \param lambda The load factor
    */
-  void evaluateInhomogeneousBoundaryConditionDerivative(Eigen::VectorXd& xIh, const double& lambda) {
-    inhomogeneousBoundaryVectorDummy_.setZero();
-    xIh.resizeLike(inhomogeneousBoundaryVectorDummy_);
+  void evaluateInhomogeneousBoundaryConditionDerivative(Eigen::VectorXd& xIh, const double& lambda) const {
+    Eigen::VectorXd inhomogeneousBoundaryVectorDummy;
+    inhomogeneousBoundaryVectorDummy.setZero(this->size());
+    xIh.resizeLike(inhomogeneousBoundaryVectorDummy);
     xIh.setZero();
     for (auto& f : dirichletFunctions_) {
       interpolate(
-          basis_, inhomogeneousBoundaryVectorDummy_,
+          basis_, inhomogeneousBoundaryVectorDummy,
           [&](const auto& globalCoord) { return f.derivative(globalCoord, lambda); }, dirichletFlagsBackend_);
-      xIh += inhomogeneousBoundaryVectorDummy_;
+      xIh += inhomogeneousBoundaryVectorDummy;
     }
   }
 
 private:
-  Eigen::VectorXd inhomogeneousBoundaryVectorDummy_;
   Basis basis_;
   FlagsType dirichletFlags_;
   BackendType dirichletFlagsBackend_;
