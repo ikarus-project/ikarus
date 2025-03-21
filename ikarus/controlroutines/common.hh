@@ -34,9 +34,10 @@ template <typename NLS>
                                                        typename NLS::Domain& x_new) {
   auto&& residual = nls.residual();
 
-  auto&& R = residual(x_old);
-  auto&& K = derivative(residual)(x_old);
+  auto&& R = residual(x_new);
+  auto&& K = derivative(residual)(x_new);
 
+  x_old.syncParameterAndGlobalSolution(nls.updateFunction());
   x_new.syncParameterAndGlobalSolution(nls.updateFunction());
   auto deltaDFromIHBC = x_new.globalSolution() - x_old.globalSolution();
   R -= K * deltaDFromIHBC; // compute the internal forces due to the displcament increment

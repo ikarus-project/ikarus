@@ -110,25 +110,28 @@ struct ArcLength
   template <typename NLS>
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     // auto&& residual  = nonlinearSolver.residual();
-    req.parameter()   = 1.0;
-    auto reqPredictor = req;
-    double dlambda = 1e-8; // using just lambda=1 from lectures does not work if the depenndent variable a  non-linear
-                           // function of the inhomogeneous bcs Thats why we need the actual tangent at the current
+    auto req_old   = req;
+    double dlambda = 1e-8; // using just lambda=1 from lectures does not work if the depenndent variable is a non-linear
+                           // function of the inhomogeneous bcs. Thats why we need the actual tangent at the current
                            // solution to get the correct prediction
-    reqPredictor.parameter() += dlambda;
+    req.parameter() += dlambda;
 
-    req += predictorForNewLoadLevel(nonlinearSolver, req, reqPredictor) / dlambda;
+    // reqPredictor.parameter() += dlambda;
 
-    auto DD2 = req.globalSolution().squaredNorm();
+    auto predictor = predictorForNewLoadLevel(nonlinearSolver, req_old, req) / dlambda;
+    // req += predictor / dlambda;
+
+    auto DD2 = predictor.squaredNorm();
 
     psi    = sqrt(DD2);
     auto s = sqrt(psi.value() * psi.value() + DD2);
 
-    args.DD      = req.globalSolution() * args.stepSize / s;
+    args.DD      = predictor * args.stepSize / s;
     args.Dlambda = args.stepSize / s;
 
-    req.globalSolution() = args.DD;
-    req.parameter()      = args.Dlambda;
+    req.globalSolution() += args.DD;
+    req.parameter() = req_old.parameter();
+    req.parameter() += args.Dlambda;
   }
 
   /**
@@ -194,11 +197,12 @@ struct LoadControlSubsidiaryFunction
   template <typename NLS>
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     auto reqPredictor = req;
-    reqPredictor.parameter() += args.stepSize;
+    // reqPredictor.parameter() += args.stepSize;
+    req.parameter() += args.stepSize;
     req += predictorForNewLoadLevel(nonlinearSolver, req, reqPredictor);
-    args.DD         = req.globalSolution();
-    args.Dlambda    = args.stepSize;
-    req.parameter() = args.Dlambda;
+    args.DD      = req.globalSolution();
+    args.Dlambda = args.stepSize;
+    req.parameter() += args.Dlambda;
   }
 
   /**
