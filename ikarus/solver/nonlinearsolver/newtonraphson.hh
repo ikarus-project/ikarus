@@ -170,7 +170,7 @@ public:
 
     decltype(auto) rx = residualFunction_(x);
     decltype(auto) Ax = jacobianFunction_(x);
-    auto rNorm        = norm(rx);
+    auto rNorm        = floatingPointNorm(rx);
     decltype(rNorm) dNorm;
     int iter{0};
     if constexpr (isLinearSolver)
@@ -187,7 +187,7 @@ public:
         updateFunction_(x, correction_);
       } else {
         correction_ = -linearSolver_(rx, Ax);
-        dNorm       = norm(correction_);
+        dNorm       = floatingPointNorm(correction_);
         updateFunction_(x, correction_);
       }
       this->notify(CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
@@ -195,7 +195,7 @@ public:
       rx = residualFunction_(x);
       Ax = jacobianFunction_(x);
       this->notify(CORRECTION_UPDATED, solverState);
-      rNorm = norm(rx);
+      rNorm = floatingPointNorm(rx);
       this->notify(RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
       this->notify(ITERATION_ENDED);
       ++iter;
@@ -215,6 +215,18 @@ public:
    * \return Reference to the function.
    */
   auto& residual() { return residualFunction_; }
+
+  /**
+   * \brief Access the function.
+   * \return Reference to the function.
+   */
+  const auto& residual() const { return residualFunction_; }
+
+  /**
+   * \brief Access the update function.
+   * \return Reference to the function.
+   */
+  const UpdateFunction& updateFunction() const { return updateFunction_; }
 
 private:
   DifferentiableFunction residualFunction_;

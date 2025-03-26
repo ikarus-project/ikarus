@@ -9,12 +9,16 @@
 
 #pragma once
 
+#include <type_traits>
+
+#include <ikarus/controlroutines/common.hh>
+#include <ikarus/utils/defaultfunctions.hh>
+
 namespace Ikarus {
 template <typename NLS>
 ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
   using enum ControlMessages;
   ControlInformation info({false});
-  decltype(auto) nonOp = nonLinearSolver_->residual();
   this->notify(CONTROL_STARTED, static_cast<std::string>(this->name()));
   auto& loadParameter = x.parameter();
 
@@ -33,6 +37,8 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
 
   state.stepSize = stepSize_;
 
+  this->initialPrediction(x);
+
   for (int ls = 0; ls < loadSteps_; ++ls) {
     this->notify(STEP_STARTED, ls, stepSize_);
     loadParameter += stepSize_;
@@ -49,5 +55,12 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
   this->notify(CONTROL_ENDED, info.totalIterations, static_cast<std::string>(this->name()));
   info.success = true;
   return info;
+}
+
+template <typename NLS>
+void LoadControl<NLS>::initialPrediction(typename NLS::Domain& x) const {
+  auto y = x;
+  y.parameter() += stepSize_;
+  x += predictorForNewLoadLevel(*nonLinearSolver_, x, y);
 }
 } // namespace Ikarus
