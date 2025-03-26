@@ -30,6 +30,9 @@ auto createSPDLinearSolverFromNonLinearSolver(const NLS& nls) {
 }
 
 template <typename NLS>
+requires(requires(typename NLS::Domain x) {
+  { x.syncParameterAndGlobalSolution(std::declval<typename NLS::UpdateFunction>()) };
+})
 [[nodiscard]] Eigen::VectorXd predictorForNewLoadLevel(const NLS& nls, const typename NLS::Domain& x_old,
                                                        typename NLS::Domain& x_new) {
   auto&& residual = nls.residual();
@@ -37,12 +40,17 @@ template <typename NLS>
   auto&& R = residual(x_new);
   auto&& K = derivative(residual)(x_new);
 
-  x_old.syncParameterAndGlobalSolution(nls.updateFunction());
-  x_new.syncParameterAndGlobalSolution(nls.updateFunction());
+  // x_old.syncParameterAndGlobalSolution(nls.updateFunction());
+  auto uf = nls.updateFunction();
+  x_new.syncParameterAndGlobalSolution(uf);
+  Eigen::VectorXd delta(R.size());
+  delta.setZero();
   auto deltaDFromIHBC = x_new.globalSolution() - x_old.globalSolution();
-  R -= K * deltaDFromIHBC; // compute the internal forces due to the displcament increment
-                           // F_Int_dir = K* delta_u_dir, delta_u_dir is only non-zero for the inhomogeneous part
+  uf(delta, deltaDFromIHBC);
 
+  // compute the internal forces due to the displcament increment
+  // F_Int_dir = K* delta_u_dir, delta_u_dir is only non-zero for the inhomogeneous part
+  R -= K * delta;
   auto linearSolver = createSPDLinearSolverFromNonLinearSolver(nls);
   linearSolver.analyzePattern(K);
   linearSolver.factorize(K);
@@ -50,5 +58,13 @@ template <typename NLS>
   linearSolver.solve(dPredictor, -R);
 
   return dPredictor;
+}
+template <typename NLS>
+requires(not requires(typename NLS::Domain x) {
+  { x.syncParameterAndGlobalSolution(std::declval<typename NLS::UpdateFunction>()) };
+})
+[[nodiscard]] auto predictorForNewLoadLevel(const NLS& nls, const typename NLS::Domain& x_old,
+                                            typename NLS::Domain& x_new) {
+  return Eigen::VectorXd::Zero(x_new.size());
 }
 } // namespace Ikarus
