@@ -84,6 +84,10 @@ SPDX-License-Identifier: LGPL-3.0-or-later
   ([#337](https://github.com/ikarus-project/ikarus/pull/337))
 - `Observers` and `Observables` are replaced with `Broadcasters` and `Listeners`. Existing loggers work almost the same.
  A noteworthy difference is that, the Broadcaster (e.g. a nonlinear solver) has to be registered to a Listener (e.g. a logger) with `logger.subscribeTo(solver)` ([#349](https://github.com/ikarus-project/ikarus/pull/349))
+- Refactor EAS to handle NonLinearElastic ([#325](https://github.com/ikarus-project/ikarus/pull/325))
+    - This also includes a new interface method in the `Mixin` called `updateState` with the respective `impl()` function.
+    - For EAS, `updateStateImpl()` is used to update the internal variable `alpha` in a nonlinear analysis.
+    - Missing functions like `getStress` and `materialTangentFunction` are added to `LinearElastic` and `NonLinearElastic`, respectively.
 
 ## Release v0.4 (Ganymede)
 

@@ -6,9 +6,10 @@
 #include "testcommon.hh"
 
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
+#include <ikarus/finiteelements/mechanics/materials.hh>
 
 template <typename FE>
-requires(FE::template hasSkill<Ikarus::EnhancedAssumedStrainsPre::Skill>())
+requires(FE::template hasEAS<Ikarus::EAS::LinearStrain>)
 struct ElementTest<FE>
 {
   [[nodiscard]] static auto test() {
@@ -30,7 +31,7 @@ struct ElementTest<FE>
 
       for (auto& numberOfEASParameter : easParameters) {
         fe.setEASType(numberOfEASParameter);
-        auto messageIfFailed = "The numbers of EAS parameters are " + std::to_string(numberOfEASParameter) + ".";
+        auto messageIfFailed = "The number of EAS parameters are " + std::to_string(numberOfEASParameter) + ".";
         if (numberOfEASParameter == 0) {
           t.subTest(checkGradientOfElement(f, req, messageIfFailed));
           t.subTest(checkHessianOfElement(f, req, messageIfFailed));
@@ -68,10 +69,10 @@ struct ElementTest<FE>
           auto easVariantCopy    = fe.easVariant(); // This only test if the variant has a copy assignment operator
           const auto& easVariant = fe.easVariant();
           auto testM             = [&]<typename EAS>(const EAS& easFunction) {
-            typename EAS::MType MIntegrated;
+            typename EAS::AnsatzType MIntegrated;
             MIntegrated.setZero();
             for (const auto& gp : rule) {
-              const auto M = easFunction.calcM(gp.position());
+              const auto M = easFunction(gp.position());
 
               const double detJ = element.geometry().integrationElement(gp.position());
               MIntegrated += M * detJ * gp.weight();
