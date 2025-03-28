@@ -147,7 +147,7 @@ def truss(youngs_modulus, cross_section):
     )
 
 
-def eas(numberofparameters, strainTag=materials.StrainTags.linear):
+def eas(numberofparameters, strainTag="LinearStrain"):
     """
     @brief Creates an enhanced assumed strains pre-element.
 
@@ -156,7 +156,7 @@ def eas(numberofparameters, strainTag=materials.StrainTags.linear):
     @return: The registered enhanced assumed strains pre-element function.
     """
     includes = ["ikarus/finiteelements/mechanics/enhancedassumedstrains.hh"]
-    formatted_strainTag = "Ikarus::" + str(strainTag).replace(".", "::")
+    formatted_strainTag = "Ikarus::EAS::" + strainTag
     element_type = f"Ikarus::EnhancedAssumedStrainsPre<{formatted_strainTag}>"
     return registerPreElement(
         "EnhancedAssumedStrainsPre", includes, element_type, numberofparameters

@@ -66,7 +66,7 @@ def nonlinElasticTest(easBool):
     svkPS = svk.asPlaneStress()
 
     nonLinElastic = iks.finite_elements.nonLinearElastic(svkPS)
-    easF = iks.finite_elements.eas(4, materials.StrainTags.greenLagrangian)
+    easF = iks.finite_elements.eas(4, "GreenLagrangeStrain")
 
     fes = []
     for e in grid.elements:
