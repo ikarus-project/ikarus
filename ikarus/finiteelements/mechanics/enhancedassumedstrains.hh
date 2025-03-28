@@ -28,7 +28,7 @@ class EnhancedAssumedStrains;
 
 /**
  * \brief A PreFE struct for Enhanced Assumed Strains.
- * \tparam ES The strain tag that is enhanced.
+ * \tparam ES The enhanced strain type.
  */
 template <typename ES>
 struct EnhancedAssumedStrainsPre
@@ -48,7 +48,7 @@ struct EnhancedAssumedStrainsPre
  *
  * \tparam PreFE Type of the pre finite element.
  * \tparam FE Type of the finite element.
- * \tparam ES The strain tag that is enhanced.
+ * \tparam ES The enhanced strain type.
  */
 template <typename PreFE, typename FE, typename ES>
 class EnhancedAssumedStrains
@@ -391,7 +391,7 @@ private:
 
 /**
  * \brief A helper function to create an enhanced assumed strain pre finite element.
- * \tparam ES The strain tag that is enhanced.
+ * \tparam ES The enhanced strain type.
  * \param numberOfEASParameters Number of EAS parameters
  * \return An enhanced assumed strain pre finite element.
  */
