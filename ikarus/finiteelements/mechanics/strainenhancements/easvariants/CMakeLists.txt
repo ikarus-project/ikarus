@@ -3,5 +3,5 @@
 
 # install headers
 install(FILES linearandglstrains.hh helperfunctions.hh
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/easvariants
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/strainenhancements/easvariants
 )
