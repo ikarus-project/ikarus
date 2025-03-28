@@ -2,6 +2,8 @@
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 # install headers
-install(FILES greenlagrangestrain.hh linearstrain.hh
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/strainenhancements/easfunctions
+install(
+  FILES greenlagrangestrain.hh linearstrain.hh
+  DESTINATION
+    ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/strainenhancements/easfunctions
 )
