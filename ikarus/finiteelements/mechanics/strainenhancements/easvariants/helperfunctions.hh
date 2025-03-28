@@ -23,4 +23,15 @@ auto transformationMatrixAtCenterWithDetJ(const GEO& geometry) {
 
   return (transformationMatrix(geometry, quadPos0) * detJ0).eval();
 }
+
+template <typename GEO>
+void transformDisplacementGradient(const GEO& geometry, Eigen::Matrix<double, GEO::mydimension, GEO::mydimension>& H,
+                                   const Dune::FieldVector<double, GEO::mydimension>& quadPos) {
+  const auto& referenceElement = Dune::ReferenceElements<double, GEO::mydimension>::general(geometry.type());
+  const auto quadPos0          = referenceElement.position(0, 0);
+  const auto detJ0             = geometry.integrationElement(quadPos0);
+  const auto detJ              = geometry.integrationElement(quadPos);
+  const auto JInv              = Dune::toEigen(geometry.jacobianInverseTransposed(quadPos0)).eval(); // pre-transposed
+  H                            = ((detJ0 / detJ) * JInv * H * JInv.transpose()).eval();
+}
 } // namespace Ikarus::EAS::Impl

@@ -42,6 +42,14 @@ auto easParametersFunc() {
       else
         easParameters = {0, 9, 21};
       return easParameters;
+    } else if constexpr (std::same_as<ES, EAS::DisplacementGradient> or
+                         std::same_as<ES, EAS::DisplacementGradientTransposed>) {
+      std::array<int, 2> easParameters;
+      if constexpr (gridDim == 2)
+        easParameters = {0, 4};
+      else
+        easParameters = {0, 9};
+      return easParameters;
     } else
       DUNE_THROW(Dune::NotImplemented, errorMessage);
   } else {
@@ -214,6 +222,8 @@ int main(int argc, char** argv) {
   };
 
   testNonlinearEASFunc.operator()<EAS::GreenLagrangeStrain>();
+  testNonlinearEASFunc.operator()<EAS::DisplacementGradient>();
+  testNonlinearEASFunc.operator()<EAS::DisplacementGradientTransposed>();
 
   return t.exit();
 }

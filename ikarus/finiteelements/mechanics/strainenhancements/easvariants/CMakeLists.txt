@@ -3,7 +3,7 @@
 
 # install headers
 install(
-  FILES linearandglstrains.hh helperfunctions.hh
+  FILES linearandglstrains.hh helperfunctions.hh displacementgradient.hh
   DESTINATION
     ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/strainenhancements/easvariants
 )
