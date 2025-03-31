@@ -24,6 +24,7 @@
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/listener/controllogger.hh>
 #include <ikarus/utils/listener/controlvtkwriter.hh>
 #include <ikarus/utils/listener/genericlistener.hh>
 #include <ikarus/utils/listener/nonlinearsolverlogger.hh>
@@ -149,10 +150,11 @@ static auto vonMisesTrussTest() {
 
   nonLinearSolverObserver.subscribeTo(lc.nonLinearSolver());
   vtkWriter.subscribeTo(lc);
-  lvkObserver.subscribeTo(lc);
+  auto controlLogger = Ikarus::ControlLogger().subscribeTo(lc);
 
   /// Execute!
   auto controlInfo = lc.run(req);
+
   t.check(controlInfo.success == true) << "Load control failed to converge";
 
   Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);

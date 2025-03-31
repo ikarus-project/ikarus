@@ -14,12 +14,16 @@ template <typename NLS>
 ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
   using enum ControlMessages;
   ControlInformation info({false});
+
   decltype(auto) nonOp = nonLinearSolver_->residual();
   this->notify(CONTROL_STARTED, static_cast<std::string>(this->name()));
   auto& loadParameter = x.parameter();
 
+  auto& state = initState(x);
+
+  // Dummy step to store the undeformed (or initial) state
+  this->notify(ControlMessages::STEP_STARTED, -1, stepSize_);
   loadParameter = 0.0;
-  this->notify(ControlMessages::STEP_STARTED, 0, stepSize_);
   auto solverInfo = nonLinearSolver_->solve(x);
   info.solverInfos.push_back(solverInfo);
   info.totalIterations += solverInfo.iterations;
@@ -36,6 +40,7 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
   for (int ls = 0; ls < loadSteps_; ++ls) {
     this->notify(STEP_STARTED, ls, stepSize_);
     loadParameter += stepSize_;
+    
     solverInfo = nonLinearSolver_->solve(x);
     info.solverInfos.push_back(solverInfo);
     info.totalIterations += solverInfo.iterations;

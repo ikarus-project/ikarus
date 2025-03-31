@@ -92,6 +92,23 @@ private:
   double parameterBegin_;
   double parameterEnd_;
   double stepSize_;
+  std::optional<typename LoadControl::State> state_{};
+
+  void updateAndNotifyControlInfo(ControlInformation& info, const NonLinearSolverInformation& solverInfo,
+                                  typename LoadControl::State& state) {
+    info.solverInfos.push_back(solverInfo);
+    info.totalIterations += solverInfo.iterations;
+
+    state.loadStep += 1;
+
+    this->notify(ControlMessages::SOLUTION_CHANGED, state);  
+    this->notify(ControlMessages::STEP_ENDED, state);
+  }
+
+  typename LoadControl::State& initState(typename NLS::Domain& x) {
+    state_.emplace(typename LoadControl::State{.domain = x, .loadStep = -1});
+    return state_.value();
+  }
 };
 
 } // namespace Ikarus
