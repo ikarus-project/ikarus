@@ -27,6 +27,7 @@ set(programSourceFiles
     testlinearelasticity.cpp
     testmanifolds.cpp
     testmaterial.cpp
+    testnonlineareas.cpp
     testnonlinearelasticityneohooke.cpp
     testnonlinearelasticitysvk.cpp
     testdifffunction.cpp
@@ -42,6 +43,7 @@ set(programSourceFiles
     testhyperelasticity.cpp
     testmaterialswithad.cpp
     testmueslimaterials.cpp
+    testcantileverbeam.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
