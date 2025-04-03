@@ -38,11 +38,13 @@ public:
   template <typename F>
   GenericListener(Messages message, F&& f)
       : message_{message},
-        f_{f} {}
+        f_{std::forward<F>(f)} {
+    subscribeTo(bc);
+  }
 
   template <typename BC>
   GenericListener& subscribeTo(BC& bc) {
-    this->subscribe(bc, [&](M message) { this->updateImpl(message); });
+    this->subscribe(bc, [&](MessageType message, const State& state) { this->updateImpl(message, state); });
     return *this;
   }
 

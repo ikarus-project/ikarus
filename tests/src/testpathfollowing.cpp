@@ -106,7 +106,6 @@ static auto simple2DOperatorLoadControlTest(DifferentiableFunction& f, typename 
   auto nr                      = Ikarus::createNonlinearSolver(nrSettings, f);
   auto lc                      = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
   auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(nr);
-  auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(lc);
 
   const auto controlInfo              = lc.run(req);
   std::vector<int> expectedIterations = {2, 3, 3, 3, 3};

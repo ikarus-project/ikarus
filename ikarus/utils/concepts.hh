@@ -634,7 +634,7 @@ namespace Concepts {
   concept ControlRoutineState = requires(S s) {
     typename S::Domain;
 
-    // { s.domain } -> std::convertible_to<const typename S::Domain>;
+    { s.domain } -> std::convertible_to<const typename S::Domain&>;
     { s.loadStep } -> std::convertible_to<int>;
     { s.stepSize } -> std::convertible_to<double>;
   };

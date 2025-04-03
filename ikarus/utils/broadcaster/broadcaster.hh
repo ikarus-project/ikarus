@@ -8,6 +8,7 @@
 
 #pragma once
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -55,9 +56,10 @@ public:
    */
   void notify(Args... args) {
     trim();
-    for (auto& w : listeners) {
+    // std::cout << "We have " << listeners.size() << " listeners registered" << std::endl;
+    for (auto w : listeners) {
       if (auto p = w.lock()) {
-        (*p)(args...);
+        (*p)(std::forward<Args>(args)...);
       }
     }
   }
