@@ -3,7 +3,8 @@
 
 # install headers
 install(
-  FILES greenlagrangestrain.hh linearstrain.hh
+  FILES greenlagrangestrain.hh linearstrain.hh displacementgradient.hh
+        displacementgradienttransposed.hh
   DESTINATION
     ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/strainenhancements/easfunctions
 )

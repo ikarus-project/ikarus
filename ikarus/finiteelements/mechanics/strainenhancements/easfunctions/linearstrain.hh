@@ -100,7 +100,7 @@ struct LinearStrain
    * \param gpIndex The index of the integration point.
    * \param I The FE node index I (defaults to sNaN).
    * \param J The FE node index J (defaults to sNaN).
-   * \param S The PK2 stress (in Voigt notation).
+   * \param S The linear stress (in Voigt notation).
    * \param easFunction The EAS function.
    * \param alpha The coefficients of the EAS function.
    *

@@ -57,6 +57,38 @@ auto cantileverBeamResults() {
     } else
       static_assert(Dune::AlwaysFalse<MATU>::value,
                     "Expected results are not available for the given material and enhancedStrain type.");
+  } else if constexpr (std::same_as<ES, EAS::DisplacementGradient>) {
+    if constexpr (std::is_same_v<MATU, StVenantKirchhoff>) {
+      constexpr int expectedIterations = 80;
+      constexpr double expectedMaxDisp = 4.466045705106845;
+      return std::make_pair(expectedIterations, expectedMaxDisp);
+    } else if constexpr (std::is_same_v<MATU, NeoHooke>) {
+      constexpr int expectedIterations = 80;
+      constexpr double expectedMaxDisp = 4.484284943716379;
+      return std::make_pair(expectedIterations, expectedMaxDisp);
+    } else if constexpr (std::is_same_v<MATU, Hyperelastic<Deviatoric<BlatzKo>, Volumetric<VF0>>>) {
+      constexpr int expectedIterations = 80;
+      constexpr double expectedMaxDisp = 4.690606234853613;
+      return std::make_pair(expectedIterations, expectedMaxDisp);
+    } else
+      static_assert(Dune::AlwaysFalse<MATU>::value,
+                    "Expected results are not available for the given material and enhancedStrain type.");
+  } else if constexpr (std::same_as<ES, EAS::DisplacementGradientTransposed>) {
+    if constexpr (std::is_same_v<MATU, StVenantKirchhoff>) {
+      constexpr int expectedIterations = 80;
+      constexpr double expectedMaxDisp = 4.462882651578276;
+      return std::make_pair(expectedIterations, expectedMaxDisp);
+    } else if constexpr (std::is_same_v<MATU, NeoHooke>) {
+      constexpr int expectedIterations = 80;
+      constexpr double expectedMaxDisp = 4.479501443200376;
+      return std::make_pair(expectedIterations, expectedMaxDisp);
+    } else if constexpr (std::is_same_v<MATU, Hyperelastic<Deviatoric<BlatzKo>, Volumetric<VF0>>>) {
+      constexpr int expectedIterations = 80;
+      constexpr double expectedMaxDisp = 4.683694983130406;
+      return std::make_pair(expectedIterations, expectedMaxDisp);
+    } else
+      static_assert(Dune::AlwaysFalse<MATU>::value,
+                    "Expected results are not available for the given material and enhancedStrain type.");
   } else
     static_assert(Dune::AlwaysFalse<MATU>::value,
                   "Expected results are not available for the provided enhanced strain type.");
@@ -180,6 +212,8 @@ int main(int argc, char** argv) {
   };
 
   testNonlinearEASFunc.operator()<EAS::GreenLagrangeStrain>();
+  testNonlinearEASFunc.operator()<EAS::DisplacementGradient>();
+  testNonlinearEASFunc.operator()<EAS::DisplacementGradientTransposed>();
 
   return t.exit();
 }

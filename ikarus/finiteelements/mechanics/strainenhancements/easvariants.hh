@@ -10,6 +10,7 @@
 #pragma once
 
 #include <ikarus/finiteelements/mechanics/strainenhancements/easfunctions.hh>
+#include <ikarus/finiteelements/mechanics/strainenhancements/easvariants/displacementgradient.hh>
 #include <ikarus/finiteelements/mechanics/strainenhancements/easvariants/linearandglstrains.hh>
 #include <ikarus/utils/tensorutils.hh>
 
@@ -31,6 +32,21 @@ namespace Impl {
   struct EASType<GEO, myDim, EAS::GreenLagrangeStrain>
   {
     using type = EASType<GEO, myDim, EAS::LinearStrain>::type;
+  };
+  template <typename GEO>
+  struct EASType<GEO, 2, EAS::DisplacementGradient>
+  {
+    using type = std::variant<H0<GEO>, H4<GEO>>;
+  };
+  template <typename GEO>
+  struct EASType<GEO, 3, EAS::DisplacementGradient>
+  {
+    using type = std::variant<H0<GEO>, H9<GEO>>;
+  };
+  template <typename GEO, int myDim>
+  struct EASType<GEO, myDim, EAS::DisplacementGradientTransposed>
+  {
+    using type = EASType<GEO, myDim, EAS::DisplacementGradient>::type;
   };
 } // namespace Impl
 
@@ -114,6 +130,30 @@ private:
             break;
           case 21:
             var_ = E21(geometry_.value());
+            break;
+          default:
+            DUNE_THROW(Dune::NotImplemented, errorMessage);
+        }
+      }
+    }
+    if constexpr (std::same_as<ES, EAS::DisplacementGradient> or
+                  std::same_as<ES, EAS::DisplacementGradientTransposed>) {
+      if (numberOfEASParameters_ == 0) {
+        var_ = H0(geometry_.value());
+        return;
+      }
+      if constexpr (myDim == 2) {
+        switch (numberOfEASParameters_) {
+          case 4:
+            var_ = H4(geometry_.value());
+            break;
+          default:
+            DUNE_THROW(Dune::NotImplemented, errorMessage);
+        }
+      } else if constexpr (myDim == 3) {
+        switch (numberOfEASParameters_) {
+          case 9:
+            var_ = H9(geometry_.value());
             break;
           default:
             DUNE_THROW(Dune::NotImplemented, errorMessage);

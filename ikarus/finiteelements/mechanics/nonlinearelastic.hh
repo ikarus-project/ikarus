@@ -81,7 +81,9 @@ public:
   static constexpr int strainDim   = myDim * (myDim + 1) / 2;
   static constexpr auto strainType = StrainTags::greenLagrangian;
   static constexpr auto stressType = StressTags::PK2;
-  static constexpr bool hasEAS     = FE::template hasEAS<EAS::GreenLagrangeStrain>;
+  static constexpr bool hasEAS     = FE::template hasEAS<EAS::GreenLagrangeStrain> or
+                                 FE::template hasEAS<EAS::DisplacementGradient> or
+                                 FE::template hasEAS<EAS::DisplacementGradientTransposed>;
 
   template <template <typename, int, int> class RT>
   using RTWrapperType = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;

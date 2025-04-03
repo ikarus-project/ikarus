@@ -9,5 +9,7 @@
 
 #pragma once
 
+#include <ikarus/finiteelements/mechanics/strainenhancements/easfunctions/displacementgradient.hh>
+#include <ikarus/finiteelements/mechanics/strainenhancements/easfunctions/displacementgradienttransposed.hh>
 #include <ikarus/finiteelements/mechanics/strainenhancements/easfunctions/greenlagrangestrain.hh>
 #include <ikarus/finiteelements/mechanics/strainenhancements/easfunctions/linearstrain.hh>
