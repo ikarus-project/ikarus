@@ -90,6 +90,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
     - Missing functions like `getStress` and `materialTangentFunction` are added to `LinearElastic` and `NonLinearElastic`, respectively.
     - `EnhancedAssumedStrains` class now takes a struct denoting the enhanced strain type as a template argument, which implements the
       enhanced strain value, its first and second derivatives w.r.t the displacements and the internal variable `alpha_`.
+- Add Q1Hn and Q1HTn elements ([#363](https://github.com/ikarus-project/ikarus/pull/363))
 
 ## Release v0.4 (Ganymede)
 
