@@ -209,6 +209,23 @@ private:
   PF pathFollowingType_;
   ASS adaptiveStepSizing_;
   SubsidiaryArgs subsidiaryArgs_;
+  std::optional<typename PathFollowing::State> state_{};
+
+  void updateAndNotifyControlInfo(ControlInformation& info, const NonLinearSolverInformation& solverInfo,
+                                  typename PathFollowing::State& state) {
+    info.solverInfos.push_back(solverInfo);
+    info.totalIterations += solverInfo.iterations;
+
+    state.loadStep += 1;
+    state.stepSize = subsidiaryArgs_.stepSize;
+
+    this->notify(ControlMessages::SOLUTION_CHANGED, state);
+    this->notify(ControlMessages::STEP_ENDED, state);
+  }
+  typename PathFollowing::State& initState(typename NLS::Domain& x) {
+    state_.emplace(typename PathFollowing::State{.domain = x, .subsidiaryArgs = subsidiaryArgs_, .loadStep = -1});
+    return state_.value();
+  }
 };
 
 } // namespace Ikarus
