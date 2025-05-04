@@ -11,6 +11,7 @@
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
+#include <ikarus/utils/lambertw.hh>
 #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::Materials {
@@ -150,8 +151,54 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
     return NeoHookeT<STO>(materialParameter_);
   }
 
+  /**
+   * \brief Computes the strain measure and inverse material tangent for a given stress state.
+   * \details Analytical solution is taken from R. Pfefferkorn, S. Bieber, B. Oesterle, M. Bischoff, and P. Betsch,
+   * “Improving efficiency and robustness of enhanced assumed strain elements for nonlinear problems,” Numerical Meth
+   * Engineering, vol. 122, no. 8, pp. 1911–1939, Apr. 2021, doi: 10.1002/nme.6605.
+   *
+   * \tparam Derived The derived type of the input matrix.
+   * \param Sraw the input stress matrix.
+   * \return pair of inverse material tangent and right Cauchy-Green strain tensor in voigt notation.
+   */
+  template <typename Derived>
+  auto materialInversionImpl(const Eigen::MatrixBase<Derived>& Sraw) const {
+    decltype(auto) S = Impl::maybeFromVoigt(Sraw, false);
+    auto C           = StrainMatrix();
+    const auto I     = Derived::Identity();
+
+    auto mu     = materialParameter_.mu;
+    auto Lambda = materialParameter_.lambda;
+    if (Dune::FloatCmp::eq(Lambda, 0.0))
+      C = (I - (1.0 / mu) * S).inverse();
+    else {
+      const auto A = 1 / Lambda * (mu * I - S);
+      const auto a = A.determinant();
+      checkInvertabilityOrAbort(a);
+
+      const auto b   = 2.0 / dim * mu / Lambda - log(static_cast<double>(dim) / 2) + 1.0 / dim * log(abs(a));
+      const auto lnJ = mu / Lambda - static_cast<double>(dim) / 2 * util::lambertW0(Dune::sign(a) * exp(b));
+      C              = (mu / Lambda - lnJ) * A.inverse();
+    }
+    const auto tangentModulus = toVoigt(tangentModuliImpl<false>(C));
+    const auto D              = tangentModulus.inverse().eval();
+    return std::make_pair(D, toVoigt(C));
+  }
+
 private:
   MaterialParameters materialParameter_;
+
+  template <typename ScalarType>
+  void checkInvertabilityOrAbort(ScalarType a, ScalarType eps = 1e-10) const {
+    const bool req1 = Dune::FloatCmp::ne(a, 0.0, eps);
+    const bool req2 = Dune::FloatCmp::gt(
+        a, -pow(static_cast<double>(dim) / 2, dim) * exp(-dim - 2 * materialParameter_.mu / materialParameter_.lambda),
+        eps);
+    if (!(req1 && req2)) {
+      std::cerr << "NeoHooke: Requirements for material law inversion not met.";
+      abort();
+    }
+  }
 };
 
 /**

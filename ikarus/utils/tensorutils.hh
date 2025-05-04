@@ -252,7 +252,7 @@ auto toVoigt(const Eigen::Matrix<ST, size, size, Options, maxSize, maxSize>& E, 
   const ST possibleStrainFactor = isStrain ? 2.0 : 1.0;
 
   const size_t inputSize = isFixedSized ? size : E.rows();
-  auto EVoigt            = [&]() {
+  decltype(auto) EVoigt  = [&]() {
     if constexpr (isFixedSized) {
       Eigen::Vector<ST, (size * (size + 1)) / 2> EVoigt;
       EVoigt.template head<size>() = E.diagonal();
@@ -435,14 +435,14 @@ Eigen::Matrix<double, 6, 6> transformationMatrix(const GEO& geometry, const Dune
   const auto J33 = jacobian(2, 2);
 
   // clang-format off
-   Eigen::Matrix<double, 6, 6> T  {
-     {J11 * J11,       J12 * J12,       J13 * J13,             J11 * J12,             J11 * J13,             J12 * J13},
-     {J21 * J21,       J22 * J22,       J23 * J23,             J21 * J22,             J21 * J23,             J22 * J23},
-     {J31 * J31,       J32 * J32,       J33 * J33,             J31 * J32,             J31 * J33,             J32 * J33},
-     {2.0 * J11 * J21, 2.0 * J12 * J22, 2.0 * J13 * J23, J11 * J22 + J21 * J12, J11 * J23 + J21 * J13, J12 * J23 + J22 * J13},
-     {2.0 * J11 * J31, 2.0 * J12 * J32, 2.0 * J13 * J33, J11 * J32 + J31 * J12, J11 * J33 + J31 * J13, J12 * J33 + J32 * J13},
-     {2.0 * J31 * J21, 2.0 * J32 * J22, 2.0 * J33 * J23, J31 * J22 + J21 * J32, J31 * J23 + J21 * J33, J32 * J23 + J22 * J33}
-   };
+    Eigen::Matrix<double, 6, 6> T  {
+      {J11 * J11,       J12 * J12,       J13 * J13,             J11 * J12,             J11 * J13,             J12 * J13},
+      {J21 * J21,       J22 * J22,       J23 * J23,             J21 * J22,             J21 * J23,             J22 * J23},
+      {J31 * J31,       J32 * J32,       J33 * J33,             J31 * J32,             J31 * J33,             J32 * J33},
+      {2.0 * J11 * J21, 2.0 * J12 * J22, 2.0 * J13 * J23, J11 * J22 + J21 * J12, J11 * J23 + J21 * J13, J12 * J23 + J22 * J13},
+      {2.0 * J11 * J31, 2.0 * J12 * J32, 2.0 * J13 * J33, J11 * J32 + J31 * J12, J11 * J33 + J31 * J13, J12 * J33 + J32 * J13},
+      {2.0 * J31 * J21, 2.0 * J32 * J22, 2.0 * J33 * J23, J31 * J22 + J21 * J32, J31 * J23 + J21 * J33, J32 * J23 + J22 * J33}
+    };
   // clang-format on
 
   return T;

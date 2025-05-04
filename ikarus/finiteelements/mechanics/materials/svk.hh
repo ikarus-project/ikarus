@@ -12,6 +12,7 @@
 #pragma once
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
+#include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
 #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::Materials {
@@ -170,6 +171,22 @@ struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ST>>
   template <typename ScalarTypeOther>
   auto rebind() const {
     return StVenantKirchhoffT<ScalarTypeOther>(materialParameter_);
+  }
+
+  /**
+   * \brief Computes the strain measure and inverse material tangent for a given stress state.
+   *
+   * \tparam Derived The derived type of the input matrix.
+   * \param Sraw the input stress matrix.
+   * \return pair of inverse material tangent and Green-Lagrangian strain tensor in voigt notation.
+   */
+  template <typename Derived>
+  auto materialInversionImpl(const Eigen::MatrixBase<Derived>& Sraw) const {
+    auto tangentModulus = tangentModuliImpl<true>(Eigen::Matrix3<ScalarType>::Zero());
+    auto D              = tangentModulus.inverse().eval();
+    decltype(auto) S    = Impl::maybeToVoigt(Sraw);
+    auto E              = (D * S).eval();
+    return std::make_pair(D, E);
   }
 
 private:

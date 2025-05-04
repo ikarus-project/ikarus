@@ -63,16 +63,16 @@ auto checkMaterialByAutoDiff(const MAT& mat) {
 
   constexpr StrainTags CauchyGreen = StrainTags::rightCauchyGreenTensor;
 
-  auto checkMaterialByAutoDiffFunc = [&]<DeformationType def>() {
+  auto checkMaterialByAutoDiffFunc = [&]<DeformationState def>() {
     auto deformation = Deformations{};
     auto c           = deformation.rightCauchyGreen<def>(1.37);
     t.subTest(checkMaterialByAutoDiffImpl<MAT, CauchyGreen>(mat, c, toString(def)));
   };
 
-  checkMaterialByAutoDiffFunc.template operator()<DeformationType::Undeformed>();
-  checkMaterialByAutoDiffFunc.template operator()<DeformationType::UniaxialTensile>();
-  checkMaterialByAutoDiffFunc.template operator()<DeformationType::BiaxialTensile>();
-  checkMaterialByAutoDiffFunc.template operator()<DeformationType::PureShear>();
-  checkMaterialByAutoDiffFunc.template operator()<DeformationType::Random>();
+  checkMaterialByAutoDiffFunc.template operator()<DeformationState::Undeformed>();
+  checkMaterialByAutoDiffFunc.template operator()<DeformationState::Uniaxial>();
+  checkMaterialByAutoDiffFunc.template operator()<DeformationState::Biaxial>();
+  checkMaterialByAutoDiffFunc.template operator()<DeformationState::PureShear>();
+  checkMaterialByAutoDiffFunc.template operator()<DeformationState::Random>();
   return t;
 }

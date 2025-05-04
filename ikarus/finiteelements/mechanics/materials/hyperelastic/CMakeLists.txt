@@ -3,7 +3,7 @@
 
 # install headers
 install(
-  FILES factory.hh concepts.hh interface.hh neohooke.hh
+  FILES factory.hh concepts.hh interface.hh neohooke.hh numericalmaterialinversion.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/materials/hyperelastic
 )
 add_subdirectory(deviatoric)
