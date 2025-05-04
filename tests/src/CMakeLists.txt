@@ -42,7 +42,6 @@ set(programSourceFiles
     testvtkwriter.cpp
     testhyperelasticity.cpp
     testmaterialswithad.cpp
-    testeigenvaluesolver.cpp
     testmaterialinversion.cpp
     testmueslimaterials.cpp
     testcantileverbeam.cpp
