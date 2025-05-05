@@ -94,6 +94,8 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Add wrappers for solving the generalized eigenvalue problem with sparse and dense matrices with Eigen and Spectra ([#368](https://github.com/ikarus-project/ikarus/pull/368)).
 - Add functionality to invert hyperelastic material laws. For Neo-Hooke and SVK law, analytical solutions are available.
   For the general hyperelastic framework, a numerical approach is used ([#369](https://github.com/ikarus-project/ikarus/pull/369)).
+- Add displacement-based `AssumedStress` elements for linear and nonlinear analysis. The implementation is similar to EAS elements, hence the internal
+  variables here and in EAS was renamed to `internalVariable`.
 
 ## Release v0.4 (Ganymede)
 
