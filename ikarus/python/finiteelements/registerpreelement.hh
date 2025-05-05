@@ -84,6 +84,20 @@ void registerEnhancedAssumedStrainsPre(pybind11::handle scope, pybind11::class_<
 }
 
 /**
+ * \brief Registers an AssumedStressPre class in Python.
+ *
+ * \tparam EASPre The AssumedStressPre class.
+ * \tparam options Additional options for the pybind11 class.
+ *
+ * \param scope Python handle to the module or class scope.
+ * \param cls The pybind11 class to register.
+ */
+template <class ASPre, class... options>
+void registerAssumedStressPre(pybind11::handle scope, pybind11::class_<ASPre, options...> cls) {
+  cls.def(pybind11::init([](int numberOfParameter) { return new ASPre(numberOfParameter); }));
+}
+
+/**
  * \brief Registers a NeumannBoundaryLoadPre class in Python.
  *
  * \tparam NeumannBoundaryLoadPre The NeumannBoundaryLoadPre class.

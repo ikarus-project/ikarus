@@ -4,5 +4,5 @@
 # install headers
 install(
   FILES linearstress.hh pk2stress.hh
-  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}ikarus/finiteelements/mechanics/assumedstress/asfunctions
+  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/assumedstress/asfunctions
 )

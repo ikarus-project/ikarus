@@ -5,3 +5,5 @@
 install(FILES asvariants.hh asfunctions.hh
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/assumedstress
 )
+add_subdirectory(asvariants)
+add_subdirectory(asfunctions)

@@ -21,6 +21,7 @@
   #include <ikarus/finiteelements/mechanics/materials/tags.hh>
   #include <ikarus/utils/broadcaster/broadcastermessages.hh>
   #include <ikarus/utils/concepts.hh>
+  #include <ikarus/utils/linearalgebrahelper.hh>
 
 namespace Ikarus {
 
