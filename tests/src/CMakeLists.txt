@@ -45,7 +45,10 @@ set(programSourceFiles
     testeigenvaluesolver.cpp
     testmaterialinversion.cpp
     testmueslimaterials.cpp
-    testcantileverbeam.cpp
+    testcantileverbeamAS.cpp
+    testassumedstress.cpp
+    testcantileverbeamEAS.cpp
+    testnonlinearas.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
@@ -53,12 +56,17 @@ set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
     testdirichletvalue
     testtrustregion
     testenhancedassumedstrains
+    testassumedstress
     testassembler
     testlinearelasticity
     testnonlinearelasticityneohooke
     testnonlinearelasticitysvk
     testadaptivestepsizing
-    testresultfunction.cpp
+    testresultfunction
+    testcantileverbeamEAS
+    testcantileverbeamAS
+    testnonlinearas
+    testnonlineareas
 )
 # Compile only tests
 dune_add_test(
@@ -88,7 +96,9 @@ target_compile_features(testfunctiontraits PUBLIC cxx_std_20)
 
 set(TEST_DEPENDING_ON_IGA testklshell testadaptivestepsizing)
 
-set(TEST_NEED_MORE_TIME testadaptivestepsizing)
+set(TEST_NEED_MORE_TIME testnonlineareas testadaptivestepsizing testcantileverbeamAS
+                        testcantileverbeamEAS
+)
 
 set(TEST_DEPENDING_ON_MUESLI testmueslimaterials)
 

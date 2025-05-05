@@ -48,22 +48,22 @@ struct EnhancedAssumedStrainsPre
  *
  * \tparam PreFE Type of the pre finite element.
  * \tparam FE Type of the finite element.
- * \tparam ES The enhanced strain type.
+ * \tparam ESF The eas strain function.
  */
-template <typename PreFE, typename FE, typename ES>
+template <typename PreFE, typename FE, typename ESF>
 class EnhancedAssumedStrains
-    : public std::conditional_t<std::same_as<ES, EAS::LinearStrain>,
+    : public std::conditional_t<std::same_as<ESF, EAS::LinearStrain>,
                                 ResultTypeBase<ResultTypes::linearStress, ResultTypes::linearStressFull>,
                                 ResultTypeBase<ResultTypes::PK2Stress, ResultTypes::PK2StressFull>>
 {
 public:
-  using Traits         = PreFE::Traits;
-  using Requirement    = FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
-  using LocalView      = typename Traits::LocalView;
-  using Geometry       = typename Traits::Geometry;
-  using GridView       = typename Traits::GridView;
-  using Pre            = EnhancedAssumedStrainsPre<ES>;
-  using EnhancedStrain = ES;
+  using Traits                 = PreFE::Traits;
+  using Requirement            = FERequirements<FESolutions::displacement, FEParameter::loadfactor>;
+  using LocalView              = typename Traits::LocalView;
+  using Geometry               = typename Traits::Geometry;
+  using GridView               = typename Traits::GridView;
+  using Pre                    = EnhancedAssumedStrainsPre<ESF>;
+  using EnhancedStrainFunction = ESF;
 
   static constexpr int myDim = Traits::mydim;
 
@@ -80,8 +80,9 @@ public:
   explicit EnhancedAssumedStrains(const Pre& pre) {
     static_assert(Concepts::Formulations::TotalLagrangian<FE::strainType, FE::stressType>,
                   "EAS method is only implemented for the total Lagrangian setting.");
-    static_assert(not(FE::strainType == StrainTags::linear) or (std::same_as<EnhancedStrain, EAS::LinearStrain>),
-                  "If FE::strainType is linear, then enhancedStrain must also be linear.");
+    static_assert(
+        not(FE::strainType == StrainTags::linear) or (std::same_as<EnhancedStrainFunction, EAS::LinearStrain>),
+        "If FE::strainType is linear, then enhancedStrain must also be linear.");
     this->setEASType(pre.numberOfParameters);
   }
 
@@ -104,7 +105,7 @@ public:
    *
    * \return Number of EAS parameters.
    */
-  auto numberOfEASParameters() const { return easVariant_.numberOfEASParameters(); }
+  auto numberOfInternalVariables() const { return easVariant_.numberOfInternalVariables(); }
 
   /**
    * \brief Calculates a requested result at a specific local position using the Enhanced Assumed Strains (EAS)
@@ -135,13 +136,13 @@ public:
       RTWrapperType<RT> resultWrapper{};
       auto calculateAtContribution = [&]<typename EAST>(const EAST& easFunction) {
         Eigen::VectorXd alpha;
-        alpha.setZero(numberOfEASParameters());
+        alpha.setZero(numberOfInternalVariables());
         if constexpr (EAST::enhancedStrainSize != 0) {
           typename EAST::DType D;
           calculateDAndLMatrix(easFunction, req, D, L_);
           alpha = -D.inverse() * L_ * disp;
         }
-        const auto enhancedStrain = EnhancedStrain::value(geo, ufunc, local, easFunction, alpha);
+        const auto enhancedStrain = EnhancedStrainFunction::value(geo, ufunc, local, easFunction, alpha);
         resultWrapper             = rFunction(enhancedStrain);
       };
       easVariant_(calculateAtContribution);
@@ -153,12 +154,12 @@ public:
   /**
    * \brief Sets the EAS type for 2D elements.
    *
-   * \param numberOfEASParameters The number of EAS parameters
+   * \param numberOfInternalVariables The number of EAS parameters
    */
-  void setEASType(int numberOfEASParameters) {
-    if (numberOfEASParameters != 0)
+  void setEASType(int numberOfInternalVariables) {
+    if (numberOfInternalVariables != 0)
       easApplicabilityCheck();
-    easVariant_.setEASType(numberOfEASParameters);
+    easVariant_.setEASType(numberOfInternalVariables);
     initializeState();
   }
 
@@ -167,7 +168,7 @@ public:
    *
    * \return Internal state variable (alpha).
    */
-  const auto& alpha() const { return alpha_; }
+  const auto& internalVariable() const { return alpha_; }
 
 protected:
   void bindImpl() {
@@ -223,23 +224,25 @@ protected:
 
     const auto geo           = underlying().localView().element().geometry();
     const auto& uFunction    = underlying().displacementFunction(par, dx);
-    const auto& kFunction    = underlying().template stiffnessMatrixFunction<ScalarType>(par, K, dx);
+    const auto& kMFunction   = underlying().template materialStiffnessMatrixFunction<ScalarType>(par, K, dx);
+    const auto& kGFunction   = underlying().template geometricStiffnessMatrixFunction<ScalarType>(par, K, dx);
     const auto numberOfNodes = underlying().numberOfNodes();
     const auto& localBasis   = underlying().localBasis();
 
     auto calculateMatrixContribution = [&]<typename EAST>(const EAST& easFunction) {
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-        const auto enhancedStrain = EnhancedStrain::value(geo, uFunction, gp.position(), easFunction, alpha_);
+        const auto enhancedStrain = EnhancedStrainFunction::value(geo, uFunction, gp.position(), easFunction, alpha_);
         const auto stresses       = underlying().stress(enhancedStrain);
         for (size_t i = 0; i < numberOfNodes; ++i) {
-          const auto E_dI = EnhancedStrain::template firstDerivative<0>(geo, uFunction, localBasis, gpIndex,
-                                                                        gp.position(), easFunction, alpha_, i);
+          const auto E_dI = EnhancedStrainFunction::template firstDerivative<0>(geo, uFunction, localBasis, gpIndex,
+                                                                                gp.position(), easFunction, alpha_, i);
           for (size_t j = 0; j < numberOfNodes; ++j) {
-            const auto E_dJ = EnhancedStrain::template firstDerivative<0>(geo, uFunction, localBasis, gpIndex,
-                                                                          gp.position(), easFunction, alpha_, j);
-            const auto E_dd = EnhancedStrain::template secondDerivative<0>(
+            const auto E_dJ = EnhancedStrainFunction::template firstDerivative<0>(
+                geo, uFunction, localBasis, gpIndex, gp.position(), easFunction, alpha_, j);
+            const auto E_dd = EnhancedStrainFunction::template secondDerivative<0>(
                 geo, uFunction, localBasis, gpIndex, gp.position(), stresses, easFunction, alpha_, i, j);
-            kFunction(enhancedStrain, E_dI, E_dJ, E_dd, i, j, gp);
+            kMFunction(enhancedStrain, E_dI, E_dJ, i, j, gp);
+            kGFunction(E_dd, i, j, gp);
           }
         }
       }
@@ -281,11 +284,12 @@ protected:
 
     auto calculateForceContribution = [&]<typename EAST>(const EAST& easFunction) {
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-        const auto enhancedStrain = EnhancedStrain::value(geo, uFunction, gp.position(), easFunction, alpha_);
+        const auto enhancedStrain = EnhancedStrainFunction::value(geo, uFunction, gp.position(), easFunction, alpha_);
+        const auto stresses       = underlying().stress(enhancedStrain);
         for (size_t i = 0; i < numberOfNodes; ++i) {
-          const auto E_dI = EnhancedStrain::template firstDerivative<0>(geo, uFunction, localBasis, gpIndex,
-                                                                        gp.position(), easFunction, alpha_, i);
-          fIntFunction(enhancedStrain, E_dI, i, gp);
+          const auto E_dI = EnhancedStrainFunction::template firstDerivative<0>(geo, uFunction, localBasis, gpIndex,
+                                                                                gp.position(), easFunction, alpha_, i);
+          fIntFunction(stresses, E_dI, i, gp);
         }
       }
       if constexpr (EAST::enhancedStrainSize != 0) {
@@ -314,7 +318,7 @@ protected:
   }
 
 private:
-  EAS::EASVariant<ES, Geometry> easVariant_;
+  EAS::EASVariant<ESF, Geometry> easVariant_;
   mutable Eigen::MatrixXd L_;
   Eigen::VectorXd alpha_;
 
@@ -326,7 +330,7 @@ private:
    * \brief Initializes the internal state variable alpha_ based on the number of EAS parameters.
    */
   void initializeState() {
-    alpha_.resize(numberOfEASParameters());
+    alpha_.resize(numberOfInternalVariables());
     alpha_.setZero();
   }
 
@@ -344,20 +348,20 @@ private:
     DMat.setZero();
     LMat.setZero(enhancedStrainSize, underlying().localView().size());
     for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-      const auto enhancedStrain = EnhancedStrain::value(geo, uFunction, gp.position(), easFunction, alpha_);
+      const auto enhancedStrain = EnhancedStrainFunction::value(geo, uFunction, gp.position(), easFunction, alpha_);
       const auto C              = underlying().materialTangent(enhancedStrain);
       const auto stresses       = underlying().stress(enhancedStrain);
       const double intElement   = geo.integrationElement(gp.position()) * gp.weight();
-      const auto E_a  = EnhancedStrain::template firstDerivative<1>(geo, uFunction, localBasis, gpIndex, gp.position(),
-                                                                    easFunction, alpha_);
-      const auto E_aa = EnhancedStrain::template secondDerivative<1>(geo, uFunction, localBasis, gpIndex, gp.position(),
-                                                                     stresses, easFunction, alpha_);
+      const auto E_a  = EnhancedStrainFunction::template firstDerivative<1>(geo, uFunction, localBasis, gpIndex,
+                                                                            gp.position(), easFunction, alpha_);
+      const auto E_aa = EnhancedStrainFunction::template secondDerivative<1>(
+          geo, uFunction, localBasis, gpIndex, gp.position(), stresses, easFunction, alpha_);
       DMat += (E_a.transpose() * C * E_a + E_aa) * intElement;
       for (size_t i = 0U; i < numberOfNodes; ++i) {
-        const auto E_dI = EnhancedStrain::template firstDerivative<0>(geo, uFunction, localBasis, gpIndex,
-                                                                      gp.position(), easFunction, alpha_, i);
-        const auto E_ad = EnhancedStrain::template secondDerivative<2>(geo, uFunction, localBasis, gpIndex,
-                                                                       gp.position(), stresses, easFunction, alpha_, i);
+        const auto E_dI = EnhancedStrainFunction::template firstDerivative<0>(geo, uFunction, localBasis, gpIndex,
+                                                                              gp.position(), easFunction, alpha_, i);
+        const auto E_ad = EnhancedStrainFunction::template secondDerivative<2>(
+            geo, uFunction, localBasis, gpIndex, gp.position(), stresses, easFunction, alpha_, i);
         LMat.template block<enhancedStrainSize, myDim>(0, myDim * i) +=
             (E_a.transpose() * C * E_dI + E_ad) * intElement;
       }
@@ -371,13 +375,13 @@ private:
     const auto& uFunction  = underlying().displacementFunction(par, dx);
     const auto& localBasis = underlying().localBasis();
     Eigen::VectorX<ScalarType> Rtilde;
-    Rtilde.setZero(numberOfEASParameters());
+    Rtilde.setZero(numberOfInternalVariables());
 
     auto calculateRtildeContribution = [&]<typename EAST>(const EAST& easFunction) {
       for (const auto& [gpIndex, gp] : uFunction.viewOverIntegrationPoints()) {
-        const auto enhancedStrain = EnhancedStrain::value(geo, uFunction, gp.position(), easFunction, alpha_);
-        const auto E_a = EnhancedStrain::template firstDerivative<1>(geo, uFunction, localBasis, gpIndex, gp.position(),
-                                                                     easFunction, alpha_);
+        const auto enhancedStrain = EnhancedStrainFunction::value(geo, uFunction, gp.position(), easFunction, alpha_);
+        const auto E_a = EnhancedStrainFunction::template firstDerivative<1>(geo, uFunction, localBasis, gpIndex,
+                                                                             gp.position(), easFunction, alpha_);
         const double intElement = geo.integrationElement(gp.position()) * gp.weight();
         auto stresses           = underlying().stress(enhancedStrain);
         Rtilde += (E_a.transpose() * stresses).eval() * intElement;
@@ -391,13 +395,13 @@ private:
 
 /**
  * \brief A helper function to create an enhanced assumed strain pre finite element.
- * \tparam ES The enhanced strain type.
- * \param numberOfEASParameters Number of EAS parameters
+ * \tparam ES The strain tag that is enhanced.
+ * \param numberOfInternalVariables Number of EAS parameters
  * \return An enhanced assumed strain pre finite element.
  */
 template <typename ES = EAS::LinearStrain>
-auto eas(int numberOfEASParameters = 0) {
-  EnhancedAssumedStrainsPre<ES> pre(numberOfEASParameters);
+auto eas(int numberOfInternalVariables = 0) {
+  EnhancedAssumedStrainsPre<ES> pre(numberOfInternalVariables);
 
   return pre;
 }

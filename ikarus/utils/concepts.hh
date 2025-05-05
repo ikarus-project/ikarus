@@ -646,13 +646,26 @@ namespace Concepts {
     { s.stepSize } -> std::convertible_to<double>;
   };
 
+  /**
+   * \brief Returns true if a given straintag is related only to the reference configuration
+   */
+  template <StrainTags tag>
+  concept ReferenceConfiguraionStrain = (tag == StrainTags::greenLagrangian) or
+                                        (tag == StrainTags::rightCauchyGreenTensor) or (tag == StrainTags::linear);
+
+  /**
+   * \brief Returns true if a given stresstag is related only to the reference configuration
+   */
+  template <StressTags tag>
+  concept ReferenceConfiguraionStress = (tag == StressTags::PK2) or (tag == StressTags::linear);
+
   namespace Formulations {
     /**
-      \concept TotalLagrangian
-      \brief Concept to check if the underlying strain and stress tag correspond to a total Lagrangian formulation.
-      \tparam T1 The underlying strain tag.
-      \tparam T2 The underlying stress tag.
-      */
+    \concept TotalLagrangian
+    \brief Concept to check if the underlying strain and stress tag correspond to a total Lagrangian formulation.
+    \tparam T1 The underlying strain tag.
+    \tparam T2 The underlying stress tag.
+    */
     template <StrainTags T1, StressTags T2>
     concept TotalLagrangian = (T1 == StrainTags::linear and T2 == StressTags::linear) or
                               (T1 == StrainTags::greenLagrangian and T2 == StressTags::PK2);

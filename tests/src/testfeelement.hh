@@ -98,7 +98,7 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
     static_assert(requires {
       fes[0].template calculateAt<RT::template Rebind>(requirements, Dune::FieldVector<double, gridDim>());
     });
-
+    auto stress = fes[0].template calculateAt<RT::template Rebind>(requirements, Dune::FieldVector<double, gridDim>());
     if ("linearStress" == toString(i))
       successlinearStressCalculateAt = true;
   });
@@ -134,10 +134,8 @@ auto testFEElement(const PreBasis& preBasis, const std::string& elementName, con
 }
 
 inline auto checkGradientFunctor = [](auto& f, auto&, auto& req, auto&) { return checkGradientOfElement(f, req); };
-inline auto checkHessianFunctor  = [](auto& f, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req,
-                                     [[maybe_unused]] auto& affordance) { return checkHessianOfElement(f, req); };
-inline auto checkJacobianFunctor = [](auto& f, [[maybe_unused]] auto& fe, [[maybe_unused]] auto& req,
-                                      [[maybe_unused]] auto& affordance) {
+inline auto checkHessianFunctor  = [](auto& f, auto&, auto& req, auto&) { return checkHessianOfElement(f, req); };
+inline auto checkJacobianFunctor = [](auto& f, auto&, auto& req, auto&) {
   auto subOperator = derivative(f);
   return checkJacobianOfElement(subOperator, req);
 };
