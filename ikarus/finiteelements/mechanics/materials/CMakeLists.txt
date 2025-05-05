@@ -11,6 +11,7 @@ install(
         vanishingstress.hh
         vanishingstrain.hh
         materialhelpers.hh
+        numericalmaterialinversion.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/materials
 )
 add_subdirectory(hyperelastic)
