@@ -22,6 +22,7 @@
 #include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
 #include <ikarus/io/resultevaluators.hh>
 #include <ikarus/io/resultfunction.hh>
+#include <ikarus/solver/eigenvaluesolver/generalizedeigensolverfactory.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 #include <ikarus/utils/basis.hh>
@@ -274,9 +275,8 @@ auto SingleElementTest(const Material& mat) {
   Eigen::MatrixXd K;
   K.setZero(nDOF, nDOF);
   calculateMatrix(fe, req, Ikarus::MatrixAffordance::stiffness, K);
-
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> essaK;
-  essaK.compute(K);
+  auto essaK = makeIdentitySymEigenSolver<EigenValueSolverType::Eigen>(K);
+  essaK.compute();
   auto eigenValuesComputed = essaK.eigenvalues();
 
   /// The eigen values are applicable only if 2x2 Gauss integration points are used
