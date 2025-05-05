@@ -6,6 +6,7 @@ install(
   FILES interface.hh
         linearelasticity.hh
         strainconversions.hh
+        stressconversions.hh
         svk.hh
         tags.hh
         vanishingstress.hh

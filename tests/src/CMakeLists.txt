@@ -45,6 +45,7 @@ set(programSourceFiles
     testeigenvaluesolver.cpp
     testmueslimaterials.cpp
     testcantileverbeam.cpp
+    testconversions.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS

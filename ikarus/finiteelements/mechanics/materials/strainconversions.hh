@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * \file
+ * \file strainconversions.hh
  * \brief Implementation of strain-related functions.
  *
  * This file provides implementation for strain-related functions, including the creation and transformation of
@@ -32,7 +32,7 @@ namespace Impl {
 } // namespace Impl
 
 /**
- * \brief Create  Green-Lagrangian strain based on the input.
+ * \brief Create Green-Lagrangian strain based on the input.
  *
  * This function creates Green-Lagrangian strains based on the input strain matrix.
  * What to do is decided by the provided strain tag
