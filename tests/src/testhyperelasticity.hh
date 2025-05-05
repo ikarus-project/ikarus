@@ -191,7 +191,7 @@ auto recoverNeoHookeTest() {
   return t;
 }
 
-template <Concepts::DeviatoricFunction DEV, DeformationState def>
+template <typename DEV, DeformationState def>
 auto materialResults() {
   if constexpr (std::same_as<DEV, BlatzKoT<double>>) {
     return BlatzKoResults<def>();
