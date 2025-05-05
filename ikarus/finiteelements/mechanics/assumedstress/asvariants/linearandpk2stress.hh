@@ -53,7 +53,6 @@ protected:
 /**
  * \brief S5 struct for AssumedStress (PS) for Q1 with 5 assumed stress parameters.
  *
- * \details
  * \tparam GEO The geometry type.
  */
 template <typename GEO>
@@ -70,11 +69,16 @@ struct S5 : SX<GEO, 5>
   explicit S5(const GEO& geo)
       : Base(geo) {}
 
+  /**
+   * \brief A function that implements the ansatz for the stress measure.
+   * \details To align with conventions commonly found in the literature, where the integration domain is typically
+   * [−1,1]^dim, a domain transformation is applied to convert from Dune's default domain of [0,1]^dim.
+   */
   AnsatzType operator()(const Dune::FieldVector<double, myDim>& quadPos) const {
     AnsatzType P;
     P.setZero(stressSize, assumedStressSize);
-    const double xi  = quadPos[0];
-    const double eta = quadPos[1];
+    const double xi  = 2.0 * quadPos[0] - 1.0;
+    const double eta = 2.0 * quadPos[1] - 1.0;
     P(0, 0)          = 1.0;
     P(1, 1)          = 1.0;
     P(2, 2)          = 1.0;
@@ -104,12 +108,17 @@ struct S18 : SX<GEO, 18>
   explicit S18(const GEO& geo)
       : Base(geo) {}
 
+  /**
+   * \brief A function that implements the ansatz for the stress measure.
+   * \details To align with conventions commonly found in the literature, where the integration domain is typically
+   * [−1,1]^dim, a domain transformation is applied to convert from Dune's default domain of [0,1]^dim.
+   */
   AnsatzType operator()(const Dune::FieldVector<double, myDim>& quadPos) const {
     AnsatzType P;
     P.setZero();
-    const double xi   = quadPos[0];
-    const double eta  = quadPos[1];
-    const double zeta = quadPos[2];
+    const double xi   = 2.0 * quadPos[0] - 1.0;
+    const double eta  = 2.0 * quadPos[1] - 1.0;
+    const double zeta = 2.0 * quadPos[2] - 1.0;
 
     // ξξ = (1.0, eta, zeta, eta*zeta) → row 0:
     P(0, 0) = 1.0;
@@ -164,13 +173,14 @@ struct S24 : SX<GEO, 24>
   explicit S24(const GEO& geo)
       : Base(geo) {}
 
+  /**
+   * \brief A function that implements the ansatz for the stress measure.
+   * \details To align with conventions commonly found in the literature, where the integration domain is typically
+   * [−1,1]^dim, a domain transformation is applied to convert from Dune's default domain of [0,1]^dim.
+   */
   AnsatzType operator()(const Dune::FieldVector<double, myDim>& quadPos) const {
     AnsatzType P;
     P.setZero();
-    // For S24, difference in eigenvalues of stiffness matrix is observed if the local coordinate system is in [0,1]
-    // domain instead of [-1, 1] domain. This is not observed for other variants. As Dune uses internally [0,1] domain
-    // but shape functions are commonly given in [-1, 1] domain in the literature, we transform the coordinates to
-    // [-1,1] domain for consistency. Perhaps, this behaviour is intrinsic to S24, the reasons of which are unclear.
     const double xi   = 2.0 * quadPos[0] - 1.0;
     const double eta  = 2.0 * quadPos[1] - 1.0;
     const double zeta = 2.0 * quadPos[2] - 1.0;
@@ -234,12 +244,17 @@ struct S30 : SX<GEO, 30>
   explicit S30(const GEO& geo)
       : Base(geo) {}
 
+  /**
+   * \brief A function that implements the ansatz for the stress measure.
+   * \details To align with conventions commonly found in the literature, where the integration domain is typically
+   * [−1,1]^dim, a domain transformation is applied to convert from Dune's default domain of [0,1]^dim.
+   */
   AnsatzType operator()(const Dune::FieldVector<double, myDim>& quadPos) const {
     AnsatzType P;
     P.setZero();
-    const double xi   = quadPos[0];
-    const double eta  = quadPos[1];
-    const double zeta = quadPos[2];
+    const double xi   = 2.0 * quadPos[0] - 1.0;
+    const double eta  = 2.0 * quadPos[1] - 1.0;
+    const double zeta = 2.0 * quadPos[2] - 1.0;
 
     // ξξ = (1.0, eta, zeta, eta*zeta) → row 0:
     P(0, 0) = 1.0;
