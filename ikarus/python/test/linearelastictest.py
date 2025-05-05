@@ -189,7 +189,8 @@ def linElasticTest(fe_type="standard"):
             abs(assembler.vector()[5] - (assemblerManipulator.vector()[5] - 2)) < 1e-6
         ), f"assembler.vector()[5]: {assembler.vector()[5]}, assemblerManipulator.vector()[5]: {assemblerManipulator.vector()[5]}"
         assert (
-            abs(assembler.vector()[5] - (assemblerManipulatorDense.vector()[5] - 2)) < 1e-6
+            abs(assembler.vector()[5] - (assemblerManipulatorDense.vector()[5] - 2))
+            < 1e-6
         ), f"assembler.vector()[5]: {assembler.vector()[5]}, assemblerManipulator.vector()[5]: {assemblerManipulatorDense.vector()[5]}"
 
         def matrixf(assembler, req, affordance, dbcOption, matrix):
@@ -198,10 +199,14 @@ def linElasticTest(fe_type="standard"):
         assemblerManipulator.addMatrixCallBack(matrixf)
         assemblerManipulatorDense.addMatrixCallBack(matrixf)
         assert (
-            abs(assembler.matrix()[5, 6] - (assemblerManipulator.matrix()[5, 6] - 2)) < 1e-6
+            abs(assembler.matrix()[5, 6] - (assemblerManipulator.matrix()[5, 6] - 2))
+            < 1e-6
         ), f"assembler.matrix()[5,6]: {assembler.matrix()[5,6]}, assemblerManipulator.matrix()[5,6]: {assemblerManipulator.matrix()[5,6]}"
         assert (
-            abs(assembler.matrix()[5, 6] - (assemblerManipulatorDense.matrix()[5, 6] - 2))
+            abs(
+                assembler.matrix()[5, 6]
+                - (assemblerManipulatorDense.matrix()[5, 6] - 2)
+            )
             < 1e-6
         ), f"assembler.matrix()[5,6]: {assembler.matrix()[5,6]}, assemblerManipulator.matrix()[5,6]: {assemblerManipulatorDense.matrix()[5,6]}"
 
@@ -232,7 +237,9 @@ def linElasticTest(fe_type="standard"):
         )
         # Ensure constraintsBelow returns matching values
         for i in range(flatBasis.size()):
-            assert assembler.constraintsBelow(i) == assemblerManipulator.constraintsBelow(
+            assert assembler.constraintsBelow(
+                i
+            ) == assemblerManipulator.constraintsBelow(
                 i
             ), f"Mismatch in constraintsBelow for index {i}"
 

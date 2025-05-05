@@ -162,6 +162,7 @@ def eas(numberofparameters, strainTag="LinearStrain"):
         "EnhancedAssumedStrainsPre", includes, element_type, numberofparameters
     )
 
+
 def assumedStress(numberofparameters, stressTag="LinearStress"):
     """
     @brief Creates an assumed stress pre-element.
