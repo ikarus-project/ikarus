@@ -18,9 +18,7 @@ namespace Ikarus::Materials {
 /**
  * \brief Computes numerically an approximation of the complementary strain energy function and returns the material
  * tangent and strain tensor for a given stress state.
- * \details  N. Viebahn, J. Schröder, und P. Wriggers, „An extension of assumed stress finite elements to a general
- * hyperelastic framework“, Adv. Model. and Simul. in Eng. Sci., Bd. 6, Nr. 1, S. 9, Dez. 2019,
- * doi: 10.1186/s40323-019-0133-z.
+ * \details See \cite viebahn_extension_2019 for details.
  *
  * \tparam Material the type of the material
  * \tparam Derived the type of the stress matrix
