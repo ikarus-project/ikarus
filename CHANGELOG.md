@@ -91,7 +91,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
     - `EnhancedAssumedStrains` class now takes a struct denoting the enhanced strain type as a template argument, which implements the
       enhanced strain value, its first and second derivatives w.r.t the displacements and the internal variable `alpha_`.
 - Add Q1Hn and Q1HTn elements ([#363](https://github.com/ikarus-project/ikarus/pull/363))
-- Add wrappers for solving the generalized eigenvalue problem with sparse and dense matrices with Eigen and Spectra.
+- Add wrappers for solving the generalized eigenvalue problem with sparse and dense matrices with Eigen and Spectra ([#368](https://github.com/ikarus-project/ikarus/pull/368)).
 
 ## Release v0.4 (Ganymede)
 
