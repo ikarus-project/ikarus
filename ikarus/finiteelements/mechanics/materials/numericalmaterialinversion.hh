@@ -11,6 +11,7 @@
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
+#include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
 #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::Materials {

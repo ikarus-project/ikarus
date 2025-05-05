@@ -29,9 +29,7 @@ namespace Impl {
 /**
  * \brief Interface for displacement-based Assumed Stress elements, where linear or PK2 stresses are assumed.
  *
- * \details See Viebahn, N., Schröder, J., Wriggers, P., 2019. An extension of assumed stress finite elements to a
- * general hyperelastic framework. Adv. Model. and Simul. in Eng. Sci. 6, 9. https://doi.org/10.1186/s40323-019-0133-z
- * for details
+ * \details See \cite viebahn_extension_2019 for details.
  */
 template <typename GEO, int ass>
 struct SX
