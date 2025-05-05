@@ -4,3 +4,4 @@
 # install headers
 add_subdirectory(linearsolver)
 add_subdirectory(nonlinearsolver)
+add_subdirectory(eigenvaluesolver)
