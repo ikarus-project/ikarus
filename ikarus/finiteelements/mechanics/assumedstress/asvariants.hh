@@ -10,7 +10,7 @@
 #pragma once
 
 #include <ikarus/finiteelements/mechanics/assumedstress/asfunctions.hh>
-#include <ikarus/finiteelements/mechanics/assumedstress/asvariants/linearandpk2stress.hh>
+#include <ikarus/finiteelements/mechanics/assumedstress/asvariants/linearandpktwostress.hh>
 #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::PS {

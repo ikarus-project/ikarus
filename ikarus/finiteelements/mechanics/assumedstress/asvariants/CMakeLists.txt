@@ -3,6 +3,6 @@
 
 # install headers
 install(
-  FILES linearandpk2stress.hh
+  FILES linearandpktwostress.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}ikarus/finiteelements/mechanics/assumedstress/asvariants
 )
