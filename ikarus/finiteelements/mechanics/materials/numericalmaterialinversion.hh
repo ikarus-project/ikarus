@@ -11,9 +11,6 @@
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
-#include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
-#include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
 #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::Materials {
