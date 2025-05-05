@@ -37,8 +37,8 @@ auto testCauchyGreen() {
 }
 } // namespace Testing
 
-auto roundTripStressConversions() {
-  TestSuite t("To and From Stress Transformations");
+auto testStressConversions() {
+  TestSuite t("Test Stress Conversions");
   const double epsilon = 100 * std::numeric_limits<double>::epsilon();
 
   auto S = Testing::testStress();
@@ -71,11 +71,11 @@ auto roundTripStressConversions() {
   return t;
 }
 
-auto roundTripStrainConversions() {
-  TestSuite t("To and From Stress Transformations");
+auto testStrainConversions() {
+  TestSuite t("Test Strain Conversions");
   const double epsilon = 100 * std::numeric_limits<double>::epsilon();
 
-  auto C = Testing::testCauchyGreen();
+  Eigen::Matrix3d C = Testing::testCauchyGreen();
 
   auto strainRange = Dune::Hybrid::integralRange(std::integral_constant<int, 3>(), std::integral_constant<int, 5>());
   Dune::Hybrid::forEach(strainRange, [&](auto i) {
@@ -108,8 +108,8 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  t.subTest(roundTripStressConversions());
-  t.subTest(roundTripStrainConversions());
+  t.subTest(testStressConversions());
+  t.subTest(testStrainConversions());
 
   return t.exit();
 }

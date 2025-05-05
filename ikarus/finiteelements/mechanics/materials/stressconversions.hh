@@ -11,8 +11,6 @@
 #pragma once
 #include "tags.hh"
 
-#include <unsupported/Eigen/MatrixFunctions>
-
 #include <Eigen/Core>
 
 #include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
@@ -24,6 +22,7 @@ namespace Ikarus {
  * \brief Create PK2 stress matrix based on the input.
  *
  * This function creates PK2 stress matrix based on the input stress matrix and deformation gradient.
+ * What to do is decided by the provided stress tag
  * \tparam tag Tag of the input stress measure.
  * \tparam Derived Type of the Eigen matrices.
  * \param sMB Input stress matrix.
@@ -31,7 +30,7 @@ namespace Ikarus {
  * \return The PK2 stress matrix.
  */
 template <StressTags tag, typename Derived>
-auto createPK2Stress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixBase<Derived>& F) {
+Derived createPK2Stress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixBase<Derived>& F) {
   const auto& S = sMB.derived();
 
   static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
@@ -52,6 +51,7 @@ auto createPK2Stress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixB
  * \brief Create PK1 stress matrix based on the input.
  *
  * This function creates PK1 stress matrix based on the input stress matrix and deformation gradient.
+ * What to do is decided by the provided stress tag
  * \tparam tag Tag of the input stress measure.
  * \tparam Derived Type of the Eigen matrices.
  * \param sMB Input stress matrix.
@@ -59,7 +59,7 @@ auto createPK2Stress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixB
  * \return The PK1 stress matrix.
  */
 template <StressTags tag, typename Derived>
-auto createPK1Stress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixBase<Derived>& F) {
+Derived createPK1Stress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixBase<Derived>& F) {
   const auto& S = sMB.derived();
 
   static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
@@ -77,6 +77,7 @@ auto createPK1Stress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixB
  * \brief Create Kirchhoff stress matrix based on the input.
  *
  * This function creates Kirchhoff stress matrix based on the input stress matrix and deformation gradient.
+ * What to do is decided by the provided stress tag
  * \tparam tag Tag of the input stress measure.
  * \tparam Derived Type of the Eigen matrices.
  * \param sMB Input stress matrix.
@@ -84,7 +85,7 @@ auto createPK1Stress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixB
  * \return The Kirchhoff stress matrix.
  */
 template <StressTags tag, typename Derived>
-auto createKirchhoffStress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixBase<Derived>& F) {
+Derived createKirchhoffStress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixBase<Derived>& F) {
   const auto& S = sMB.derived();
 
   static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
@@ -102,6 +103,7 @@ auto createKirchhoffStress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::M
  * \brief Create Cauchy stress matrix based on the input.
  *
  * This function creates Cauchy stress matrix based on the input stress matrix and deformation gradient.
+ * What to do is decided by the provided stress tag
  * \tparam tag Tag of the input stress measure.
  * \tparam Derived Type of the Eigen matrices.
  * \param sMB Input stress matrix.
@@ -109,7 +111,7 @@ auto createKirchhoffStress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::M
  * \return The Cauchy stress matrix.
  */
 template <StressTags tag, typename Derived>
-auto createCauchyStress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixBase<Derived>& F) {
+Derived createCauchyStress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixBase<Derived>& F) {
   const auto& S = sMB.derived();
 
   static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
@@ -135,9 +137,8 @@ auto createCauchyStress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::Matr
  * \tparam from Tag of the source stress measure.
  * \tparam to Tag of the target stress measure.
  * \tparam DerivedS Type of the stress matrix.
- * \tparam DerivedS Type of the stress matrix.
  * \param sRaw Eigen matrix representing the input stress (can be in Voigt notation).
- * \param sRaw Eigen matrix representing the deformation gradient (has to be in matrix notation).
+ * \param F Eigen matrix representing the deformation gradient (has to be in matrix notation).
  * \return The transformed stress matrix.
  */
 template <StressTags from, StressTags to, typename DerivedS, typename DerivedF>
@@ -146,7 +147,7 @@ auto transformStress(const Eigen::MatrixBase<DerivedS>& sRaw, const Eigen::Matri
                 "No useful transformation available for linear stresses.");
   static_assert(Concepts::EigenMatrix33<DerivedF> or Concepts::EigenMatrix22<DerivedF>);
 
-  auto S = Impl::maybeFromVoigt(sRaw.derived(), false);
+  const auto S = Impl::maybeFromVoigt(sRaw.derived(), false);
 
   if constexpr (from == to)
     return S;

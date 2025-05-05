@@ -110,7 +110,7 @@ auto maybeToVoigt(const Eigen::MatrixBase<Derived>& v, bool isStrain = false) {
 }
 
 /**
- * \brief Checks weather a scalar is greater then zero. Here its used in the context of checking the determinant of the
+ * \brief Checks whether a scalar is greater than zero. Here it's used in the context of checking the determinant of the
  * right Cauchy Green tensor C.
  *
  * \param eps the epislon for comparison (defaults to 1e-10)
