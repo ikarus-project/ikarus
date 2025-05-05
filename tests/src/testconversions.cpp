@@ -3,6 +3,8 @@
 
 #include <config.h>
 
+#include "testhelpers.hh"
+
 #include <dune/common/test/testsuite.hh>
 
 #include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
@@ -12,34 +14,92 @@
 using Dune::TestSuite;
 using namespace Ikarus;
 
-auto testToAndFromStressConversions() {
-  TestSuite t("To and From Stress Transformations");
-
-  auto F = Eigen::Matrix3d{
+namespace Testing {
+constexpr auto testDeformationGradient() {
+  return Eigen::Matrix3d{
       {1.0, 0.0, 0.5},
       {0.0, 0.2, 0.5},
       {0.2, 0.5, 1.0}
   };
-  auto S = Eigen::Matrix3d{
+}
+
+constexpr auto testStress() {
+  return Eigen::Matrix3d{
       { 0.600872, -0.179083, 0},
       {-0.179083,  0.859121, 0},
       {        0,         0, 1}
   };
+}
 
-  // constexpr auto tags = Dune::makeTupleVector(StressTags::PK2, StressTags::PK1, StressTags::Kirchhoff, StressTags::Cauchy);
-  // Dune::Hybrid::forEach(tags, [&](auto tag1) {
-  //   Dune::Hybrid::forEach(tags, [&](auto tag2) {
-  //     auto transformedStress = transformStress<tag1, tag2>(S, F);
-  //   });
-  // });
-  auto stressTagRange = Dune::Hybrid::integralRange(std::integral_constant<int, 2>(), std::integral_constant<int, 4>());
+auto testCauchyGreen() {
+  auto F = Testing::testDeformationGradient();
+  return (F.transpose() * F).eval();
+}
+} // namespace Testing
+
+auto roundTripStressConversions() {
+  TestSuite t("To and From Stress Transformations");
+  const double epsilon = 100 * std::numeric_limits<double>::epsilon();
+
+  auto S = Testing::testStress();
+  auto F = Testing::testDeformationGradient();
+
+  auto stressTagRange = Dune::Hybrid::integralRange(std::integral_constant<int, 2>(), std::integral_constant<int, 5>());
   Dune::Hybrid::forEach(stressTagRange, [&](auto i) {
-    constexpr StressTags tag = StressTags(int(i));
-    transformStress<StressTags::PK2, tag>(S, F);
-    // auto roundTripStress = transformStress<tag, StressTags::PK2>(convertedStress, F);
-    // t.check(roundTripStress.isApprox(S, 1e-6), "Round-trip stress conversion failed");
+    constexpr StressTags tag1 = StressTags(int(i));
+    Dune::Hybrid::forEach(stressTagRange, [&](auto j) {
+      constexpr StressTags tag2       = StressTags(int(j));
+      Eigen::Matrix3d convertedStress = transformStress<tag1, tag2>(S, F);
+      Eigen::Matrix3d roundTripStress = transformStress<tag2, tag1>(convertedStress, F);
+      checkApproxMatrices(
+          t, roundTripStress, S,
+          "Round-trip stress not equal to initial stress (" + toString(tag1) + " & " + toString(tag2) + ")", epsilon);
+
+      Dune::Hybrid::forEach(stressTagRange, [&](auto k) {
+        constexpr StressTags tag3               = StressTags(int(k));
+        Eigen::Matrix3d convertedAgainStress    = transformStress<tag2, tag3>(convertedStress, F);
+        Eigen::Matrix3d directlyConvertedStress = transformStress<tag1, tag3>(S, F);
+
+        checkApproxMatrices(t, convertedAgainStress, directlyConvertedStress,
+                            "Converted stress with two steps does not equal direct conversion (" + toString(tag1) +
+                                " & " + toString(tag2) + " & " + toString(tag3) + ")",
+                            epsilon);
+      });
+    });
   });
 
+  return t;
+}
+
+auto roundTripStrainConversions() {
+  TestSuite t("To and From Stress Transformations");
+  const double epsilon = 100 * std::numeric_limits<double>::epsilon();
+
+  auto C = Testing::testCauchyGreen();
+
+  auto strainRange = Dune::Hybrid::integralRange(std::integral_constant<int, 3>(), std::integral_constant<int, 5>());
+  Dune::Hybrid::forEach(strainRange, [&](auto i) {
+    constexpr StrainTags tag1 = StrainTags(int(i));
+    Dune::Hybrid::forEach(strainRange, [&](auto j) {
+      constexpr StrainTags tag2       = StrainTags(int(j));
+      Eigen::Matrix3d convertedStrain = transformStrain<tag1, tag2>(C);
+      Eigen::Matrix3d roundTripStrain = transformStrain<tag2, tag1>(convertedStrain);
+      checkApproxMatrices(
+          t, roundTripStrain, C,
+          "Round-trip strain not equal to initial strain (" + toString(tag1) + " & " + toString(tag2) + ")", epsilon);
+
+      Dune::Hybrid::forEach(strainRange, [&](auto k) {
+        constexpr StrainTags tag3               = StrainTags(int(k));
+        Eigen::Matrix3d convertedAgainStrain    = transformStrain<tag2, tag3>(convertedStrain);
+        Eigen::Matrix3d directlyConvertedStrain = transformStrain<tag1, tag3>(C);
+
+        checkApproxMatrices(t, convertedAgainStrain, directlyConvertedStrain,
+                            "Converted strain with two steps does not equal direct conversion (" + toString(tag1) +
+                                " & " + toString(tag2) + " & " + toString(tag3) + ")",
+                            epsilon);
+      });
+    });
+  });
 
   return t;
 }
@@ -48,7 +108,8 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  t.subTest(testToAndFromStressConversions());
+  t.subTest(roundTripStressConversions());
+  t.subTest(roundTripStrainConversions());
 
   return t.exit();
 }

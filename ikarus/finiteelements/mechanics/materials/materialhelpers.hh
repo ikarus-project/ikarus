@@ -28,7 +28,7 @@ struct MatrixIndexPair
   Eigen::Index col; ///< Column index.
 };
 } // namespace Ikarus::Materials
-namespace Ikarus::Materials::Impl {
+namespace Ikarus::Impl {
 
 /**
  * \brief Helper function to create an array of free Voigt indices.
@@ -37,7 +37,7 @@ namespace Ikarus::Materials::Impl {
  * \return std::array<size_t, 6 - size> The array of free Voigt indices.
  */
 template <size_t size>
-consteval auto createfreeVoigtIndices(const std::array<MatrixIndexPair, size>& fixed) {
+consteval auto createfreeVoigtIndices(const std::array<Materials::MatrixIndexPair, size>& fixed) {
   std::array<size_t, 6 - size> res{};
   std::array<size_t, size> voigtFixedIndices;
   std::ranges::transform(fixed, voigtFixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
@@ -54,7 +54,7 @@ consteval auto createfreeVoigtIndices(const std::array<MatrixIndexPair, size>& f
  * \return std::array<size_t, size> The array of fixed Voigt indices.
  */
 template <size_t size>
-consteval auto createFixedVoigtIndices(const std::array<MatrixIndexPair, size>& fixed) {
+consteval auto createFixedVoigtIndices(const std::array<Materials::MatrixIndexPair, size>& fixed) {
   std::array<size_t, size> fixedIndices;
   std::ranges::transform(fixed, fixedIndices.begin(), [](auto pair) { return toVoigt(pair.row, pair.col); });
   std::ranges::sort(fixedIndices);
@@ -68,7 +68,7 @@ consteval auto createFixedVoigtIndices(const std::array<MatrixIndexPair, size>& 
  * \return constexpr size_t The number of diagonal indices.
  */
 template <size_t size>
-constexpr size_t countDiagonalIndices(const std::array<MatrixIndexPair, size>& fixed) {
+constexpr size_t countDiagonalIndices(const std::array<Materials::MatrixIndexPair, size>& fixed) {
   size_t count = 0;
   for (auto v : fixed) {
     if (v.col == v.row)
@@ -78,22 +78,47 @@ constexpr size_t countDiagonalIndices(const std::array<MatrixIndexPair, size>& f
 }
 
 /**
- * \brief Converts the input strain matrix to the appropriate form for stress reduction.
+ * \brief Converts the input measure from voigt notation to tensor notation if its not already in tensor notation.
+ *
  * \tparam Derived The derived type of the input matrix.
- * \param E The input strain matrix.
- * \return decltype(auto) The converted strain matrix.
+ * \param v The input measure.
+ * \param isStrain Flag indicating whether the vector represents a strain (default is true).
+ * \return decltype(auto) The converted matrix.
  */
 template <typename Derived>
-decltype(auto) maybeFromVoigt(const Eigen::MatrixBase<Derived>& E) {
+auto maybeFromVoigt(const Eigen::MatrixBase<Derived>& v, bool isStrain = true) {
   if constexpr (Concepts::EigenVector<Derived>) { // receiving vector means Voigt notation
-    return fromVoigt(E.derived(), true);
+    return fromVoigt(v.derived(), isStrain).eval();
   } else
-    return E.derived();
+    return v.derived().eval();
 }
 
+/**
+ * \brief Converts the input measure from tensor notation to voigt notation if its not already in voigt notation
+ *
+ * \tparam Derived The derived type of the input matrix.
+ * \param v the input measure
+ * \param isStrain Flag indicating whether the vector represents a strain (default is true).
+ * \return decltype(auto) The converted vector.
+ */
+template <typename Derived>
+auto maybeToVoigt(const Eigen::MatrixBase<Derived>& v, bool isStrain = false) {
+  if constexpr (Concepts::EigenVector<Derived>) { // receiving vector means Voigt notation
+    return v.derived().eval();
+  } else
+    return toVoigt(v.derived(), isStrain).eval();
+}
+
+/**
+ * \brief Checks weather a scalar is greater then zero. Here its used in the context of checking the determinant of the
+ * right Cauchy Green tensor C.
+ *
+ * \param eps the epislon for comparison (defaults to 1e-10)
+ * \param det the evaluated determinant
+ */
 template <typename ScalarType>
-void checkPositiveOrAbort(ScalarType det) {
-  if (Dune::FloatCmp::le(static_cast<double>(det), 0.0, 1e-10)) {
+void checkPositiveOrAbort(ScalarType det, double eps = 1e-10) {
+  if (Dune::FloatCmp::le(static_cast<double>(det), 0.0, eps)) {
     std::cerr << "Determinant of right Cauchy Green tensor C must be greater than zero. detC = " +
                      std::to_string(static_cast<double>(det));
     abort();
@@ -174,4 +199,4 @@ inline Vector invariants(const Vector& lambda) {
 
   return invariants;
 }
-} // namespace Ikarus::Materials::Impl
+} // namespace Ikarus::Impl

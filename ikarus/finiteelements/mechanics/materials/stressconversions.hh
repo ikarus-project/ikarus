@@ -47,6 +47,7 @@ auto createPK2Stress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixB
   else if constexpr (tag == StressTags::PK2)
     return S;
 }
+
 /**
  * \brief Create PK1 stress matrix based on the input.
  *
@@ -68,9 +69,8 @@ auto createPK1Stress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixB
     return (S * F.inverse().transpose()).eval();
   else if constexpr (tag == StressTags::PK1)
     return S;
-  else if constexpr (tag == StressTags::PK2) {
+  else if constexpr (tag == StressTags::PK2)
     return (F * S).eval();
-  }
 }
 
 /**
@@ -146,12 +146,13 @@ auto transformStress(const Eigen::MatrixBase<DerivedS>& sRaw, const Eigen::Matri
                 "No useful transformation available for linear stresses.");
   static_assert(Concepts::EigenMatrix33<DerivedF> or Concepts::EigenMatrix22<DerivedF>);
 
-  auto S = Impl::maybeFromVoigt(sRaw.eval(), true);
+  auto S = Impl::maybeFromVoigt(sRaw.derived(), false);
+
   if constexpr (from == to)
     return S;
   else if constexpr (to == StressTags::PK2)
     return createPK2Stress<from>(S, F);
-  else if constexpr (to == StressTags::PK2)
+  else if constexpr (to == StressTags::PK1)
     return createPK1Stress<from>(S, F);
   else if constexpr (to == StressTags::Kirchhoff)
     return createKirchhoffStress<from>(S, F);

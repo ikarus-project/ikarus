@@ -16,7 +16,7 @@ namespace Ikarus {
  * \ingroup Materialtags
  * \brief A strongly typed enum class representing the type of the passed strain
  */
-MAKE_ENUM(StrainTags, linear, deformationGradient, displacementGradient, greenLagrangian, rightCauchyGreenTensor);
+MAKE_ENUM(StrainTags, linear, displacementGradient, deformationGradient, greenLagrangian, rightCauchyGreenTensor);
 
 /**
  *
