@@ -689,7 +689,6 @@ namespace Concepts {
     { m.template storedEnergy<M::strainTag>(C) } -> std::same_as<typename M::ScalarType>;
     { m.template stresses<M::strainTag>(C) };
     { m.template tangentModuli<M::strainTag>(C) };
-    { m.template rebind<double>() };
   };
 
   /**
