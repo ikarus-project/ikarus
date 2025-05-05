@@ -119,6 +119,18 @@ struct LinearElasticityT : Material<LinearElasticityT<ST>>
     return leRebound;
   }
 
+  /**
+   * \brief Computes the strain measure and inverse material tangent for a given stress state.
+   *
+   * \tparam Derived The derived type of the input matrix.
+   * \param S the input stress matrix.
+   * \return pair of inverse material tangent and strain tensor in voigt notation.
+   */
+  template <typename Derived>
+  auto materialInversionImpl(const Eigen::MatrixBase<Derived>& S) const {
+    return svk_.template materialInversionImpl(S);
+  }
+
 private:
   StVenantKirchhoffT<ScalarType> svk_;
 };

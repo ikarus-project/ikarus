@@ -92,6 +92,8 @@ SPDX-License-Identifier: LGPL-3.0-or-later
       enhanced strain value, its first and second derivatives w.r.t the displacements and the internal variable `alpha_`.
 - Add Q1Hn and Q1HTn elements ([#363](https://github.com/ikarus-project/ikarus/pull/363))
 - Add wrappers for solving the generalized eigenvalue problem with sparse and dense matrices with Eigen and Spectra ([#368](https://github.com/ikarus-project/ikarus/pull/368)).
+- Add functionality to invert hyperelastic material laws. For Neo-Hooke and SVK law, analytical solutions are available.
+  For the general hyperelastic framework, a numerical approach is used ([#369](https://github.com/ikarus-project/ikarus/pull/369)).
 
 ## Release v0.4 (Ganymede)
 

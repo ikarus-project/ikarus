@@ -490,15 +490,6 @@ namespace Concepts {
   } // namespace Impl
 
   /**
-   * \concept GeometricallyLinearMaterial
-   * \brief Concepts defining the requirements for a material to be geometrically linear
-   * This is the case when the corresponding strainTag is linear.
-   * \tparam MAT the material implementation
-   */
-  template <typename MAT>
-  concept GeometricallyLinearMaterial = MAT::strainTag == StrainTags::linear;
-
-  /**
    * \concept ResultType
    * \brief A concept to check if a template type satisfies the ResultType requirements.
    * \tparam RT A template type with parameters (typename, int, int).
@@ -678,6 +669,38 @@ namespace Concepts {
   } // namespace Formulations
 
   /**
+   * \brief Concept representing a material interface
+   *
+   * \concept Material
+   * A type M satisfies the material interface if it provides the necessary member functions and type.
+   */
+  template <typename M>
+  concept Material = requires(M m, Eigen::Matrix3d C) {
+    M::strainTag;
+    M::stressTag;
+    M::tangentModuliTag;
+    M::derivativeFactor;
+    M::isReduced;
+
+    typename M::ScalarType;
+
+    { m.name() } -> std::convertible_to<std::string>;
+    { m.materialParameters() } -> std::same_as<typename M::MaterialParameters>;
+    { m.template storedEnergy<M::strainTag>(C) } -> std::same_as<typename M::ScalarType>;
+    { m.template stresses<M::strainTag>(C) };
+    { m.template tangentModuli<M::strainTag>(C) };
+  };
+
+  /**
+   * \concept GeometricallyLinearMaterial
+   * \brief Concepts defining the requirements for a material to be geometrically linear
+   * This is the case when the corresponding strainTag is linear.
+   * \tparam MAT the material implementation
+   */
+  template <typename MAT>
+  concept GeometricallyLinearMaterial = Material<MAT> && (MAT::strainTag == StrainTags::linear);
+
+  /**
    * \brief Concept representing an eigenvalue solver interface
    *
    * \concept EigenValueSolver
@@ -718,4 +741,5 @@ namespace traits {
   using MaybeDereferencedType = typename MaybeDereference<T>::type;
 
 } // namespace traits
+
 } // namespace Ikarus

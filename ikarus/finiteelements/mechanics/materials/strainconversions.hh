@@ -18,18 +18,10 @@
 
 #include <Eigen/Core>
 
+#include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
 #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus {
-namespace Impl {
-  template <typename Derived>
-  decltype(auto) mayTransformFromVoigt(const Eigen::MatrixBase<Derived>& e, bool isStrain = true) {
-    if constexpr (Concepts::EigenVector<Derived>)
-      return fromVoigt(e.derived(), isStrain);
-    else
-      return e;
-  }
-} // namespace Impl
 
 /**
  * \brief Create  Green-Lagrangian strain based on the input.
@@ -45,7 +37,7 @@ namespace Impl {
 template <StrainTags tag, typename Derived>
 auto createGreenLagrangianStrains(const Eigen::MatrixBase<Derived>& eMB) {
   const auto& e = eMB.derived();
-  static_assert(Concepts::EigenMatrix33<Derived>);
+  static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
   if constexpr (tag == StrainTags::greenLagrangian)
     return e;
   else if constexpr (tag == StrainTags::deformationGradient)
@@ -71,7 +63,7 @@ template <StrainTags tag, typename Derived>
 decltype(auto) createDeformationGradient(const Eigen::MatrixBase<Derived>& eMB) {
   const auto& e = eMB.derived();
 
-  static_assert(Concepts::EigenMatrix33<Derived>);
+  static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
   if constexpr (tag == StrainTags::greenLagrangian) {
     // E = 0.5 * (F ^ 2 - I);
     // 2*E = F ^ 2 - I;
@@ -101,7 +93,7 @@ decltype(auto) createDeformationGradient(const Eigen::MatrixBase<Derived>& eMB) 
 template <StrainTags tag, typename Derived>
 decltype(auto) createRightCauchyGreen(const Eigen::MatrixBase<Derived>& eMB) {
   const auto& e = eMB.derived();
-  static_assert(Concepts::EigenMatrix33<Derived>);
+  static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
   if constexpr (tag == StrainTags::greenLagrangian) {
     // E = 0.5 * (C - I);
     // 2*E = C - I;
@@ -132,7 +124,7 @@ template <StrainTags from, StrainTags to, typename Derived>
 decltype(auto) transformStrain(const Eigen::MatrixBase<Derived>& eRaw) {
   static_assert((from == to) or (from != StrainTags::linear and to != StrainTags::linear),
                 "No useful transformation available for linear strains.");
-  decltype(auto) e = Impl::mayTransformFromVoigt(eRaw.eval(), true);
+  decltype(auto) e = Impl::maybeFromVoigt(eRaw.eval(), true);
   if constexpr (from == to)
     return e;
   else if constexpr (to == StrainTags::greenLagrangian)

@@ -140,6 +140,22 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
    */
   auto& underlying() const { return matImpl_; }
 
+  template <typename Derived>
+  auto materialInversionImpl(const Eigen::MatrixBase<Derived>& Sraw) const {
+    static_assert(Concepts::EigenMatrix22<decltype(Sraw)>);
+    // Enlarge S
+    auto S                       = Eigen::Matrix<typename Derived::Scalar, 3, 3>::Zero().eval();
+    S.template block<2, 2>(0, 0) = Sraw;
+
+    auto [D, E] = matImpl_.template materialInversion<Underlying::strainTag, true>(S);
+
+    // Reduce D and E again
+    auto Dred = reduceMatrix(D, fixedVoigtIndices);
+    auto Ered = removeCol(E, fixedVoigtIndices);
+
+    return std::make_pair(Dred, Ered);
+  }
+
 private:
   /**
    * \brief Initializes unknown strains based on fixed indices.

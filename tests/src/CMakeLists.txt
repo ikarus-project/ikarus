@@ -43,6 +43,7 @@ set(programSourceFiles
     testhyperelasticity.cpp
     testmaterialswithad.cpp
     testeigenvaluesolver.cpp
+    testmaterialinversion.cpp
     testmueslimaterials.cpp
     testcantileverbeam.cpp
 )
