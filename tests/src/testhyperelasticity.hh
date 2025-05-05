@@ -45,15 +45,15 @@ struct Deformations
   using MatrixType         = Eigen::Matrix<double, dim, dim>;
   Deformations()           = default;
 
-  template <DeformationType DT>
+  template <DeformationState DT>
   MatrixType rightCauchyGreen(double lambda) const {
-    if constexpr (DT == DeformationType::Undeformed)
+    if constexpr (DT == DeformationState::Undeformed)
       return undeformed(lambda);
-    else if constexpr (DT == DeformationType::UniaxialTensile)
+    else if constexpr (DT == DeformationState::Uniaxial)
       return uniaxialTensile(lambda);
-    else if constexpr (DT == DeformationType::BiaxialTensile)
+    else if constexpr (DT == DeformationState::Biaxial)
       return biaxialTensile(lambda);
-    else if constexpr (DT == DeformationType::PureShear)
+    else if constexpr (DT == DeformationState::PureShear)
       return pureShear(lambda);
     else
       return random(lambda);
@@ -157,8 +157,8 @@ auto recoverNeoHookeTest() {
   auto deformation     = Deformations{};
   constexpr double tol = 1e-14;
 
-  auto checkNHRecoveryImpl = [&]<DeformationType def, typename MAT1, typename MAT2>(const MAT1& mat1,
-                                                                                    const MAT2& mat2) {
+  auto checkNHRecoveryImpl = [&]<DeformationState def, typename MAT1, typename MAT2>(const MAT1& mat1,
+                                                                                     const MAT2& mat2) {
     auto c           = deformation.rightCauchyGreen<def>(1.37);
     auto energy_mat1 = mat1.template storedEnergy<rightCauchyGreenTensor>(c);
     auto stress_mat1 = mat1.template stresses<rightCauchyGreenTensor>(c);
@@ -175,23 +175,23 @@ auto recoverNeoHookeTest() {
     checkApproxMatrices(t, moduli_mat2, moduli_mat1, testLocation() + matName + "Incorrect tangentModuli.", tol);
   };
 
-  auto checkNHRecovery = [&]<DeformationType def>() {
+  auto checkNHRecovery = [&]<DeformationState def>() {
     checkNHRecoveryImpl.operator()<def>(nh, nhFromogdenTotal);
     checkNHRecoveryImpl.operator()<def>(nhFromInvariantBased, nhFromogdenDevi);
   };
 
   // Checking for these deformation states will indirectly ensure correct transformation of quantities from principal
   // coordinate system to Cartesian coordinate system (even for duplicate principal stretches).
-  checkNHRecovery.operator()<DeformationType::Undeformed>();
-  checkNHRecovery.operator()<DeformationType::UniaxialTensile>();
-  checkNHRecovery.operator()<DeformationType::BiaxialTensile>();
-  checkNHRecovery.operator()<DeformationType::PureShear>();
-  checkNHRecovery.operator()<DeformationType::Random>();
+  checkNHRecovery.operator()<DeformationState::Undeformed>();
+  checkNHRecovery.operator()<DeformationState::Uniaxial>();
+  checkNHRecovery.operator()<DeformationState::Biaxial>();
+  checkNHRecovery.operator()<DeformationState::PureShear>();
+  checkNHRecovery.operator()<DeformationState::Random>();
 
   return t;
 }
 
-template <typename DEV, DeformationType def>
+template <typename DEV, DeformationState def>
 auto materialResults() {
   if constexpr (std::same_as<DEV, BlatzKoT<double>>) {
     return BlatzKoResults<def>();
@@ -213,7 +213,7 @@ auto materialResults() {
     static_assert(Dune::AlwaysFalse<DEV>::value, "The requested deviatoric function is not implemented.");
 }
 
-template <DeformationType def, Concepts::DeviatoricFunction DEV>
+template <DeformationState def, Concepts::DeviatoricFunction DEV>
 auto testMaterialResult(const DEV& dev) {
   Dune::TestSuite t("Test Deviatoric Function Results for the material model: " + dev.name() +
                     " with deformation type as " + toString(def));
@@ -257,7 +257,7 @@ auto testMaterialResults() {
   auto ab         = ArrudaBoyce({mu, 0.85});
   auto gent       = Gent({mu, 2.5});
 
-  auto checkForDeformationType = [&]<DeformationType def>() {
+  auto checkForDeformationType = [&]<DeformationState def>() {
     t.subTest(testMaterialResult<def>(bk));
     t.subTest(testMaterialResult<def>(ogdenTotal));
     t.subTest(testMaterialResult<def>(ogdenDevi));
@@ -267,11 +267,11 @@ auto testMaterialResults() {
     t.subTest(testMaterialResult<def>(gent));
   };
 
-  checkForDeformationType.operator()<DeformationType::Undeformed>();
-  checkForDeformationType.operator()<DeformationType::UniaxialTensile>();
-  checkForDeformationType.operator()<DeformationType::BiaxialTensile>();
-  checkForDeformationType.operator()<DeformationType::PureShear>();
-  checkForDeformationType.operator()<DeformationType::Random>();
+  checkForDeformationType.operator()<DeformationState::Undeformed>();
+  checkForDeformationType.operator()<DeformationState::Uniaxial>();
+  checkForDeformationType.operator()<DeformationState::Biaxial>();
+  checkForDeformationType.operator()<DeformationState::PureShear>();
+  checkForDeformationType.operator()<DeformationState::Random>();
 
   // Check malformed Invariant model constructor
   t.checkThrow([]() { InvariantBased<2>({0, 0}, {0, 1}, {500, 500}); });

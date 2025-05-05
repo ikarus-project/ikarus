@@ -92,7 +92,7 @@ auto checkConstructors() {
   return t;
 }
 
-template <DeformationType def, typename DEV>
+template <DeformationState def, typename DEV>
 auto testDeviatoricMaterialResultMuesli(const DEV& dev) {
   Dune::TestSuite t("Test Deviatoric Function Results for the material model: " + dev.name() +
                     " with deformation type as " + toString(def));
@@ -101,7 +101,7 @@ auto testDeviatoricMaterialResultMuesli(const DEV& dev) {
   auto [energyEx, firstDerivativesEx, secondDerivativesEx] = materialResults<DEV, def>();
   auto deformation                                         = Deformations{};
   constexpr double lambda                                  = 1.37;
-  auto C = Materials::Impl::maybeFromVoigt(deformation.rightCauchyGreen<def>(lambda));
+  auto C = Impl::maybeFromVoigt(deformation.rightCauchyGreen<def>(lambda));
 
   auto W               = dev.template storedEnergy<StrainTags::rightCauchyGreenTensor>(C);
   auto stress          = dev.template stresses<StrainTags::rightCauchyGreenTensor, false>(C);
@@ -124,11 +124,11 @@ auto testDeviatoricMaterialResultMuesli(const DEV& dev) {
 
 template <typename MAT>
 auto testDeviatoricPart(TestSuite& t, const MAT& mat) {
-  t.subTest(testDeviatoricMaterialResultMuesli<DeformationType::Undeformed>(mat));
-  t.subTest(testDeviatoricMaterialResultMuesli<DeformationType::UniaxialTensile>(mat));
-  t.subTest(testDeviatoricMaterialResultMuesli<DeformationType::BiaxialTensile>(mat));
-  t.subTest(testDeviatoricMaterialResultMuesli<DeformationType::PureShear>(mat));
-  t.subTest(testDeviatoricMaterialResultMuesli<DeformationType::Random>(mat));
+  t.subTest(testDeviatoricMaterialResultMuesli<DeformationState::Undeformed>(mat));
+  t.subTest(testDeviatoricMaterialResultMuesli<DeformationState::Uniaxial>(mat));
+  t.subTest(testDeviatoricMaterialResultMuesli<DeformationState::Biaxial>(mat));
+  t.subTest(testDeviatoricMaterialResultMuesli<DeformationState::PureShear>(mat));
+  t.subTest(testDeviatoricMaterialResultMuesli<DeformationState::Random>(mat));
 }
 
 auto testMuesliAgainstIkarus() {

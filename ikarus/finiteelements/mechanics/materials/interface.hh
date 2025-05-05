@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
 #include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
 #include <ikarus/finiteelements/mechanics/materials/tags.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
@@ -188,6 +189,41 @@ struct Material
       return toVoigt(tangentModuliMaybeTransformInputToVoigt<false>(E));
     else
       return tangentModuliMaybeTransformInputToVoigt<voigt>(E);
+  }
+
+  /**
+   * \brief Computes the corresponding strain measure and inverse material tangent for a given stress state.
+   * \details This assumes the existence of a complementary stored energy function $\chi(\BS)$, such that
+   * $$ \partial_{\BS} \chi(\BS) := \BE$$. Except for linear materials, this is not just the inverse of the material
+   * tangent, but needs the inversion of the materials stored energy function. For SVK and Linear Elasticity, the
+   * inverse of $\BC$ is taken. For NeoHooke an analytical solution exists, and for the general hyperelastic framework
+   * (and for all materials that don't implement the material inversion, for that a strain energy function exists) a
+   * numerical approach is used.
+   *
+   * \tparam tag Strain tag indicating which strain tensor components are expected as result.
+   * \tparam voigt Boolean indicating whether to return Voigt-shaped result.
+   * \tparam useNumeric forces the function to use the generic numerical approach
+   * \tparam Derived the type of the stress matrix
+   * \param Sraw input stress matrix
+   * \return pair of inverse material tangent and strain tensor
+   */
+  template <StrainTags tag, bool voigt = true, bool useNumeric = false, typename Derived>
+  requires CorrectStrainSize<MaterialImpl, Derived>
+  [[nodiscard]] auto materialInversion(const Eigen::MatrixBase<Derived>& Sraw) const {
+    const auto S = Impl::maybeFromVoigt(Sraw.derived(), false).eval();
+
+    auto [D, Eraw] = [&]() {
+      if constexpr (requires { impl().materialInversionImpl(S); } and not useNumeric)
+        return impl().materialInversionImpl(S);
+      else
+        return numericalMaterialInversion(impl(), S);
+    }();
+
+    const auto E = transformStrain<MaterialImpl::strainTag, tag>(Eraw).eval();
+    if constexpr (voigt)
+      return std::make_pair(D, toVoigt(E));
+    else
+      return std::make_pair(fromVoigt(D), E);
   }
 
   /**

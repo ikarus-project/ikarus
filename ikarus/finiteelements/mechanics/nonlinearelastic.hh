@@ -38,7 +38,7 @@ class NonLinearElastic;
  * \brief A PreFE struct for non-linear elastic elements.
  * \tparam MAT Type of the material.
  */
-template <typename MAT>
+template <Concepts::Material MAT>
 struct NonLinearElasticPre
 {
   using Material = MAT;
@@ -405,7 +405,7 @@ protected:
  * \param mat Material parameters for the non-linear elastic element.
  * \return A non-linear elastic pre finite element.
  */
-template <typename MAT>
+template <Concepts::Material MAT>
 auto nonLinearElastic(const MAT& mat) {
   NonLinearElasticPre<MAT> pre(mat);
 

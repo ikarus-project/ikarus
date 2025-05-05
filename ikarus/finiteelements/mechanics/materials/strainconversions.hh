@@ -34,7 +34,7 @@ template <StrainTags tag, typename Derived>
 Derived createGreenLagrangianStrains(const Eigen::MatrixBase<Derived>& eMB) {
   const auto& e = eMB.derived();
 
-  static_assert(Concepts::EigenMatrix33<Derived>);
+  static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
   if constexpr (tag == StrainTags::greenLagrangian)
     return e;
   else if constexpr (tag == StrainTags::deformationGradient)
@@ -59,7 +59,7 @@ template <StrainTags tag, typename Derived>
 Derived createDeformationGradient(const Eigen::MatrixBase<Derived>& eMB) {
   const auto& e = eMB.derived();
 
-  static_assert(Concepts::EigenMatrix33<Derived>);
+  static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
   if constexpr (tag == StrainTags::greenLagrangian) {
     // E = 0.5 * (F ^ 2 - I);
     // 2*E = F ^ 2 - I;
@@ -89,7 +89,7 @@ template <StrainTags tag, typename Derived>
 Derived createRightCauchyGreen(const Eigen::MatrixBase<Derived>& eMB) {
   const auto& e = eMB.derived();
 
-  static_assert(Concepts::EigenMatrix33<Derived>);
+  static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
   if constexpr (tag == StrainTags::greenLagrangian) {
     // E = 0.5 * (C - I);
     // 2*E = C - I;
@@ -120,7 +120,6 @@ auto transformStrain(const Eigen::MatrixBase<Derived>& eRaw) {
   static_assert((from == to) or (from != StrainTags::linear and to != StrainTags::linear),
                 "No useful transformation available for linear strains.");
   const auto e = Impl::maybeFromVoigt(eRaw.derived(), true);
-
   if constexpr (from == to)
     return e;
   else if constexpr (to == StrainTags::greenLagrangian)

@@ -393,7 +393,7 @@ protected:
  * \param mat Material parameters for the non-linear elastic element.
  * \return A linear elastic pre finite element.
  */
-template <typename MAT>
+template <Concepts::GeometricallyLinearMaterial MAT>
 auto linearElastic(const MAT& mat) {
   LinearElasticPre<MAT> pre(mat);
 
