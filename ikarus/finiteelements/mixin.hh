@@ -94,6 +94,9 @@ public:
   using LocalView               = typename Traits::LocalView;
   static constexpr int worldDim = Traits::worlddim;
 
+  template <typename ES>
+  static constexpr bool hasEAS = hasSkill<EnhancedAssumedStrainsPre<ES>::template Skill>();
+
   /**
    * \brief Create a Requirement object.
    *
@@ -249,10 +252,33 @@ public:
   }
 
 private:
+  template <typename Sk>
+  auto invokeUpdateState(const Requirement& par,
+                         const std::remove_reference_t<typename Traits::template VectorType<>>& correction) {
+    if constexpr (requires { Sk::updateStateImpl(par, correction); })
+      Sk::updateStateImpl(par, correction);
+  }
+
+public:
+  /**
+   * \brief  Call all updateStateImpl functions if the skill implements it.
+   *
+   * \details Update the state variables related to a particular skill.
+   *
+   * \param req The Requirement object specifying the requirements for the update itself.
+   * \param force A correction vector (for example, the displacement increment) based on which the state variables are
+   * to be updated.
+   */
+  void updateState(const Requirement& par,
+                   const std::remove_reference_t<typename Traits::template VectorType<>>& correction) {
+    (invokeUpdateState<Skills<PreFE, typename PreFE::template FE<Skills...>>>(par, correction), ...);
+  }
+
+private:
   template <typename Sk, typename BC, typename MT>
   auto invokeSubscribeTo(BC& bc) {
-    // For Clang-16: we need the this-> otherwise the code in the if clause will never be called. For Gcc-12.2: with the
-    // this-> it throws a compiler error in certain cases
+    // For Clang-16: we need the this-> otherwise the code in the if clause will never be called. For Gcc-12.2: with
+    // the this-> it throws a compiler error in certain cases
 #if defined(__clang__)
     if constexpr (requires { this->Sk::template subscribeToImpl<MT>(bc); }) {
 #else

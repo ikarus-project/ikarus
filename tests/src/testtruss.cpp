@@ -18,6 +18,7 @@
 #include <ikarus/controlroutines/loadcontrol.hh>
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/truss.hh>
+#include <ikarus/solver/eigenvaluesolver/generalizedeigensolverfactory.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
@@ -121,7 +122,7 @@ static auto vonMisesTrussTest() {
   auto nr = nrFactory.create(denseFlatAssembler);
 
   /// Create Observer to write information of the non-linear solver
-  auto f = Ikarus::DifferentiableFunctionFactory::op(denseFlatAssembler);
+  auto f = DifferentiableFunctionFactory::op(denseFlatAssembler);
 
   t.check(utils::checkGradient(f, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check gradient failed";
@@ -241,8 +242,8 @@ static auto truss3dTest() {
   linSolver.solve(d, -R);
 
   /// Compute eigenvalues of the stiffness matrix
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> essaK;
-  essaK.compute(K);
+  auto essaK = makeIdentitySymEigenSolver<EigenValueSolverType::Eigen>(K);
+  essaK.compute();
   auto eigenValuesComputed = essaK.eigenvalues();
 
   Eigen::Vector2d axialForces = Eigen::Vector2d::Zero();

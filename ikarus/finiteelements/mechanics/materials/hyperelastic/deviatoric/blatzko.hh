@@ -82,8 +82,8 @@ struct BlatzKoT
    */
   template <typename ST>
   FirstDerivative<ST> firstDerivativeImpl(const PrincipalStretches<ST>& lambda) const {
-    auto dWdLambda     = FirstDerivative<ST>::Zero().eval();
-    const ScalarType J = Impl::determinantFromPrincipalValues(lambda);
+    auto dWdLambda = FirstDerivative<ST>::Zero().eval();
+    const ST J     = Impl::determinantFromPrincipalValues(lambda);
 
     return mu_ * (-lambda.cwisePow(3).cwiseInverse() + (J * lambda.cwiseInverse()));
   }
@@ -97,8 +97,8 @@ struct BlatzKoT
    */
   template <typename ST>
   SecondDerivative<ST> secondDerivativeImpl(const PrincipalStretches<ST>& lambda) const {
-    auto dS            = SecondDerivative<ST>::Zero().eval();
-    const ScalarType J = Impl::determinantFromPrincipalValues(lambda);
+    auto dS    = SecondDerivative<ST>::Zero().eval();
+    const ST J = Impl::determinantFromPrincipalValues(lambda);
 
     auto lam      = lambda.array();
     dS            = J / (lambda * lambda.transpose()).array();

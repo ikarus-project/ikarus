@@ -369,6 +369,22 @@ namespace Concepts {
   template <typename M>
   concept EigenMatrix = traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, M>::value;
 
+  /**
+   * \concept SparseEigenMatrix
+   * \brief Concept defining the requirements for sparse Eigen matrices.
+   * \tparam M Type representing a sparse Eigen matrix.
+   */
+  template <typename M>
+  concept SparseEigenMatrix = traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix, M>::value;
+
+  /**
+   * \concept DenseOrSparseEigenMatrix
+   * \brief Concept defining the requirements for sparse or dense Eigen matrices.
+   * \tparam M Type representing a dense or sparse Eigen matrix.
+   */
+  template <typename M>
+  concept DenseOrSparseEigenMatrix = SparseEigenMatrix<M> or EigenMatrix<M>;
+
 #define MAKE_EIGEN_FIXED_VECTOR_CONCEPT(Size) \
   template <typename V>                       \
   concept EigenVector##Size =                 \
@@ -637,6 +653,44 @@ namespace Concepts {
     { s.domain } -> std::convertible_to<const typename S::Domain&>;
     { s.loadStep } -> std::convertible_to<int>;
     { s.stepSize } -> std::convertible_to<double>;
+  };
+
+  namespace Formulations {
+    /**
+      \concept TotalLagrangian
+      \brief Concept to check if the underlying strain and stress tag correspond to a total Lagrangian formulation.
+      \tparam T1 The underlying strain tag.
+      \tparam T2 The underlying stress tag.
+      */
+    template <StrainTags T1, StressTags T2>
+    concept TotalLagrangian = (T1 == StrainTags::linear and T2 == StressTags::linear) or
+                              (T1 == StrainTags::greenLagrangian and T2 == StressTags::PK2);
+
+    /**
+      \concept TwoPoint
+      \brief Concept to check if the underlying strain and stress tag correspond to a two point formulation.
+      \tparam T1 The underlying strain tag.
+      \tparam T2 The underlying stress tag.
+      */
+    template <StrainTags T1, StressTags T2>
+    concept TwoPoint =
+        (T1 == StrainTags::deformationGradient or T1 == StrainTags::displacementGradient) and T2 == StressTags::PK1;
+  } // namespace Formulations
+
+  /**
+   * \brief Concept representing an eigenvalue solver interface
+   *
+   * \concept EigenValueSolver
+   * A type ES satisfies EigenValueSolver if it provides the necessary member functions and type
+   */
+  template <typename ES>
+  concept EigenValueSolver = requires(ES es) {
+    typename ES::MatrixType;
+    typename ES::ScalarType;
+    { es.compute() } -> std::same_as<bool>;
+    { es.eigenvalues() } -> std::convertible_to<Eigen::VectorX<typename ES::ScalarType>>;
+    { es.eigenvectors() } -> std::convertible_to<Eigen::MatrixX<typename ES::ScalarType>>;
+    { es.nev() } -> std::convertible_to<int>;
   };
 
 } // namespace Concepts
