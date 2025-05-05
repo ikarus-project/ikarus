@@ -5,7 +5,7 @@
  * \file linearstress.hh
  * \brief Implementation of the PS function, where the linear stress is assumed.
  *
- * \ingroup as
+ * \ingroup ps
  */
 
 #pragma once

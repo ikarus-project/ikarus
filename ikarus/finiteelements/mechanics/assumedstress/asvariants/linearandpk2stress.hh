@@ -6,7 +6,7 @@
  * \brief Definition of the types of Assumed Stress formulations for 2D and 3D linear solid elements, where linear and
  * PK2 stresses are assumed.
  *
- * \ingroup as
+ * \ingroup ps
  */
 
 #pragma once

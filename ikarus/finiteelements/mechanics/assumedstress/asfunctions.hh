@@ -4,7 +4,7 @@
 /**
  * \file asfunctions.hh
  * \brief Header file for various assumed stress functions.
- * \ingroup as
+ * \ingroup ps
  */
 
 #pragma once

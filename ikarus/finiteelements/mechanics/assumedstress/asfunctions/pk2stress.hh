@@ -5,7 +5,7 @@
  * \file pk2stress.hh
  * \brief Implementation of the PS function, where the PK2 Stress is assumed.
  *
- * \ingroup as
+ * \ingroup ps
  */
 
 #pragma once
