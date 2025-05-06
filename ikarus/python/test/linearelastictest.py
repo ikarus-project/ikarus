@@ -155,6 +155,8 @@ def linElasticTest(fe_type="standard"):
     else:
         raise AssertionError("Expected RuntimeError for PK2Stress query")
 
+    # We only test assembler manipulators here for standard element, as there is nothing specific about the combination of
+    # element technology and mainpulators and it only adds compile time
     if not isMixed:
         assemblerDense = iks.assembler.denseFlatAssembler(fes, dirichletValues)
         assemblerDense.bind(
@@ -246,10 +248,10 @@ def linElasticTest(fe_type="standard"):
 
 if __name__ == "__main__":
     # # Run for standard formulation.
-    # linElasticTest(fe_type="standard")
+    linElasticTest(fe_type="standard")
 
-    # # Run for eas formulation.
-    # linElasticTest(fe_type="eas")
+    # Run for eas formulation.
+    linElasticTest(fe_type="eas")
 
     # Run for assumed stress formulation.
     linElasticTest(fe_type="assumed")

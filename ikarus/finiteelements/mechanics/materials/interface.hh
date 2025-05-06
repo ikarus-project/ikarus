@@ -206,7 +206,8 @@ struct Material
    * \tparam useNumeric forces the function to use the generic numerical approach
    * \tparam Derived the type of the stress matrix
    * \param Sraw input stress matrix
-   * \param Estart optionally define a starting value for the numerical algorithm (applies only to numerical inversion)
+   * \param EstartRaw optionally define a starting value for the numerical algorithm (applies only to numerical
+   * inversion)
    * \param tol tolerance for the Newton-Raphson solver (applies only to numerical inversion).
    * \param maxIter maximum number of iterations for the Newton-Raphson solver (applies only to numerical inversion).
    * \return pair of inverse material tangent and strain tensor
