@@ -58,22 +58,22 @@ auto checkFESByAutoDiffImpl(const GridView& gridView, const BasisHandler& basis,
     checkSymmetricMatrix(t, K, tol, "K");
     checkSymmetricMatrix(t, KAutoDiff, tol, "KAutoDiff");
 
-    if constexpr (requires { fe.numberOfEASParameters(); }) {
-      checkScalars(t, fe.numberOfEASParameters(), feAutoDiff.realFE().numberOfEASParameters(),
+    if constexpr (fe.hasEAS() or fe.hasAssumedStress()) {
+      checkScalars(t, fe.numberOfInternalVariables(), feAutoDiff.realFE().numberOfInternalVariables(),
                    "Incorrect number of EAS parameters");
-      checkApproxVectors(t, fe.alpha(), feAutoDiff.alpha(),
+      checkApproxVectors(t, fe.internalVariable(), feAutoDiff.internalVariable(),
                          testLocation() + "\nIncorrect internal variable alpha." + feClassName, tol);
 
-      if (fe.numberOfEASParameters() != 0) {
-        t.checkThrow<Dune::NotImplemented>(
-            [&]() { calculateVector(feAutoDiff, req, affordance.vectorAffordance(), RAutoDiff); },
-            "calculateVector with AutoDiff should throw a Dune::NotImplemented");
+      if constexpr (fe.hasEAS())
+        if (fe.numberOfInternalVariables() != 0) {
+          t.checkThrow<Dune::NotImplemented>(
+              [&]() { calculateVector(feAutoDiff, req, affordance.vectorAffordance(), RAutoDiff); },
+              "calculateVector with AutoDiff should throw a Dune::NotImplemented");
 
-        t.checkThrow<Dune::NotImplemented>(
-            [&]() { auto energyAutoDiff = calculateScalar(feAutoDiff, req, affordance.scalarAffordance()); },
-            "calculateScalar with AutoDiff should throw a Dune::NotImplemented");
-      }
-
+          t.checkThrow<Dune::NotImplemented>(
+              [&]() { auto energyAutoDiff = calculateScalar(feAutoDiff, req, affordance.scalarAffordance()); },
+              "calculateScalar with AutoDiff should throw a Dune::NotImplemented");
+        }
     } else {
       calculateVector(fe, req, affordance.vectorAffordance(), R);
       calculateVector(feAutoDiff, req, affordance.vectorAffordance(), RAutoDiff);

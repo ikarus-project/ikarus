@@ -86,8 +86,7 @@ struct GreenLagrangeStrain
     } else
       static_assert(Dune::AlwaysFalse<GEO>::value,
                     "firstDerivative can only be called with wrtCoeff as 0 and 1 indicating first derivative of the "
-                    "Green-Lagrange strain w.r.t d and "
-                    "alpha, respectively.");
+                    "Green-Lagrange strain w.r.t d and alpha, respectively.");
   }
 
   /**
@@ -138,8 +137,7 @@ struct GreenLagrangeStrain
       static_assert(
           Dune::AlwaysFalse<GEO>::value,
           "secondDerivative can only be called with wrtCoeff as 0, 1 and 2 indicating second derivative of the "
-          "Green-Lagrange strain w.r.t d and "
-          "alpha and the mixed derivative, respectively.");
+          "Green-Lagrange strain w.r.t d and alpha and the mixed derivative, respectively.");
   }
 
   /** \brief The name of the strain measure enhanced w.r.t EAS method. */

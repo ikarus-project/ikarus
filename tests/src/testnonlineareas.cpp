@@ -72,17 +72,17 @@ void easAutoDiffTest(TestSuitType& t, const MAT& mat) {
     auto grid                = createUGGridFromCorners<gridDim>(CornerDistortionFlag::randomlyDistorted);
     auto gridView            = grid->leafGridView();
 
-    for (const int numberOfEASParameters : easParameters) {
-      auto sk = skills(nonLinearElastic(mat), eas<ES>(numberOfEASParameters));
+    for (const int numberOfInternalVariables : easParameters) {
+      auto sk = skills(nonLinearElastic(mat), eas<ES>(numberOfInternalVariables));
       t.subTest(checkFESByAutoDiff(gridView, power<gridDim>(lagrange<order>()), sk,
                                    AffordanceCollections::elastoStatics,
-                                   " (numberOfEASParameters = " + std::to_string(numberOfEASParameters) +
+                                   " (numberOfInternalVariables = " + std::to_string(numberOfInternalVariables) +
                                        ") and EnhancedStrainTag = " + ES::name()));
-      if (numberOfEASParameters != 0) {
+      if (numberOfInternalVariables != 0) {
         t.template checkThrow<Dune::NotImplemented>(
             [&]() {
               checkFESByAutoDiff(gridView, power<gridDim>(lagrange<3>()), sk, AffordanceCollections::elastoStatics,
-                                 " (numberOfEASParameters = " + std::to_string(numberOfEASParameters) +
+                                 " (numberOfInternalVariables = " + std::to_string(numberOfInternalVariables) +
                                      ") and EnhancedStrainTag = " + ES::name());
             },
             "EAS method should have failed for a third-order basis.");
@@ -109,8 +109,8 @@ auto checkOrthogonalityCondition(const MAT& mat) {
       const auto& element    = localView.element();
       auto rule              = Dune::QuadratureRules<double, gridDim>::rule(localView.element().type(), 2 * order);
       const auto& easVariant = fe.easVariant();
-      const int numberOfEASParameters = fe.numberOfEASParameters();
-      auto integrateFunctor           = [&]<typename EASF>(const EASF& easFunction) {
+      const int numberOfInternalVariables = fe.numberOfInternalVariables();
+      auto integrateFunctor               = [&]<typename EASF>(const EASF& easFunction) {
         typename EASF::AnsatzType integratedStrain;
         integratedStrain.setZero();
         for (const auto& gp : rule) {
@@ -123,15 +123,15 @@ auto checkOrthogonalityCondition(const MAT& mat) {
               integratedStrain += H * detJ * gp.weight();
         }
         t.check(integratedStrain.isZero()) << "Ansatz function for the enhanced strains in the EAS method should be "
-                                                        "zero when integrated over the domain. (numberOfEASParameters = " +
-                                                  std::to_string(numberOfEASParameters) +
+                                                            "zero when integrated over the domain. (numberOfInternalVariables = " +
+                                                  std::to_string(numberOfInternalVariables) +
                                                   ") and EnhancedStrainTag = " + ES::name();
       };
       easVariant(integrateFunctor);
     };
 
-    for (const int numberOfEASParameters : easParameters) {
-      auto sk      = skills(nonLinearElastic(mat), eas<ES>(numberOfEASParameters));
+    for (const int numberOfInternalVariables : easParameters) {
+      auto sk      = skills(nonLinearElastic(mat), eas<ES>(numberOfInternalVariables));
       auto fe      = makeFE(basis, sk);
       auto element = gridView.template begin<0>();
       fe.bind(*element);
@@ -144,7 +144,7 @@ auto checkOrthogonalityCondition(const MAT& mat) {
 template <int order, int gridDim, typename ES, typename MAT>
 auto recoverNonlinearElastic(const MAT& mat) {
   TestSuite t(
-      "Recover NonLinearElastic Test for EAS Method with numberOfEASParameters = 0 with enhanced strain type as " +
+      "Recover NonLinearElastic Test for EAS Method with numberOfInternalVariables = 0 with enhanced strain type as " +
       ES::name() + " and material type as " + Dune::className<MAT>());
   using namespace Dune::Functions::BasisFactory;
   auto grid                 = createUGGridFromCorners<gridDim>(CornerDistortionFlag::randomlyDistorted);
@@ -158,7 +158,7 @@ auto recoverNonlinearElastic(const MAT& mat) {
   auto fe1 = makeFE(basis, skills(nonLinearElastic(mat)));
   auto fe2 = makeFE(basis, skills(nonLinearElastic(mat), eas<ES>(0)));
   fe1.bind(*element);
-  fe2.bind(*element); // updateState need not be called as numberOfEASParameters = 0
+  fe2.bind(*element); // updateState need not be called as numberOfInternalVariables = 0
 
   Eigen::VectorXd d;
   d.setRandom(nDOF);

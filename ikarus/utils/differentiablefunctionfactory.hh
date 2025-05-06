@@ -25,7 +25,7 @@ struct DifferentiableFunctionFactory
   static auto op(Assembler&& as, AffordanceCollection<Affordances...> affordances,
                  DBCOption dbcOption = DBCOption::Full) {
     auto assemblerPtr = [as]() {
-      if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
+      if constexpr (traits::Pointer<std::remove_cvref_t<Assembler>> or
                     traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value)
         return as;
       else

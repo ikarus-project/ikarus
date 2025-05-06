@@ -164,7 +164,7 @@ struct NeoHookeT : public Material<NeoHookeT<ST>>
   template <typename Derived>
   auto materialInversionImpl(const Eigen::MatrixBase<Derived>& Sraw) const {
     decltype(auto) S = Impl::maybeFromVoigt(Sraw, false);
-    auto C           = StrainMatrix();
+    auto C           = Derived::Zero().eval();
     const auto I     = Derived::Identity();
 
     auto mu     = materialParameter_.mu;

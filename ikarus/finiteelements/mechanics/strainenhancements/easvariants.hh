@@ -16,7 +16,7 @@
 
 namespace Ikarus::EAS {
 namespace Impl {
-  template <typename GEO, int myDim, typename ESS>
+  template <typename GEO, int myDim, typename EASFunction>
   struct EASType;
   template <typename GEO>
   struct EASType<GEO, 3, EAS::LinearStrain>
@@ -53,12 +53,13 @@ namespace Impl {
 /**
  * \brief Wrapper around the EAS variant, contains helper functions
  * \tparam GEO the Geometry type of the udderlying grid element
+ * \tparam EASFunction the enhanced assumed strain function
  */
-template <typename ES, typename GEO>
+template <typename EASFunction, typename GEO>
 struct EASVariant
 {
   static constexpr int myDim = GEO::mydimension;
-  using Variant              = Impl::EASType<GEO, myDim, ES>::type;
+  using Variant              = Impl::EASType<GEO, myDim, EASFunction>::type;
   static_assert((myDim == 2) or (myDim == 3), "EAS variants are only available for 2D and 3D elements.");
 
   /**
@@ -75,7 +76,7 @@ struct EASVariant
    * \brief A helper function to get the number of EAS parameters.
    * \return Number of EAS parameters.
    */
-  auto numberOfEASParameters() const {
+  auto numberOfInternalVariables() const {
     return std::visit([]<typename EAST>(const EAST&) -> int { return EAST::enhancedStrainSize; }, var_);
   }
 
@@ -84,10 +85,10 @@ struct EASVariant
    * parameters is zero.
    * \return A bool indicating if the formulation is displacement-based or not.
    */
-  bool isDisplacmentBased() const { return numberOfEASParameters() == 0; }
+  bool isDisplacmentBased() const { return numberOfInternalVariables() == 0; }
 
-  void setEASType(int numberOfEASParameters) {
-    numberOfEASParameters_ = numberOfEASParameters;
+  void setEASType(int numberOfInternalVariables) {
+    numberOfEASParameters_ = numberOfInternalVariables;
     if (geometry_)
       createEASType();
   }
@@ -98,10 +99,11 @@ struct EASVariant
 
 private:
   void createEASType() {
-    const std::string& errorMessage = "The given EAS parameters are not available for enhancing " + ES::name() +
-                                      " strain measure for the " + std::to_string(myDim) + "D case.";
+    const std::string& errorMessage = "The given EAS parameters are not available for enhancing " +
+                                      EASFunction::name() + " strain measure for the " + std::to_string(myDim) +
+                                      "D case.";
 
-    if constexpr (std::same_as<ES, EAS::LinearStrain> or std::same_as<ES, EAS::GreenLagrangeStrain>) {
+    if constexpr (std::same_as<EASFunction, EAS::LinearStrain> or std::same_as<EASFunction, EAS::GreenLagrangeStrain>) {
       if (numberOfEASParameters_ == 0) {
         var_ = E0(geometry_.value());
         return;
@@ -136,8 +138,8 @@ private:
         }
       }
     }
-    if constexpr (std::same_as<ES, EAS::DisplacementGradient> or
-                  std::same_as<ES, EAS::DisplacementGradientTransposed>) {
+    if constexpr (std::same_as<EASFunction, EAS::DisplacementGradient> or
+                  std::same_as<EASFunction, EAS::DisplacementGradientTransposed>) {
       if (numberOfEASParameters_ == 0) {
         var_ = H0(geometry_.value());
         return;

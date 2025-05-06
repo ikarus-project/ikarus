@@ -77,18 +77,17 @@ public:
   static constexpr int strainDim   = myDim * (myDim + 1) / 2;
   static constexpr auto strainType = StrainTags::linear;
   static constexpr auto stressType = StressTags::linear;
-  static constexpr bool hasEAS     = FE::template hasEAS<EAS::LinearStrain>;
 
   template <template <typename, int, int> class RT>
   using RTWrapperType = ResultWrapper<RT<typename Traits::ctype, myDim, Traits::worlddim>, ResultShape::Vector>;
 
-  template <typename ST>
+  template <typename ST = double>
   using StrainType = Eigen::Vector<ST, strainDim>;
 
-  template <typename ST>
+  template <typename ST = double>
   using BopType = Eigen::Matrix<ST, strainDim, myDim>;
 
-  template <typename ST>
+  template <typename ST = double>
   using KgType = Eigen::Matrix<ST, myDim, myDim>;
 
   /**
@@ -244,7 +243,7 @@ public:
   requires(LinearElastic::template supportsResultType<RT>())
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<1>) const {
-    if constexpr (hasEAS)
+    if constexpr (FE::isMixed())
       return RTWrapperType<RT>{};
     if constexpr (isSameResultType<RT, ResultTypes::linearStress> or
                   isSameResultType<RT, ResultTypes::linearStressFull>) {
@@ -268,8 +267,9 @@ private:
 
 public:
   /**
-   * \brief Get a lambda function that evaluates the stiffness matrix for a given strain, integration point and its
-   * index.
+   * \brief Get a lambda function that evaluates the geometric part of the stiffness matrix (Kg) for a given integration
+   * point and its index.
+   * \details This is here due to symmetry to the `NonLinearElastic` class
    *
    * \tparam ST The scalar type for the material and strain.
    * \param par The Requirement object.
@@ -278,10 +278,29 @@ public:
    * \return A lambda function that evaluates the stiffness matrix for a given strain, integration point and its index.
    */
   template <typename ST>
-  auto stiffnessMatrixFunction(const Requirement& par, typename Traits::template MatrixType<ST>& K,
-                               const VectorXOptRef<ST>& dx = std::nullopt) const {
-    return [&](const StrainType<ST>& strain, const BopType<ST>& bopI, const BopType<ST>& bopJ, const KgType<ST>& kgIJ,
-               const int I, const int J, const auto& gp) {
+  auto geometricStiffnessMatrixFunction(const Requirement& par, typename Traits::template MatrixType<ST>& K,
+                                        const VectorXOptRef<ST>& dx = std::nullopt) const {
+    return [&](const FE::template KgType<ST>& kgIJ, const int I, const int J, const auto& gp) {
+      const auto geo          = underlying().localView().element().geometry();
+      const double intElement = geo.integrationElement(gp.position()) * gp.weight();
+      K.template block<FE::myDim, FE::myDim>(I * FE::myDim, J * FE::myDim) += kgIJ * intElement;
+    };
+  }
+  /**
+   * \brief Get a lambda function that evaluates the elastic stiffness matrix for a given strain, integration point and
+   * its index.
+   *
+   * \tparam ST The scalar type for the material and strain.
+   * \param par The Requirement object.
+   * \param dx Optional displacement vector.
+   * \param K The matrix to store the calculated result.
+   * \return A lambda function that evaluates the stiffness matrix for a given strain, integration point and its index.
+   */
+  template <typename ST>
+  auto materialStiffnessMatrixFunction(const Requirement& par, typename Traits::template MatrixType<ST>& K,
+                                       const VectorXOptRef<ST>& dx = std::nullopt) const {
+    return [&](const StrainType<ST>& strain, const BopType<ST>& bopI, const BopType<ST>& bopJ, const int I, const int J,
+               const auto& gp) {
       const auto C            = materialTangent(strain);
       const double intElement = geo_->integrationElement(gp.position()) * gp.weight();
       K.template block<myDim, myDim>(I * myDim, J * myDim) += (bopI.transpose() * C * bopJ) * intElement;
@@ -302,9 +321,8 @@ public:
   template <typename ST>
   auto internalForcesFunction(const Requirement& par, typename Traits::template VectorType<ST>& force,
                               const VectorXOptRef<ST>& dx = std::nullopt) const {
-    return [&](const StrainType<ST>& strain, const BopType<ST>& bopI, const int I, const auto& gp) {
+    return [&](const StrainType<ST>& stresses, const BopType<ST>& bopI, const int I, const auto& gp) {
       const double intElement = geo_->integrationElement(gp.position()) * gp.weight();
-      auto stresses           = stress(strain);
       force.template segment<myDim>(myDim * I) += bopI.transpose() * stresses * intElement;
     };
   }
@@ -337,13 +355,13 @@ protected:
   void calculateMatrixImpl(const Requirement& par, const MatrixAffordance& affordance,
                            typename Traits::template MatrixType<> K,
                            const VectorXOptRef<ScalarType>& dx = std::nullopt) const {
-    if constexpr (hasEAS)
+    if constexpr (FE::isMixed()) {
       return;
+    }
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto eps       = strainFunction(par, dx);
-    const auto kFunction = stiffnessMatrixFunction<ScalarType>(par, K, dx);
-    const auto& kgIJ     = KgType<ScalarType>::Zero().eval();
+    const auto kFunction = materialStiffnessMatrixFunction<ScalarType>(par, K, dx);
 
     for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
       const auto epsVoigt = eps.evaluate(gpIndex, on(gridElement));
@@ -351,7 +369,7 @@ protected:
         const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
         for (size_t j = 0; j < numberOfNodes_; ++j) {
           const auto bopJ = eps.evaluateDerivative(gpIndex, wrt(coeff(j)), on(gridElement));
-          kFunction(epsVoigt, bopI, bopJ, kgIJ, i, j, gp);
+          kFunction(epsVoigt, bopI, bopJ, i, j, gp);
         }
       }
     }
@@ -360,7 +378,7 @@ protected:
   template <typename ScalarType>
   auto calculateScalarImpl(const Requirement& par, ScalarAffordance affordance,
                            const VectorXOptRef<ScalarType>& dx = std::nullopt) const -> ScalarType {
-    if constexpr (hasEAS)
+    if constexpr (FE::isMixed())
       return ScalarType{0.0};
     return energyFunction(par, dx)();
   }
@@ -369,7 +387,7 @@ protected:
   void calculateVectorImpl(const Requirement& par, VectorAffordance affordance,
                            typename Traits::template VectorType<ScalarType> force,
                            const VectorXOptRef<ScalarType>& dx = std::nullopt) const {
-    if constexpr (hasEAS)
+    if constexpr (FE::isMixed())
       return;
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
@@ -379,9 +397,10 @@ protected:
     // Internal forces
     for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
       const auto epsVoigt = eps.evaluate(gpIndex, on(gridElement));
+      const auto stresses = stress(epsVoigt);
       for (size_t i = 0; i < numberOfNodes_; ++i) {
         const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
-        fIntFunction(epsVoigt, bopI, i, gp);
+        fIntFunction(stresses, bopI, i, gp);
       }
     }
   }

@@ -193,14 +193,25 @@ struct ValidCornerFactory
     if (distortionFlag == CornerDistortionFlag::unDistorted)
       return;
     else if (distortionFlag == CornerDistortionFlag::fixedDistorted) {
-      if (not((gridDim == 2) and (numberOfVertices == 4)))
-        DUNE_THROW(Dune::NotImplemented, "Fixed distortion is only implemented for a 2D 4-node element (Q1)");
+      if (not(((gridDim == 2) and (numberOfVertices == 4)) or ((gridDim == 3) and (numberOfVertices == 8))))
+        DUNE_THROW(Dune::NotImplemented, "Fixed distortion is only implemented for a Q1 and a H1 element");
       std::vector<Dune::FieldVector<double, gridDim>> randomnessOnNodes;
-      randomnessOnNodes.push_back({-0.2, -0.05});
-      randomnessOnNodes.push_back({-0.15, 0.05});
-      randomnessOnNodes.push_back({0.15, 0.15});
-      randomnessOnNodes.push_back({-0.05, -0.1});
-      for (long i = 0; i < 4; ++i)
+      if constexpr (gridDim == 3) {
+        randomnessOnNodes.push_back({-0.2, -0.05, 0.01});
+        randomnessOnNodes.push_back({-0.15, 0.05, 0.01});
+        randomnessOnNodes.push_back({0.15, 0.15, 0.02});
+        randomnessOnNodes.push_back({-0.05, -0.1, 0.02});
+        randomnessOnNodes.push_back({-0.2, -0.05, 0.01});
+        randomnessOnNodes.push_back({-0.15, 0.05, 0.01});
+        randomnessOnNodes.push_back({0.15, 0.15, 0.02});
+        randomnessOnNodes.push_back({-0.05, -0.1, 0.02});
+      } else {
+        randomnessOnNodes.push_back({-0.2, -0.05});
+        randomnessOnNodes.push_back({-0.15, 0.05});
+        randomnessOnNodes.push_back({0.15, 0.15});
+        randomnessOnNodes.push_back({-0.05, -0.1});
+      }
+      for (long i = 0; i < numberOfVertices; ++i)
         values[i] += randomnessOnNodes[i];
     } else if (distortionFlag == CornerDistortionFlag::randomlyDistorted) {
       std::transform(values.begin(), values.end(), values.begin(), [](const auto& vec) {

@@ -12,6 +12,7 @@
 #include <dune/common/tuplevector.hh>
 
 #include <ikarus/finiteelements/fetraits.hh>
+#include <ikarus/finiteelements/mechanics/assumedstress.hh>
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
 #include <ikarus/utils/broadcaster/broadcastermessages.hh>
 #include <ikarus/utils/functionhelper.hh>
@@ -94,8 +95,19 @@ public:
   using LocalView               = typename Traits::LocalView;
   static constexpr int worldDim = Traits::worlddim;
 
+private:
   template <typename ES>
-  static constexpr bool hasEAS = hasSkill<EnhancedAssumedStrainsPre<ES>::template Skill>();
+  static constexpr bool hasEASImpl = hasSkill<EnhancedAssumedStrainsPre<ES>::template Skill>();
+  template <typename PS>
+  static constexpr bool hasASImpl = hasSkill<AssumedStressPre<PS>::template Skill>();
+
+public:
+  static constexpr bool hasEAS() {
+    return hasEASImpl<EAS::LinearStrain> or hasEASImpl<EAS::GreenLagrangeStrain> or
+           hasEASImpl<EAS::DisplacementGradient> or hasEASImpl<EAS::DisplacementGradientTransposed>;
+  }
+  static constexpr bool hasAssumedStress() { return hasASImpl<PS::LinearStress> or hasASImpl<PS::PK2Stress>; }
+  static constexpr bool isMixed() { return hasAssumedStress() or hasEAS(); }
 
   /**
    * \brief Create a Requirement object.

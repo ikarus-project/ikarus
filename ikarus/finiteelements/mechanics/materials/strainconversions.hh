@@ -24,7 +24,7 @@
 namespace Ikarus {
 
 /**
- * \brief Create  Green-Lagrangian strain based on the input.
+ * \brief Create Green-Lagrangian strain based on the input.
  *
  * This function creates Green-Lagrangian strains based on the input strain matrix.
  * What to do is decided by the provided strain tag

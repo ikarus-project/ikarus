@@ -10,6 +10,7 @@
 #pragma once
 
 #include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
+#include <ikarus/finiteelements/mechanics/materials/numericalmaterialinversion.hh>
 #include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
 #include <ikarus/finiteelements/mechanics/materials/tags.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
@@ -205,18 +206,26 @@ struct Material
    * \tparam useNumeric forces the function to use the generic numerical approach
    * \tparam Derived the type of the stress matrix
    * \param Sraw input stress matrix
+   * \param EstartRaw optionally define a starting value for the numerical algorithm (applies only to numerical
+   * inversion)
+   * \param tol tolerance for the Newton-Raphson solver (applies only to numerical inversion).
+   * \param maxIter maximum number of iterations for the Newton-Raphson solver (applies only to numerical inversion).
    * \return pair of inverse material tangent and strain tensor
    */
   template <StrainTags tag, bool voigt = true, bool useNumeric = false, typename Derived>
   requires CorrectStrainSize<MaterialImpl, Derived>
-  [[nodiscard]] auto materialInversion(const Eigen::MatrixBase<Derived>& Sraw) const {
+  [[nodiscard]] auto materialInversion(const Eigen::MatrixBase<Derived>& Sraw,
+                                       const Eigen::MatrixBase<Derived>& EstartRaw = Derived::Zero().eval(),
+                                       const double tol = 1e-12, const int maxIter = 20) const {
     const auto S = Impl::maybeFromVoigt(Sraw.derived(), false).eval();
 
     auto [D, Eraw] = [&]() {
       if constexpr (requires { impl().materialInversionImpl(S); } and not useNumeric)
         return impl().materialInversionImpl(S);
-      else
-        return numericalMaterialInversion(impl(), S);
+      else {
+        const auto Estart = Impl::maybeFromVoigt(EstartRaw.derived(), true).eval();
+        return numericalMaterialInversion(impl(), S, Estart, tol, maxIter);
+      }
     }();
 
     const auto E = transformStrain<MaterialImpl::strainTag, tag>(Eraw).eval();
