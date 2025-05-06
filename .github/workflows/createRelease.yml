@@ -30,7 +30,7 @@ jobs:
         run: |
           cd repo
           python .github/workflows/scripts/release.py $NEWVERSION
-          git config --local user.email "ikarus@ibb.uni-stuttgart.de"
+          git config --local user.email "mueller@ibb.uni-stuttgart.de"
           git config --local user.name "AlexanderMueller"
           git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus.git
           git add .
