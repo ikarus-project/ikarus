@@ -11,6 +11,7 @@
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
+#include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
 #include <ikarus/utils/tensorutils.hh>
 
 namespace Ikarus::Materials {
@@ -24,6 +25,7 @@ namespace Ikarus::Materials {
  * \tparam Derived the type of the stress matrix
  * \param mat the material
  * \param S stress matrix
+ * \param Estart optionally define a starting value for the algorithm
  * \param tol tolerance for the Newton-Raphson solver.
  * \param maxIter maximum number of iterations for the Newton-Raphson solver.
  * \return pair of inverse material tangent and the strain tensor in voigt notation.
@@ -33,8 +35,13 @@ auto numericalMaterialInversion(const Material& mat, const Eigen::MatrixBase<Der
                                 const Eigen::MatrixBase<Derived>& Estart = Derived::Zero().eval(),
                                 const double tol = 1e-12, const int maxIter = 20) {
   static_assert(Concepts::EigenMatrix33<decltype(S)> or Concepts::EigenMatrix22<decltype(S)>);
+  static_assert(Concepts::ReferenceConfiguraionStress<Material::stressTag> and
+                Concepts::ReferenceConfiguraionStrain<Material::strainTag>);
+
   constexpr int dim      = Derived::CompileTimeTraits::RowsAtCompileTime;
   constexpr int dimVoigt = (dim * (dim + 1)) / 2;
+  constexpr auto strainTag =
+      Material::strainTag == StrainTags::linear ? StrainTags::linear : StrainTags::greenLagrangian;
 
   using ST       = Derived::Scalar;
   using VoigtVec = Eigen::Vector<ST, dimVoigt>;
@@ -46,7 +53,7 @@ auto numericalMaterialInversion(const Material& mat, const Eigen::MatrixBase<Der
   auto D = Eigen::Matrix<ST, dimVoigt, dimVoigt>::Zero().eval();
 
   for (auto i : Dune::range(maxIter)) {
-    r = (Svoigt - mat.template stresses<StrainTags::greenLagrangian, true>(Es)).eval();
+    r = (Svoigt - mat.template stresses<strainTag, true>(Es)).eval();
 
     if (r.norm() < tol and i > 0)
       break;
@@ -56,10 +63,10 @@ auto numericalMaterialInversion(const Material& mat, const Eigen::MatrixBase<Der
           "Numerical material inversion failed to converge within the maximum number of iterations for the material: " +
               mat.name());
 
-    D = mat.template tangentModuli<StrainTags::greenLagrangian, true>(Es).inverse().eval(); // voigt
+    D = mat.template tangentModuli<strainTag, true>(Es).inverse().eval(); // voigt
     Es += (D * r).eval();
   }
-  return std::make_pair(D, transformStrain<StrainTags::greenLagrangian, Material::strainTag>(Es).eval());
+  return std::make_pair(D, transformStrain<strainTag, Material::strainTag>(Es).eval());
 }
 
 } // namespace Ikarus::Materials

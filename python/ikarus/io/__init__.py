@@ -42,7 +42,7 @@ def vtkWriter(
     includes += ["dune/vtk/datacollectors/lagrangedatacollector.hh"]
     includes += ["ikarus/io/vtkwriter.hh"]
     includes += ["ikarus/assembler/simpleassemblers.hh"]
-    includes += assembler._includes
+    includes += assembler.cppIncludes
 
     gridViewName = assembler.gridView.cppTypeName
     dataCollectorName: str = ""

@@ -7,9 +7,10 @@
 
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
+#include <ikarus/solver/eigenvaluesolver/generalizedeigensolverfactory.hh>
 
 template <typename FE>
-requires(FE::template hasEAS<Ikarus::EAS::LinearStrain>)
+requires(FE::hasEAS() and FE::strainType == Ikarus::StrainTags::linear)
 struct ElementTest<FE>
 {
   [[nodiscard]] static auto test() {
@@ -42,7 +43,8 @@ struct ElementTest<FE>
 
         decltype(auto) stiffnessMatrix = derivative(subOp)(req);
 
-        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(stiffnessMatrix);
+        auto es = Ikarus::makeIdentitySymEigenSolver<Ikarus::EigenValueSolverType::Spectra>(stiffnessMatrix);
+        es.compute();
         newEigenValues = es.eigenvalues();
 
         t.check((newEigenValues.array() < 1e-6 * newEigenValues.norm()).count() == 3 * gridDim - 3,
@@ -88,8 +90,9 @@ struct ElementTest<FE>
           }) << "fe.calculateScalar should have failed for numberOfEASParameter > 0";
         }
 
-        t.check(numberOfEASParameter == fe.numberOfEASParameters())
-            << "Number of EAS Parameters should be " << numberOfEASParameter << "but is " << fe.numberOfEASParameters();
+        t.check(numberOfEASParameter == fe.numberOfInternalVariables())
+            << "Number of EAS Parameters should be " << numberOfEASParameter << "but is "
+            << fe.numberOfInternalVariables();
 
         t.checkThrow([&]() { fe.setEASType(100); }) << "fe.setEASType(100) should have failed";
       }

@@ -93,7 +93,7 @@ def neumannBoundaryLoad(boundaryPatch, f):
     includes += ["dune/python/pybind11/functional.h"]
     includes += ["dune/python/pybind11/stl.h"]
     includes += ["dune/python/pybind11/eigen.h"]
-    includes += boundaryPatch._includes
+    includes += boundaryPatch.cppIncludes
     element_type = (
         f"Ikarus::NeumannBoundaryLoadPre<{boundaryPatch.gridView().cppTypeName}>"
     )
@@ -113,7 +113,7 @@ def nonLinearElastic(mat):
     includes = ["ikarus/finiteelements/mechanics/nonlinearelastic.hh"]
 
     element_type = f"Ikarus::NonLinearElasticPre<{mat.cppTypeName}>"
-    includes += mat._includes
+    includes += mat.cppIncludes
     return registerPreElement("NonLinearElasticPre", includes, element_type, mat)
 
 
@@ -127,7 +127,7 @@ def linearElastic(mat):
     """
     includes = ["ikarus/finiteelements/mechanics/linearelastic.hh"]
     element_type = f"Ikarus::LinearElasticPre<{mat.cppTypeName}>"
-    includes += mat._includes
+    includes += mat.cppIncludes
     return registerPreElement("LinearElasticPre", includes, element_type, mat)
 
 
@@ -160,6 +160,22 @@ def eas(numberofparameters, strainTag="LinearStrain"):
     element_type = f"Ikarus::EnhancedAssumedStrainsPre<{formatted_strainTag}>"
     return registerPreElement(
         "EnhancedAssumedStrainsPre", includes, element_type, numberofparameters
+    )
+
+
+def assumedStress(numberofparameters, stressTag="LinearStress"):
+    """
+    @brief Creates an assumed stress pre-element.
+
+    @param numberofparameters: The number of parameters.
+
+    @return: The registered assumed stress pre-element function.
+    """
+    includes = ["ikarus/finiteelements/mechanics/assumedstress.hh"]
+    formatted_stressTag = "Ikarus::PS::" + stressTag
+    element_type = f"Ikarus::AssumedStressPre<{formatted_stressTag}>"
+    return registerPreElement(
+        "AssumedStressPre", includes, element_type, numberofparameters
     )
 
 
@@ -200,9 +216,9 @@ def makeFE(basis, *skills):
 
     generator = MySimpleGenerator("FE", "Ikarus::Python")
 
-    includes += basis._includes
+    includes += basis.cppIncludes
     for arg in skills:
-        includes += arg._includes
+        includes += arg.cppIncludes
 
     moduleName = "FE" + "_" + hashIt(element_type)
     module = generator.load(
