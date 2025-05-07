@@ -30,8 +30,8 @@ jobs:
         run: |
           cd repo
           python .github/workflows/scripts/release.py $NEWVERSION
-          git config --local user.email "mueller@ibb.uni-stuttgart.de"
-          git config --local user.name "AlexanderMueller"
+          git config --local user.email "ikarus@ibb.uni-stuttgart.de"
+          git config --local user.name "IkarusBot"
           git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus.git
           git add .
           git commit -m "Create release v$NEWVERSION"
@@ -73,7 +73,7 @@ jobs:
           cp -R ../repo/build_docs/ .
           cp -R ../repo/ikarus/ .
           git config --local user.email "ikarus@ibb.uni-stuttgart.de"
-          git config --local user.name "AlexanderMueller"
+          git config --local user.name "IkarusBot"
           cd build_docs/docs
           export MKDOCSOFFLINE=false
           mike deploy v$NEWVERSION  --config-file mkdocs.insiders.yml
@@ -143,7 +143,7 @@ jobs:
           git clone https://github.com/ikarus-project/ikarus-examples.git
           cd ikarus-examples
           git config --local user.email "ikarus@ibb.uni-stuttgart.de"
-          git config --local user.name "AlexanderMueller"
+          git config --local user.name "IkarusBot"
           git tag -a v$NEWVERSION -m "Create release v$NEWVERSION"
           cd ..
           mv ikarus-examples ikarus-examples-v$NEWVERSION
