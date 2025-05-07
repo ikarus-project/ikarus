@@ -4,6 +4,7 @@
 /**
  * \file genericlistener.hh
  * \brief Listener implementation for calling a callback function
+ * \ingroup observer
  */
 
 #pragma once

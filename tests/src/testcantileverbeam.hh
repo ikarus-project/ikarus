@@ -147,7 +147,7 @@ auto cantileverBeamTest(const MAT& material, Skills&& additionalSkills, std::pai
 
   auto nonLinearSolverObserver = NonLinearSolverLogger();
   auto controlLogger           = ControlLogger();
-  auto vtkWriter = ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>(basis.flat(), d);
+  auto vtkWriter               = ControlSubsamplingVertexVTKWriter(basis.flat());
 
   if (logToConsole) {
     nonLinearSolverObserver.subscribeTo(lc.nonLinearSolver());

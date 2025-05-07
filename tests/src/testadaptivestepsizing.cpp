@@ -169,7 +169,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   auto pathFollowingObserver = ControlLogger();
 
   /// Create Observer which writes vtk files when control routines messages
-  auto vtkWriter = ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>(basis.flat(), d, 2);
+  auto vtkWriter = ControlSubsamplingVertexVTKWriter(basis.flat(), 2);
   vtkWriter.setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 3);
   vtkWriter.setFileNamePrefix("testAdaptiveStepSizing" + pft.name());
   vtkWriter.subscribeTo(crWoSS);

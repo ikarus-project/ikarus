@@ -189,8 +189,7 @@ public:
         correction_ = -linearSolver_(rx, Ax);
         dNorm       = norm(correction_);
       }
-      solverInformation.residualNorm = static_cast<double>(dNorm);
-      ;
+      solverInformation.correctionNorm = static_cast<double>(dNorm);
 
       this->notify(CORRECTION_UPDATED, state);
       updateFunction_(x, correction_);

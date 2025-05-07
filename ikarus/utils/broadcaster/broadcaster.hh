@@ -4,6 +4,7 @@
 /**
  * \file broadcaster.hh
  * \brief Implementation of the observer design pattern with broadcasters
+ * \ingroup observer
  */
 
 #pragma once
@@ -70,8 +71,9 @@ private:
   std::vector<std::weak_ptr<Callback>> listeners;
 
   void trim() {
-    listeners.erase(std::ranges::remove_if(listeners, [](const auto& weakCb) { return weakCb.expired(); }),
-                    listeners.end());
+    listeners.erase(
+        std::remove_if(listeners.begin(), listeners.end(), [](const auto& weakCb) { return weakCb.expired(); }),
+        listeners.end());
   }
 };
 

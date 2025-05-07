@@ -246,15 +246,13 @@ public:
       lambda += deltalambda;
       subsidiaryArgs.Dlambda += deltalambda;
 
-      dNorm                          = sqrt(deltaD.dot(deltaD) + deltalambda * deltalambda);
-      solverInformation.residualNorm = static_cast<double>(dNorm);
-      ;
+      dNorm                            = sqrt(deltaD.dot(deltaD) + deltalambda * deltalambda);
+      solverInformation.correctionNorm = static_cast<double>(dNorm);
 
       rx                             = residualFunction_(req);
       Ax                             = jacobianFunction_(req);
       rNorm                          = sqrt(rx.dot(rx) + subsidiaryArgs.f * subsidiaryArgs.f);
       solverInformation.residualNorm = static_cast<double>(rNorm);
-      ;
 
       this->notify(SOLUTION_CHANGED, state);
       this->notify(CORRECTIONNORM_UPDATED, state);

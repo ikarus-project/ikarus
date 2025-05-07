@@ -3,7 +3,8 @@
 
 /**
  * \file nonlinearsolverlogger.hh
- * \brief Observer implementation for logging non-linear solvers
+ * \brief Listener implementation for logging non-linear solvers
+ * \ingroup observer
  */
 
 #pragma once
@@ -11,52 +12,43 @@
 #include <ikarus/utils/listener/listener.hh>
 
 namespace Ikarus {
+
 /**
  * \brief Implementation of an observer for logging non-linear solvers.
- * \ingroup observer
- * This class inherits from the IObserver class and provides specific
- * implementations for updating based on NonLinearSolverMessages.
  */
 class NonLinearSolverLogger : public Listener
 {
 public:
   template <typename BC>
   NonLinearSolverLogger& subscribeTo(BC& bc) {
-    this->subscribe(bc,
-                    [&](NonLinearSolverMessages message, const BC::State& state) { this->updateImpl(message, state); });
-
+    this->subscribe(bc, [&](NonLinearSolverMessages message, const BC::State& state) { this->update(message, state); });
     return *this;
   }
 
-  /**
-   * \brief Handles the update when a NonLinearSolverMessages is received.
-   *
-   * \param message The NonLinearSolverMessages received.
-   */
-  void updateImpl(NonLinearSolverMessages message);
-
-  /**
-   * \brief Handles the update when a NonLinearSolverMessages with a double value is received.
-   *
-   * \param message The NonLinearSolverMessages received.
-   * \param val The double value associated with the message.
-   */
-  void updateImpl(NonLinearSolverMessages message, double val);
-
-  /**
-   * \brief Handles the update when a NonLinearSolverMessages with an integer value is received.
-   *
-   * \param message The NonLinearSolverMessages received.
-   * \param intVal The integer value associated with numberOfIterations.
-   */
-  void updateImpl(NonLinearSolverMessages message, int intVal);
-
   template <typename State>
-  void updateImpl(NonLinearSolverMessages message, const State& state) {
-    updateImpl(message);
-    updateImpl(message, state.information.residualNorm);
-    updateImpl(message, state.information.correctionNorm);
-    updateImpl(message, state.information.iterations);
+  void update(NonLinearSolverMessages message, const State& state) {
+    switch (message) {
+      case NonLinearSolverMessages::INIT:
+        init();
+        break;
+      case NonLinearSolverMessages::ITERATION_ENDED:
+        iterationEnded();
+        break;
+      case NonLinearSolverMessages::RESIDUALNORM_UPDATED:
+        rNorm_ = state.information.residualNorm;
+        break;
+      case NonLinearSolverMessages::SOLUTION_CHANGED:
+        lambda_ = state.domain.parameter();
+        break;
+      case NonLinearSolverMessages::CORRECTIONNORM_UPDATED:
+        dNorm_ = state.information.correctionNorm;
+        break;
+      case NonLinearSolverMessages::FINISHED_SUCESSFULLY:
+        finishedSucessfully(state.information.iterations);
+        break;
+      default:
+        break;
+    }
   }
 
 private:
@@ -64,5 +56,9 @@ private:
   double dNorm_{0};
   double rNorm_{0};
   double lambda_{0};
+
+  void init();
+  void iterationEnded();
+  void finishedSucessfully(int numberOfIterations);
 };
 } // namespace Ikarus

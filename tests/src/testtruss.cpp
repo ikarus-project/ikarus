@@ -140,7 +140,7 @@ static auto vonMisesTrussTest() {
   });
 
   /// Create Observer which writes vtk files when control routines messages
-  auto vtkWriter = ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>(basis.flat(), d, 2);
+  auto vtkWriter = ControlSubsamplingVertexVTKWriter(basis.flat(), 2);
   vtkWriter.setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2);
   vtkWriter.setFileNamePrefix("vonMisesTruss");
 

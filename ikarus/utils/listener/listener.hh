@@ -4,6 +4,7 @@
 /**
  * \file listener.hh
  * \brief Implementation of the observer design pattern with broadcasters
+ * \ingroup observer
  */
 
 #pragma once
