@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: CC0-1.0
 
-name: Publish Python distributions to PyPI (Dry Run)
+name: Publish Python distributions to Test PyPI
 on:
   push:
 
@@ -24,10 +24,6 @@ jobs:
           git config --global --add safe.directory /__w/ikarus/ikarus
 
       - name: Bump dev version
-        if: ${{ github.event_name == 'push' }}
-        run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py dev
-
-      - name: Create version from workflow dispatch
         run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py dev
 
       - name: Create source distribution
