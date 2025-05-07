@@ -23,7 +23,8 @@ env:
   NEWVERSION: ${{ github.event.inputs.releaseTag }}
 
 jobs:
-  build-n-publish:
+  build:
+    name: Build distribution
     runs-on: ubuntu-latest
     container:
       image: ikarusproject/ikarus-dev:latest
@@ -46,16 +47,39 @@ jobs:
         if: ${{ github.event_name == 'release' }}
         run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py $NEWVERSION
 
-      - name: Create tarball
+      - name: Create source distribution
         run: |
           /dune/dune-common/build-cmake/run-in-dune-env python setup.py sdist
 
-      - name: Publish distribution to Test PyPI
+      - name: Upload distribution artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-artifact
+          path: dist/*.tar.gz
+          
+  publish:
+    name: Publish to Test PyPI
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-artifact
+          path: dist
+
+      - name: Install Twine
+        run: pip install twine
+
+      - name: Publish distribution 📦 to Test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.TESTPYPI_TOKEN }}
           repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/
+
       - name: Publish distribution 📦 to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           password: ${{ secrets.PYPI_TOKEN }}
+          packages-dir: dist/
