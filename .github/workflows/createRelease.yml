@@ -12,7 +12,7 @@ on:
 
 env:
   MKDOCSOFFLINE: true
-  NEWVERSION: ${{ github.event.inputs.releaseTag }}
+  NEWVERSION: v${{ github.event.inputs.releaseTag }}
 
 jobs:
   Run:
@@ -30,12 +30,12 @@ jobs:
         run: |
           cd repo
           python .github/workflows/scripts/release.py $NEWVERSION
-          git config --local user.email "mueller@ibb.uni-stuttgart.de"
-          git config --local user.name "AlexanderMueller"
+          git config --local user.email "ikarus@ibb.uni-stuttgart.de"
+          git config --local user.name "IkarusBot"
           git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus.git
           git add .
-          git commit -m "Create release v$NEWVERSION"
-          git tag -a v$NEWVERSION -m "Create release v$NEWVERSION"
+          git commit -m "Create release $NEWVERSION"
+          git tag -a $NEWVERSION -m "Create release $NEWVERSION"
 
       - name: Docker Login
         uses: azure/docker-login@v1
@@ -73,10 +73,10 @@ jobs:
           cp -R ../repo/build_docs/ .
           cp -R ../repo/ikarus/ .
           git config --local user.email "ikarus@ibb.uni-stuttgart.de"
-          git config --local user.name "AlexanderMueller"
+          git config --local user.name "IkarusBot"
           cd build_docs/docs
           export MKDOCSOFFLINE=false
-          mike deploy v$NEWVERSION  --config-file mkdocs.insiders.yml
+          mike deploy $NEWVERSION  --config-file mkdocs.insiders.yml
           mike deploy dev  --config-file mkdocs.insiders.yml
           git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-project.github.io.git
           git push origin gh-pages 
@@ -93,10 +93,9 @@ jobs:
           cd build_docs_offline
           cmake .. -DBUILD_DOCS=1 -DDUNE_ENABLE_PYTHONBINDINGS=0
           cmake --build . --target site
-          mv docs/site documentation-v$NEWVERSION
+          mv docs/site documentation-$NEWVERSION
           apt-get update && apt-get install -y tar gzip zip unzip bzip2
-          #tar -czf docs-v$NEWVERSION.tar.gz ./documentation-v$NEWVERSION
-          zip -9r  docs-v$NEWVERSION.zip    ./documentation-v$NEWVERSION
+          zip -9r  docs-$NEWVERSION.zip    ./documentation-$NEWVERSION
       - name: Install docker in Docker container
         run: |
           apt-get update
@@ -116,56 +115,53 @@ jobs:
       - name: Download, tag, push and save docker images for new release
         run: |
           docker pull ikarusproject/ikarus-dev:latest
-          docker tag ikarusproject/ikarus-dev:latest ikarusproject/ikarus-dev:v$NEWVERSION
+          docker tag ikarusproject/ikarus-dev:latest ikarusproject/ikarus-dev:$NEWVERSION
 
           docker pull ikarusproject/ikarus-dev-gcc:latest
-          docker tag ikarusproject/ikarus-dev-gcc:latest ikarusproject/ikarus-dev-gcc:v$NEWVERSION
+          docker tag ikarusproject/ikarus-dev-gcc:latest ikarusproject/ikarus-dev-gcc:$NEWVERSION
 
           docker pull ikarusproject/ikarus-dev-clang:latest
-          docker tag ikarusproject/ikarus-dev-clang:latest ikarusproject/ikarus-dev-clang:v$NEWVERSION
+          docker tag ikarusproject/ikarus-dev-clang:latest ikarusproject/ikarus-dev-clang:$NEWVERSION
 
           docker pull ikarusproject/ikarus:latest
-          docker tag ikarusproject/ikarus:latest ikarusproject/ikarus:v$NEWVERSION
+          docker tag ikarusproject/ikarus:latest ikarusproject/ikarus:$NEWVERSION
 
           docker pull ikarusproject/ikarus-gcc:latest
-          docker tag ikarusproject/ikarus-gcc:latest ikarusproject/ikarus-gcc:v$NEWVERSION
+          docker tag ikarusproject/ikarus-gcc:latest ikarusproject/ikarus-gcc:$NEWVERSION
 
           docker pull ikarusproject/ikarus-clang:latest
-          docker tag ikarusproject/ikarus-clang:latest ikarusproject/ikarus-clang:v$NEWVERSION
+          docker tag ikarusproject/ikarus-clang:latest ikarusproject/ikarus-clang:$NEWVERSION
 
-          #docker save ikarusproject/ikarus-dev:v$NEWVERSION > ikarus-dev-docker-v$NEWVERSION.tar
-          docker save ikarusproject/ikarus:v$NEWVERSION     > ikarus-docker-v$NEWVERSION.tar
-          #gzip -c9 ikarus-dev-docker-v$NEWVERSION.tar > ikarus-dev-docker-v$NEWVERSION.tar.gz
-          gzip -c9 ikarus-docker-v$NEWVERSION.tar > ikarus-docker-v$NEWVERSION.tar.gz
+          docker save ikarusproject/ikarus:$NEWVERSION     > ikarus-docker-$NEWVERSION.tar
+          gzip -c9 ikarus-docker-$NEWVERSION.tar > ikarus-docker-$NEWVERSION.tar.gz
 
       - name: Checkout ikarus-examples and create tag, push it, zip it
         run: |
           git clone https://github.com/ikarus-project/ikarus-examples.git
           cd ikarus-examples
           git config --local user.email "ikarus@ibb.uni-stuttgart.de"
-          git config --local user.name "AlexanderMueller"
+          git config --local user.name "IkarusBot"
           git tag -a v$NEWVERSION -m "Create release v$NEWVERSION"
           cd ..
-          mv ikarus-examples ikarus-examples-v$NEWVERSION
-          #tar -czf ikarus-examples-v$NEWVERSION.tar.gz ./ikarus-examples-v$NEWVERSION
-          zip -9r  ikarus-examples-v$NEWVERSION.zip    ./ikarus-examples-v$NEWVERSION
+          mv ikarus-examples ikarus-examples-$NEWVERSION
+          zip -9r  ikarus-examples-$NEWVERSION.zip    ./ikarus-examples-$NEWVERSION
 
       - name: Push and finalize
         run: |
           cd ikarus-project.github.io 
           git push origin gh-pages     
-          cd ../ikarus-examples-v$NEWVERSION
-          git push https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-examples.git v$NEWVERSION
+          cd ../ikarus-examples-$NEWVERSION
+          git push https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-examples.git $NEWVERSION
           cd .. 
-          docker push ikarusproject/ikarus-dev:v$NEWVERSION  
-          docker push ikarusproject/ikarus-dev-gcc:v$NEWVERSION  
-          docker push ikarusproject/ikarus-dev-clang:v$NEWVERSION  
-          docker push ikarusproject/ikarus:v$NEWVERSION
-          docker push ikarusproject/ikarus-gcc:v$NEWVERSION
-          docker push ikarusproject/ikarus-clang:v$NEWVERSION
+          docker push ikarusproject/ikarus-dev:$NEWVERSION  
+          docker push ikarusproject/ikarus-dev-gcc:$NEWVERSION  
+          docker push ikarusproject/ikarus-dev-clang:$NEWVERSION  
+          docker push ikarusproject/ikarus:$NEWVERSION
+          docker push ikarusproject/ikarus-gcc:$NEWVERSION
+          docker push ikarusproject/ikarus-clang:$NEWVERSION
           cd repo
           git push origin main
-          git push origin v$NEWVERSION
+          git push origin $NEWVERSION
           git pull
           sleep 20
 
@@ -178,7 +174,3 @@ jobs:
           files: |
             ./repo/build_docs_offline/docs-v${{ github.event.inputs.releaseTag }}.zip
             ikarus-docker-v${{ github.event.inputs.releaseTag }}.tar.gz
-            #./repo/build_docs_offline/docs-v${{ github.event.inputs.releaseTag }}.tar.gz
-            #ikarus-dev-docker-v${{ github.event.inputs.releaseTag }}.tar.gz
-            #ikarus-examples-v${{ github.event.inputs.releaseTag }}.tar.gz
-            #ikarus-examples-v${{ github.event.inputs.releaseTag }}.zip
