@@ -42,7 +42,7 @@ public:
 
   template <typename BC>
   GenericListener& subscribeTo(BC& bc) {
-    this->subscribe(bc, [&](M message) { this->updateImpl(message); });
+    this->subscribe(bc, [&](M message, const BC::State& state) { this->updateImpl(message); });
     return *this;
   }
 

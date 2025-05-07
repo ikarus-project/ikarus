@@ -3,6 +3,7 @@
 
 #pragma once
 #include <concepts>
+#include <fstream>
 #include <iomanip>
 #include <source_location>
 #include <vector>
@@ -152,4 +153,9 @@ double transformStrainAccordingToStrain(auto& e) {
 template <typename Derived>
 void replaceNaNWithZero(Eigen::MatrixBase<Derived>& val) {
   val = val.unaryExpr([](double x) { return std::isnan(x) ? 0.0 : x; });
+}
+
+bool fileExists(const std::string& filename) {
+  std::ifstream file(filename);
+  return file.good();
 }

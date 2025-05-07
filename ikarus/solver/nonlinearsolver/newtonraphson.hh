@@ -163,7 +163,7 @@ public:
       "it was successful")]] Ikarus::NonLinearSolverInformation
   solve(Domain& x) {
     using enum NonLinearSolverMessages;
-    this->notify(INIT);
+    // this->notify(INIT);
 
     Ikarus::NonLinearSolverInformation solverInformation;
     solverInformation.success = true;
@@ -179,7 +179,7 @@ public:
     auto solverState = typename NewtonRaphson::State{.domain = x, .correction = correction_};
 
     while ((rNorm > settings_.tol && iter < settings_.maxIter) or iter < settings_.minIter) {
-      this->notify(ITERATION_STARTED);
+      this->notify(ITERATION_STARTED, solverState);
       if constexpr (isLinearSolver) {
         linearSolver_.factorize(Ax);
         linearSolver_.solve(correction_, -rx);
@@ -190,13 +190,13 @@ public:
       }
       this->notify(CORRECTION_UPDATED, solverState);
       updateFunction_(x, correction_);
-      this->notify(CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
-      this->notify(SOLUTION_CHANGED);
+      this->notify(CORRECTIONNORM_UPDATED, solverState);
+      this->notify(SOLUTION_CHANGED, solverState);
       rx    = residualFunction_(x);
       Ax    = jacobianFunction_(x);
       rNorm = norm(rx);
-      this->notify(RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
-      this->notify(ITERATION_ENDED);
+      this->notify(RESIDUALNORM_UPDATED, solverState);
+      this->notify(ITERATION_ENDED, solverState);
       ++iter;
     }
     if (iter == settings_.maxIter)
@@ -205,7 +205,7 @@ public:
     solverInformation.residualNorm   = static_cast<double>(rNorm);
     solverInformation.correctionNorm = static_cast<double>(dNorm);
     if (solverInformation.success)
-      this->notify(FINISHED_SUCESSFULLY, iter);
+      this->notify(FINISHED_SUCESSFULLY, solverState);
     return solverInformation;
   }
 

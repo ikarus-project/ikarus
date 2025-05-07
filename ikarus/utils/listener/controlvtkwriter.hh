@@ -52,7 +52,9 @@ public:
 
   template <typename BC>
   ControlSubsamplingVertexVTKWriter& subscribeTo(BC& bc) {
-    this->subscribe(bc, [&](ControlMessages message) { this->updateImpl(message); });
+    this->subscribe(bc, [&](ControlMessages message, const BC::State& state) {
+      this->updateImpl(message);
+    });
     return *this;
   }
 

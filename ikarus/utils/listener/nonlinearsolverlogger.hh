@@ -22,9 +22,9 @@ class NonLinearSolverLogger : public Listener
 public:
   template <typename BC>
   NonLinearSolverLogger& subscribeTo(BC& bc) {
-    this->subscribe(bc, [&](NonLinearSolverMessages message) { this->updateImpl(message); });
-    this->subscribe(bc, [&](NonLinearSolverMessages message, double val) { this->updateImpl(message, val); });
-    this->subscribe(bc, [&](NonLinearSolverMessages message, int intVal) { this->updateImpl(message, intVal); });
+    this->subscribe(bc,
+                    [&](NonLinearSolverMessages message, const BC::State& state) { this->updateImpl(message, state); });
+
     return *this;
   }
 
@@ -50,6 +50,11 @@ public:
    * \param intVal The integer value associated with numberOfIterations.
    */
   void updateImpl(NonLinearSolverMessages message, int intVal);
+
+  template <typename State>
+  void updateImpl(NonLinearSolverMessages message, const State& state) {
+    updateImpl(message);
+  }
 
 private:
   int iters_{0};
