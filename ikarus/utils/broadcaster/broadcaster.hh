@@ -11,10 +11,10 @@ template <typename MT, typename S>
 class Broadcaster
 {
 public:
-using MessageType = MT;
-using State = S;
+  using MessageType = MT;
+  using State       = S;
 
-using Callback = std::function<void(MT, const State&)>;
+  using Callback = std::function<void(MT, const State&)>;
   using Token    = std::shared_ptr<Callback>;
 
   Token registerListener(Callback callback) {
@@ -37,7 +37,6 @@ using Callback = std::function<void(MT, const State&)>;
       }
     }
   }
-
 
 private:
   std::vector<std::weak_ptr<Callback>> listeners;

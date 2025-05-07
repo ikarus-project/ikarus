@@ -32,6 +32,7 @@ struct PathFollowingState
 {
   using Domain = D;
 
+  std::string name;
   const Domain& domain;
   const SubsidiaryArgs& subsidiaryArgs;
   int loadStep{};

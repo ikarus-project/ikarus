@@ -15,10 +15,11 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
   using enum ControlMessages;
   ControlInformation info({false});
   decltype(auto) nonOp = nonLinearSolver_->residual();
-  // this->notify(CONTROL_STARTED, static_cast<std::string>(this->name()));
-  auto& loadParameter = x.parameter();
 
   auto state = typename LoadControl::State{.domain = x};
+
+  this->notify(CONTROL_STARTED, state);
+  auto& loadParameter = x.parameter();
 
   loadParameter = 0.0;
   this->notify(ControlMessages::STEP_STARTED, state);
@@ -28,14 +29,13 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
   if (not solverInfo.success)
     return info;
 
-
   this->notify(SOLUTION_CHANGED, state);
   this->notify(STEP_ENDED, state);
 
   state.stepSize = stepSize_;
 
   for (int ls = 0; ls < loadSteps_; ++ls) {
-    this->notify(STEP_STARTED,  state);
+    this->notify(STEP_STARTED, state);
     loadParameter += stepSize_;
     solverInfo = nonLinearSolver_->solve(x);
     info.solverInfos.push_back(solverInfo);
@@ -47,7 +47,7 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
     this->notify(SOLUTION_CHANGED, state);
     this->notify(STEP_ENDED, state);
   }
-  // this->notify(CONTROL_ENDED, info.totalIterations, static_cast<std::string>(this->name()));
+  this->notify(CONTROL_ENDED, state);
   info.success = true;
   return info;
 }

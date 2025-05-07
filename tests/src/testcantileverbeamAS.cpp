@@ -80,7 +80,8 @@ int main(int argc, char** argv) {
 
   auto reducedMats = Dune::makeTupleVector(planeStrain(matSVK), planeStrain(matNH), planeStrain(matBK));
   Dune::Hybrid::forEach(reducedMats, [&t](const auto& mat) {
-    t.subTest(cantileverBeamTest<2>(mat, skills(assumedStress<PS::PK2Stress>(5)), cantileverBeamResults(mat), false, true));
+    t.subTest(
+        cantileverBeamTest<2>(mat, skills(assumedStress<PS::PK2Stress>(5)), cantileverBeamResults(mat), false, true));
   });
 
   // auto materials = Dune::makeTupleVector(matSVK, matNH, matBK);

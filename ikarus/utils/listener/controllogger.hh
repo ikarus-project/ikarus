@@ -24,12 +24,8 @@ class ControlLogger : public Listener
 public:
   template <typename BC>
   ControlLogger& subscribeTo(BC& bc) {
-    // this->subscribe(bc, [&](ControlMessages message) { this->updateImpl(message); });
     this->subscribe(bc, [&](ControlMessages message, const BC::State& state) { this->updateImpl(message, state); });
-    // this->subscribe(bc, [&](ControlMessages message, const std::string& val) { this->updateImpl(message, val); });
-    // this->subscribe(
-    //     bc, [&](ControlMessages message, int val1, const std::string& val2) { this->updateImpl(message, val1, val2); });
-    // this->subscribe(bc, [&](ControlMessages message, int val1, double val2) { this->updateImpl(message, val1, val2); });
+
     return *this;
   }
 
@@ -69,12 +65,18 @@ public:
    * \param message The received control message.
    * \param state The received control state.
    */
-  void updateImpl(ControlMessages message, const Concepts::ControlRoutineState auto& state) { updateImpl(message); }
+  void updateImpl(ControlMessages message, const Concepts::ControlRoutineState auto& state) {
+    updateImpl(message);
+    updateImpl(message, state.loadStep, state.stepSize);
+    if (message == ControlMessages::CONTROL_STARTED)
+      name_ = state.name;
+  }
 
 private:
   using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
   TimePoint start_{};
   TimePoint stop_{};
   std::chrono::milliseconds duration_{};
+  std::string name_;
 };
 } // namespace Ikarus

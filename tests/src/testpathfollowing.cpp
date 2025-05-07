@@ -48,7 +48,7 @@ static auto simple2DOperatorArcLengthTest(DifferentiableFunction& f, typename Di
   auto nrSettings              = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig({}, linSolver);
   auto nr                      = Ikarus::createNonlinearSolver(nrSettings, f);
   auto alc                     = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
-  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(nr);
+  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
   auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(alc);
 
   const auto controlInfo              = alc.run(req);
@@ -76,7 +76,7 @@ static auto simple2DOperatorArcLengthTestAsDefault(DifferentiableFunction& f,
   auto nrSettings = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.linearSolver = linSolver};
   auto nr         = Ikarus::createNonlinearSolver(nrSettings, f);
   auto alc        = Ikarus::PathFollowing(nr, loadSteps, stepSize);
-  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(nr);
+  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
   auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(alc);
 
   const auto controlInfo              = alc.run(req);
@@ -105,7 +105,7 @@ static auto simple2DOperatorLoadControlTest(DifferentiableFunction& f, typename 
   auto nrSettings              = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig({}, linSolver);
   auto nr                      = Ikarus::createNonlinearSolver(nrSettings, f);
   auto lc                      = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
-  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(nr);
+  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
   auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(lc);
 
   const auto controlInfo              = lc.run(req);
@@ -137,7 +137,7 @@ static auto simple2DOperatorDisplacementControlTest(DifferentiableFunction& f,
   auto nrSettings              = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig({}, linSolver);
   auto nr                      = Ikarus::createNonlinearSolver(nrSettings, f);
   auto dc                      = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
-  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(nr);
+  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
   auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(dc);
 
   const auto controlInfo              = dc.run(req);

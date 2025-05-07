@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <ikarus/solver/nonlinearsolver/solverinfos.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
@@ -26,10 +27,7 @@ struct NonlinearSolverState
 
   const Domain& domain;
   const CorrectionType& correction;
-
-  double rNorm{};
-  double dNorm{};
-  int iteration{};
+  const NonLinearSolverInformation& information;
 };
 
 namespace Impl {

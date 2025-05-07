@@ -54,6 +54,9 @@ public:
   template <typename State>
   void updateImpl(NonLinearSolverMessages message, const State& state) {
     updateImpl(message);
+    updateImpl(message, state.information.residualNorm);
+    updateImpl(message, state.information.correctionNorm);
+    updateImpl(message, state.information.iterations);
   }
 
 private:

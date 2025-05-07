@@ -25,6 +25,7 @@
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/listener/controllogger.hh>
 #include <ikarus/utils/listener/controlvtkwriter.hh>
 #include <ikarus/utils/listener/genericlistener.hh>
 #include <ikarus/utils/listener/nonlinearsolverlogger.hh>
@@ -147,8 +148,11 @@ static auto vonMisesTrussTest() {
   auto lc = ControlRoutineFactory::create(LoadControlConfig{loadSteps, 0.0, 0.5}, nr, denseFlatAssembler);
 
   auto nonLinearSolverObserver = NonLinearSolverLogger();
+  auto controlLogger           = ControlLogger();
 
   nonLinearSolverObserver.subscribeTo(lc.nonLinearSolver());
+  controlLogger.subscribeTo(lc);
+
   vtkWriter.subscribeTo(lc);
   lvkObserver.subscribeTo(lc);
 

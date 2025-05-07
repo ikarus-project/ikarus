@@ -174,10 +174,12 @@ public:
       "it was successful")]] NonLinearSolverInformation
   solve(Domain& req, SubsidiaryType&& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs) {
     using enum NonLinearSolverMessages;
-    this->notify(INIT);
 
-    /// Initializations
     Ikarus::NonLinearSolverInformation solverInformation;
+    auto state = typename NewtonRaphsonWithSubsidiaryFunction::State{
+        .domain = req, .correction = correction_, .information = solverInformation};
+    this->notify(INIT, state);
+
     solverInformation.success = true;
 
     auto& lambda = req.parameter();
@@ -212,13 +214,11 @@ public:
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
 
-    auto solverState = typename NewtonRaphsonWithSubsidiaryFunction::State{.domain = req, .correction = correction_};
-
     Eigen::MatrixX2<double> residual2d, sol2d;
 
     /// Iterative solving scheme
     while (rNorm > settings_.tol && iter < settings_.maxIter) {
-      this->notify(ITERATION_STARTED);
+      this->notify(ITERATION_STARTED, state);
 
       /// Two-step solving procedure
       residual2d.resize(rx.rows(), 2);
@@ -238,10 +238,7 @@ public:
                                  (subsidiaryArgs.dfdDD.dot(sol2d.col(1)) + subsidiaryArgs.dfdDlambda);
       deltaD = sol2d.col(0) + deltalambda * sol2d.col(1);
 
-      solverState.dNorm     = static_cast<double>(dNorm);
-      solverState.rNorm     = static_cast<double>(rNorm);
-      solverState.iteration = iter;
-      this->notify(CORRECTION_UPDATED, solverState);
+      this->notify(CORRECTION_UPDATED, state);
 
       updateFunction_(x, deltaD);
       updateFunction_(subsidiaryArgs.DD, deltaD);
@@ -249,26 +246,28 @@ public:
       lambda += deltalambda;
       subsidiaryArgs.Dlambda += deltalambda;
 
-      dNorm = sqrt(deltaD.dot(deltaD) + deltalambda * deltalambda);
-      rx    = residualFunction_(req);
-      Ax    = jacobianFunction_(req);
-      rNorm = sqrt(rx.dot(rx) + subsidiaryArgs.f * subsidiaryArgs.f);
+      dNorm                            = sqrt(deltaD.dot(deltaD) + deltalambda * deltalambda);
+      solverInformation.correctionNorm = dNorm;
 
-      this->notify(SOLUTION_CHANGED, static_cast<double>(lambda));
-      this->notify(CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
-      this->notify(RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
-      this->notify(ITERATION_ENDED);
+      rx                             = residualFunction_(req);
+      Ax                             = jacobianFunction_(req);
+      rNorm                          = sqrt(rx.dot(rx) + subsidiaryArgs.f * subsidiaryArgs.f);
+      solverInformation.residualNorm = rNorm;
+
+      this->notify(SOLUTION_CHANGED, state);
+      this->notify(CORRECTIONNORM_UPDATED, state);
+      this->notify(RESIDUALNORM_UPDATED, state);
 
       ++iter;
+      solverInformation.iterations = iter;
+      this->notify(ITERATION_ENDED, state);
     }
 
     if (iter == settings_.maxIter)
       solverInformation.success = false;
-    solverInformation.iterations     = iter;
-    solverInformation.residualNorm   = rNorm;
-    solverInformation.correctionNorm = dNorm;
+
     if (solverInformation.success)
-      this->notify(FINISHED_SUCESSFULLY, iter);
+      this->notify(FINISHED_SUCESSFULLY, state);
 
     return solverInformation;
   }
