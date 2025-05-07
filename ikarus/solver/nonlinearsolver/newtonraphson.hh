@@ -189,7 +189,8 @@ public:
         correction_ = -linearSolver_(rx, Ax);
         dNorm       = norm(correction_);
       }
-      solverInformation.correctionNorm = dNorm;
+      solverInformation.residualNorm = static_cast<double>(dNorm);
+      ;
 
       this->notify(CORRECTION_UPDATED, state);
       updateFunction_(x, correction_);
@@ -199,7 +200,7 @@ public:
       rx                             = residualFunction_(x);
       Ax                             = jacobianFunction_(x);
       rNorm                          = norm(rx);
-      solverInformation.residualNorm = rNorm;
+      solverInformation.residualNorm = static_cast<double>(rNorm);
       this->notify(RESIDUALNORM_UPDATED, state);
 
       ++iter;

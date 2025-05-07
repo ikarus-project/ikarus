@@ -145,7 +145,7 @@ struct DummyBroadcaster : public Broadcaster<NonLinearSolverMessages, NRStateDum
   using State = NRStateDummy;
 
   void emitMessage(NonLinearSolverMessages message) {
-    auto state = State(x_, dx_);
+    auto state = State(x_, dx_, {});
     this->notify(message, state);
   }
 
@@ -166,8 +166,8 @@ struct DummyBroadcasterInt : public Broadcaster<UpdateMessages, NRStateDummyInt>
 {
   using State = NRStateDummyInt;
 
-  void emitMessage(UpdateMessages message, int val) { this->notify(message, State{val, 0}); }
-  void emitMessage(UpdateMessages message) { this->notify(message, State{0, 0}); }
+  void emitMessage(UpdateMessages message, int val) { this->notify(message, State{val, 0, {}}); }
+  void emitMessage(UpdateMessages message) { this->notify(message, State{0, 0, {}}); }
 };
 
 int main(int argc, char** argv) {
@@ -250,7 +250,7 @@ int main(int argc, char** argv) {
   auto f  = Ikarus::DifferentiableFunctionFactory::op(sparseFlatAssembler);
   auto lc = ControlRoutineFactory::create(LoadControlConfig{1, 0.0, 1.0}, nr, sparseFlatAssembler);
 
-  auto state = decltype(lc)::State{req};
+  auto state = decltype(lc)::State{"LoadControl", req};
   lc.notify(Ikarus::ControlMessages::CONTROL_STARTED, state);
   checkMatrixAndVector(10, testLocation());
 

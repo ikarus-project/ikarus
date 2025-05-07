@@ -28,6 +28,6 @@ struct NonLinearSolverInformation
   bool success{false};
   double residualNorm{std::numeric_limits<double>::infinity()};
   double correctionNorm{std::numeric_limits<double>::infinity()};
-  int iterations{-1};
+  int iterations{0};
 };
 } // namespace Ikarus
