@@ -44,6 +44,7 @@ jobs:
         run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py ${{ github.event.release.tag_name }}
 
       - name: Create version from workflow dispatch
+        if: ${{ github.event_name == 'workflow_dispatch' }}
         run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py $NEWVERSION
 
       - name: Create source distribution
@@ -69,7 +70,7 @@ jobs:
 
       - name: Install Twine
         run: pip install twine
-
+        
       - name: Publish to Test PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
