@@ -49,6 +49,7 @@ set(programSourceFiles
     testassumedstress.cpp
     testcantileverbeamEAS.cpp
     testnonlinearas.cpp
+    testconversions.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS

@@ -2,13 +2,10 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * \file
- * \brief Implementation of strain-related functions.
+ * \file strainconversions.hh
+ * \brief Implementation of transformations for different strain measures
  *
- * This file provides implementation for strain-related functions, including the creation and transformation of
- * different strain tensors.
- *
- * \ingroup  materials
+ * \ingroup materials
  */
 
 #pragma once
@@ -28,24 +25,24 @@ namespace Ikarus {
  *
  * This function creates Green-Lagrangian strains based on the input strain matrix.
  * What to do is decided by the provided strain tag
- * \ingroup  materials
- * \tparam tag Type of the strain tag.
+ * \tparam tag Tag of the input strain measure.
  * \tparam Derived Type of the Eigen matrix.
  * \param eMB Eigen matrix representing the input strain.
  * \return The Green-Lagrangian strains matrix.
  */
 template <StrainTags tag, typename Derived>
-auto createGreenLagrangianStrains(const Eigen::MatrixBase<Derived>& eMB) {
+Derived createGreenLagrangianStrains(const Eigen::MatrixBase<Derived>& eMB) {
   const auto& e = eMB.derived();
+
   static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
   if constexpr (tag == StrainTags::greenLagrangian)
     return e;
   else if constexpr (tag == StrainTags::deformationGradient)
-    return (0.5 * (e.transpose() * e - Derived::Identity())).eval();
+    return 0.5 * (e.transpose() * e - Derived::Identity());
   else if constexpr (tag == StrainTags::displacementGradient)
-    return (0.5 * (e + e.transpose() + e.transpose() * e)).eval();
+    return 0.5 * (e + e.transpose() + e.transpose() * e);
   else if constexpr (tag == StrainTags::rightCauchyGreenTensor)
-    return (0.5 * (e - Derived::Identity())).eval();
+    return 0.5 * (e - Derived::Identity());
 }
 
 /**
@@ -53,14 +50,13 @@ auto createGreenLagrangianStrains(const Eigen::MatrixBase<Derived>& eMB) {
  *
  * This function creates deformation gradient based on the input strain matrix.
  * What to do is decided by the provided strain tag
- * \ingroup  materials
- * \tparam tag Type of the strain tag.
+ * \tparam tag Tag of the input strain measure.
  * \tparam Derived Type of the Eigen matrix.
  * \param eMB Eigen matrix representing the input strain.
  * \return The deformation gradient matrix.
  */
 template <StrainTags tag, typename Derived>
-decltype(auto) createDeformationGradient(const Eigen::MatrixBase<Derived>& eMB) {
+Derived createDeformationGradient(const Eigen::MatrixBase<Derived>& eMB) {
   const auto& e = eMB.derived();
 
   static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
@@ -69,13 +65,13 @@ decltype(auto) createDeformationGradient(const Eigen::MatrixBase<Derived>& eMB) 
     // 2*E = F ^ 2 - I;
     // 2*E+I = F ^ 2;
     // sqrt(2*E+I) = F;
-    return ((2 * e + Derived::Identity()).sqrt()).eval();
+    return (2 * e + Derived::Identity()).sqrt();
   } else if constexpr (tag == StrainTags::deformationGradient)
     return e;
   else if constexpr (tag == StrainTags::displacementGradient)
-    return (e + Derived::Identity()).eval();
+    return e + Derived::Identity();
   else if constexpr (tag == StrainTags::rightCauchyGreenTensor) {
-    return (e.sqrt()).eval(); // this looses information, since the rotation information from the original F is lost!
+    return e.sqrt(); // this looses information, since the rotation information from the original F is lost!
   }
 }
 
@@ -84,26 +80,26 @@ decltype(auto) createDeformationGradient(const Eigen::MatrixBase<Derived>& eMB) 
  *
  * This function creates Right Cauchy-Green tensor based on the input strain matrix.
  * What to do is decided by the provided strain tag
- * \ingroup  materials
- * \tparam tag Type of the strain tag.
+ * \tparam tag Tag of the input strain measure.
  * \tparam Derived Type of the Eigen matrix.
  * \param eMB Eigen matrix representing the input strain.
  * \return The Right Cauchy-Green tensor matrix.
  */
 template <StrainTags tag, typename Derived>
-decltype(auto) createRightCauchyGreen(const Eigen::MatrixBase<Derived>& eMB) {
+Derived createRightCauchyGreen(const Eigen::MatrixBase<Derived>& eMB) {
   const auto& e = eMB.derived();
+
   static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
   if constexpr (tag == StrainTags::greenLagrangian) {
     // E = 0.5 * (C - I);
     // 2*E = C - I;
     // 2*E+I = C;
-    return (2 * e + Derived::Identity()).eval();
+    return 2 * e + Derived::Identity();
   } else if constexpr (tag == StrainTags::deformationGradient)
-    return (e.transpose() * e).eval();
+    return e.transpose() * e;
   else if constexpr (tag == StrainTags::displacementGradient) {
     const auto F = e + Derived::Identity();
-    return (F.transpose() * F).eval();
+    return F.transpose() * F;
   } else if constexpr (tag == StrainTags::rightCauchyGreenTensor) {
     return e;
   }
@@ -113,18 +109,17 @@ decltype(auto) createRightCauchyGreen(const Eigen::MatrixBase<Derived>& eMB) {
  * \brief Transform strain from one type to another.
  *
  * This function transforms one strain component matrix from one type to another, based on the provided strain tags
- * \ingroup  materials
- * \tparam from Type of the source strain tag.
- * \tparam to Type of the target strain tag.
+ * \tparam from Tag of the source strain measure.
+ * \tparam to Tag of the target strain measure.
  * \tparam Derived Type of the Eigen matrix.
  * \param eRaw Eigen matrix representing the input strain (can be in Voigt notation).
  * \return The transformed strain matrix.
  */
 template <StrainTags from, StrainTags to, typename Derived>
-decltype(auto) transformStrain(const Eigen::MatrixBase<Derived>& eRaw) {
+auto transformStrain(const Eigen::MatrixBase<Derived>& eRaw) {
   static_assert((from == to) or (from != StrainTags::linear and to != StrainTags::linear),
                 "No useful transformation available for linear strains.");
-  decltype(auto) e = Impl::maybeFromVoigt(eRaw.eval(), true);
+  const auto e = Impl::maybeFromVoigt(eRaw.derived(), true);
   if constexpr (from == to)
     return e;
   else if constexpr (to == StrainTags::greenLagrangian)

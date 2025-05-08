@@ -96,6 +96,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
   For the general hyperelastic framework, a numerical approach is used ([#369](https://github.com/ikarus-project/ikarus/pull/369)).
 - Add `AssumedStress` class to extend linear and nonlinear solid elements. The implementation is similar to EAS elements, hence the
   internal variables here and in EAS were renamed to `internalVariable` ([#371](https://github.com/ikarus-project/ikarus/pull/371)).
+- Add push-forward and pull-back operations for stress measures ([#372](https://github.com/ikarus-project/ikarus/pull/372)).
 
 ## Release v0.4 (Ganymede)
 
