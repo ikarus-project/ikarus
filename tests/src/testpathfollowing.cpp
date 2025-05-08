@@ -166,7 +166,7 @@ static auto simple2DOperatorLoadControlTestLC(DifferentiableFunction& f, typenam
     for (auto j = 0; j < loadSteps; ++j)
       checkScalars(t, dispMat(i, j), expectedDisplacement(i, j), " --> " + lc.name());
   checkScalars(t, req.parameter(), expectedLambda, " --> " + lc.name());
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
   return t;
 }
 

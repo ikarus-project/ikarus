@@ -23,7 +23,6 @@ struct ControlRoutineState
 {
   using Domain = D;
 
-  std::string name;
   const Domain& domain;
   const ControlInformation& information;
 
