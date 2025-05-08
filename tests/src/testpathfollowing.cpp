@@ -134,9 +134,9 @@ static auto simple2DOperatorLoadControlTestLC(DifferentiableFunction& f, typenam
   TestSuite t("Load Control Method");
   std::vector<int> expectedIterations = {0, 2, 3, 3, 3, 3};
   Eigen::Matrix2Xd expectedDisplacement;
-  expectedDisplacement.setZero(Eigen::NoChange, loadSteps + 1);
-  expectedDisplacement << 0.0, 0.01715872957844366, 0.0345464428730192, 0.0524126112865617, 0.0710534689402604,
-      0.0908533884835060, 0.0, 0.0691806374841585, 0.1389097864303651, 0.2097895325120464, 0.2825443193976919,
+  expectedDisplacement.setZero(Eigen::NoChange, loadSteps);
+  expectedDisplacement << 0.01715872957844366, 0.0345464428730192, 0.0524126112865617, 0.0710534689402604,
+      0.0908533884835060, 0.0691806374841585, 0.1389097864303651, 0.2097895325120464, 0.2825443193976919,
       0.3581294588381901;
   double expectedLambda = 0.5;
 
@@ -150,7 +150,7 @@ static auto simple2DOperatorLoadControlTestLC(DifferentiableFunction& f, typenam
 
   /// Create GenericListener which executes when control routines messages to check displacements at every step
   Eigen::Matrix2Xd dispMat;
-  dispMat.setZero(Eigen::NoChange, loadSteps + 1);
+  dispMat.setZero(Eigen::NoChange, loadSteps);
 
   auto dispObserver = Ikarus::GenericListener(lc, Ikarus::ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
     const auto& d    = state.domain.globalSolution();
@@ -163,7 +163,7 @@ static auto simple2DOperatorLoadControlTestLC(DifferentiableFunction& f, typenam
 
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
-    for (auto j = 0; j < loadSteps + 1; ++j)
+    for (auto j = 0; j < loadSteps; ++j)
       checkScalars(t, dispMat(i, j), expectedDisplacement(i, j), " --> " + lc.name());
   checkScalars(t, req.parameter(), expectedLambda, " --> " + lc.name());
   checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
