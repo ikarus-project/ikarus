@@ -21,7 +21,7 @@ void NonLinearSolverLogger::iterationEnded() {
   ++iters_;
 }
 
-void NonLinearSolverLogger::finishedSucessfully(int numberOfIterations) {
+void NonLinearSolverLogger::finishedSuccessfully(int numberOfIterations) {
   spdlog::info("Number of iterations: {}", numberOfIterations);
 }
 
