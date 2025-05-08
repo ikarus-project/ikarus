@@ -9,6 +9,7 @@
 
 #pragma once
 #include <ikarus/utils/broadcaster/broadcastermessages.hh>
+#include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/listener/listener.hh>
 
 namespace Ikarus {
@@ -25,8 +26,13 @@ public:
     return *this;
   }
 
-  template <typename State>
-  void update(NonLinearSolverMessages message, const State& state) {
+  /**
+   * \brief Implementation of the update method for logging control messages with a control routine state.
+   *
+   * \param message The received nonlinear solver message.
+   * \param state The received nonlinear solver state.
+   */
+  void update(NonLinearSolverMessages message, const Concepts::NonLinearSolverState auto& state) {
     switch (message) {
       case NonLinearSolverMessages::INIT:
         init();

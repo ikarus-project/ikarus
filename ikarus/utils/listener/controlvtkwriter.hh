@@ -41,7 +41,6 @@ public:
    * Initializes the VTK writer with the provided basis, solution, and refinement levels.
    *
    * \param basis The grid basis.
-   * \param sol The solution vector.
    * \param refinementLevels The refinement levels for subsampling.
    */
   ControlSubsamplingVertexVTKWriter(const Basis& basis, int refinementLevels = 0)
@@ -83,6 +82,7 @@ public:
    * It writes VTK files with subsampling based on the provided field information.
    *
    * \param message The received control message.
+   * \param state The received control state.
    */
   void update(ControlMessages message, const Concepts::ControlRoutineState auto& state) {
     assert(isFieldInfoSet_ && "You need to call setFieldInfo first!");

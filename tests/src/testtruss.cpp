@@ -133,7 +133,7 @@ static auto vonMisesTrussTest() {
   Eigen::Matrix3Xd lambdaAndDisp;
   lambdaAndDisp.setZero(Eigen::NoChange, loadSteps + 1);
   // Create Observer which executes when control routines messages
-  auto lvkObserver = GenericListener<ControlMessages>(ControlMessages::SOLUTION_CHANGED, [&](int step) {
+  auto lvkObserver = GenericListener(ControlMessages::SOLUTION_CHANGED, [&](int step) {
     lambdaAndDisp(0, step) = lambda; // load factor
     lambdaAndDisp(1, step) = d[2];   // horizontal displacement at center node
     lambdaAndDisp(2, step) = d[3];   // vertical displacement at center node

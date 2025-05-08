@@ -34,7 +34,7 @@ struct PathFollowingState
 
   std::string name;
   const Domain& domain;
-  ControlInformation& information;
+  const ControlInformation& information;
   const SubsidiaryArgs& subsidiaryArgs;
 
   int loadStep{};
