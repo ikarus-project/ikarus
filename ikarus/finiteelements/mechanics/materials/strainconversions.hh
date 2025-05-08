@@ -3,7 +3,7 @@
 
 /**
  * \file strainconversions.hh
- * \brief Implementation of transformations for different stress measures
+ * \brief Implementation of transformations for different strain measures
  *
  * \ingroup materials
  */

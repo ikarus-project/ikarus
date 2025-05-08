@@ -112,21 +112,18 @@ Derived createKirchhoffStress(const Eigen::MatrixBase<Derived>& sMB, const Eigen
  */
 template <StressTags tag, typename Derived>
 Derived createCauchyStress(const Eigen::MatrixBase<Derived>& sMB, const Eigen::MatrixBase<Derived>& F) {
-  const auto& S = sMB.derived();
+  const auto& S   = sMB.derived();
+  const auto invJ = 1.0 / F.determinant();
 
   static_assert(Concepts::EigenMatrix33<Derived> or Concepts::EigenMatrix22<Derived>);
   if constexpr (tag == StressTags::Cauchy)
     return S;
-  else if constexpr (tag == StressTags::Kirchhoff) {
-    auto invJ = 1.0 / F.determinant();
+  else if constexpr (tag == StressTags::Kirchhoff)
     return (invJ * S).eval();
-  } else if constexpr (tag == StressTags::PK1) {
-    auto invJ = 1.0 / F.determinant();
+  else if constexpr (tag == StressTags::PK1)
     return (invJ * S * F.transpose()).eval();
-  } else if constexpr (tag == StressTags::PK2) {
-    auto invJ = 1.0 / F.determinant();
+  else if constexpr (tag == StressTags::PK2)
     return (invJ * F * S * F.transpose()).eval();
-  }
 }
 
 /**

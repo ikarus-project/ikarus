@@ -39,7 +39,7 @@ auto testCauchyGreen() {
 
 auto testStressConversions() {
   TestSuite t("Test Stress Conversions");
-  const double epsilon = 100 * std::numeric_limits<double>::epsilon();
+  const double epsilon = 1e-14;
 
   auto S = Testing::testStress();
   auto F = Testing::testDeformationGradient();
@@ -48,12 +48,12 @@ auto testStressConversions() {
   Dune::Hybrid::forEach(stressTagRange, [&](auto i) {
     constexpr StressTags tag1 = StressTags(int(i));
     Dune::Hybrid::forEach(stressTagRange, [&](auto j) {
-      constexpr StressTags tag2       = StressTags(int(j));
-      Eigen::Matrix3d convertedStress = transformStress<tag1, tag2>(S, F);
-      Eigen::Matrix3d roundTripStress = transformStress<tag2, tag1>(convertedStress, F);
+      constexpr StressTags tag2         = StressTags(int(j));
+      Eigen::Matrix3d convertedStress   = transformStress<tag1, tag2>(S, F);
+      Eigen::Matrix3d reconvertedStress = transformStress<tag2, tag1>(convertedStress, F);
       checkApproxMatrices(
-          t, roundTripStress, S,
-          "Round-trip stress not equal to initial stress (" + toString(tag1) + " & " + toString(tag2) + ")", epsilon);
+          t, reconvertedStress, S,
+          "Re-converted stress not equal to initial stress (" + toString(tag1) + " & " + toString(tag2) + ")", epsilon);
 
       Dune::Hybrid::forEach(stressTagRange, [&](auto k) {
         constexpr StressTags tag3               = StressTags(int(k));
@@ -73,7 +73,7 @@ auto testStressConversions() {
 
 auto testStrainConversions() {
   TestSuite t("Test Strain Conversions");
-  const double epsilon = 100 * std::numeric_limits<double>::epsilon();
+  const double epsilon = 1e-14;
 
   Eigen::Matrix3d C = Testing::testCauchyGreen();
 
@@ -81,12 +81,12 @@ auto testStrainConversions() {
   Dune::Hybrid::forEach(strainRange, [&](auto i) {
     constexpr StrainTags tag1 = StrainTags(int(i));
     Dune::Hybrid::forEach(strainRange, [&](auto j) {
-      constexpr StrainTags tag2       = StrainTags(int(j));
-      Eigen::Matrix3d convertedStrain = transformStrain<tag1, tag2>(C);
-      Eigen::Matrix3d roundTripStrain = transformStrain<tag2, tag1>(convertedStrain);
+      constexpr StrainTags tag2         = StrainTags(int(j));
+      Eigen::Matrix3d convertedStrain   = transformStrain<tag1, tag2>(C);
+      Eigen::Matrix3d reconvertedStrain = transformStrain<tag2, tag1>(convertedStrain);
       checkApproxMatrices(
-          t, roundTripStrain, C,
-          "Round-trip strain not equal to initial strain (" + toString(tag1) + " & " + toString(tag2) + ")", epsilon);
+          t, reconvertedStrain, C,
+          "Re-converted strain not equal to initial strain (" + toString(tag1) + " & " + toString(tag2) + ")", epsilon);
 
       Dune::Hybrid::forEach(strainRange, [&](auto k) {
         constexpr StrainTags tag3               = StrainTags(int(k));
