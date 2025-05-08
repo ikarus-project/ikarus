@@ -205,7 +205,6 @@ private:
 
     auto Er = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
 
-    Er.setZero();
     auto diffFunction = Ikarus::makeDifferentiableFunction(functions(f, df), Er);
 
     auto linearSolver   = [](auto& r, auto& A) { return (A.inverse() * r).eval(); };
