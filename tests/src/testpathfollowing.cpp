@@ -152,12 +152,13 @@ static auto simple2DOperatorLoadControlTestLC(DifferentiableFunction& f, typenam
   Eigen::Matrix2Xd dispMat;
   dispMat.setZero(Eigen::NoChange, loadSteps + 1);
 
-  auto dispObserver = Ikarus::GenericListener(Ikarus::ControlMessages::SOLUTION_CHANGED, [&](int step) {
-    const auto& d    = req.globalSolution();
+  auto dispObserver = Ikarus::GenericListener(lc, Ikarus::ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
+    const auto& d    = state.domain.globalSolution();
+    int step         = state.loadStep;
     dispMat(0, step) = d[0];
     dispMat(1, step) = d[1];
   });
-  dispObserver.subscribeTo(lc);
+  // dispObserver.subscribeTo(lc);
 
   const auto controlInfo = lc.run(req);
 
