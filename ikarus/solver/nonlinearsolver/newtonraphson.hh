@@ -168,12 +168,13 @@ public:
     auto state =
         typename NewtonRaphson::State{.domain = x, .correction = correction_, .information = solverInformation};
     this->notify(INIT, state);
-
     solverInformation.success = true;
 
-    decltype(auto) rx = residualFunction_(x);
-    decltype(auto) Ax = jacobianFunction_(x);
-    auto rNorm        = norm(rx);
+    decltype(auto) rx              = residualFunction_(x);
+    decltype(auto) Ax              = jacobianFunction_(x);
+    auto rNorm                     = norm(rx);
+    solverInformation.residualNorm = static_cast<double>(rNorm);
+
     decltype(rNorm) dNorm;
     int iter{0};
     if constexpr (isLinearSolver)

@@ -208,7 +208,8 @@ public:
     subsidiaryArgs.dfdDD.resizeLike(Fext0);
 
     subsidiaryFunction(subsidiaryArgs);
-    auto rNorm = sqrt(rx.dot(rx));
+    auto rNorm                     = sqrt(rx.dot(rx));
+    solverInformation.residualNorm = static_cast<double>(rNorm);
     decltype(rNorm) dNorm;
     int iter{0};
     if constexpr (isLinearSolver)

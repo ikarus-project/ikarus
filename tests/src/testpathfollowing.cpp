@@ -158,7 +158,6 @@ static auto simple2DOperatorLoadControlTestLC(DifferentiableFunction& f, typenam
     dispMat(0, step) = d[0];
     dispMat(1, step) = d[1];
   });
-  // dispObserver.subscribeTo(lc);
 
   const auto controlInfo = lc.run(req);
 
