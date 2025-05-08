@@ -155,7 +155,9 @@ void replaceNaNWithZero(Eigen::MatrixBase<Derived>& val) {
   val = val.unaryExpr([](double x) { return std::isnan(x) ? 0.0 : x; });
 }
 
-bool fileExists(const std::string& filename) {
+// This does not check, if the file was created recently
+template <typename TestSuiteType>
+void fileExists(TestSuiteType& t, const std::string& filename, const std::string& messageIfFailed = "") {
   std::ifstream file(filename);
-  return file.good();
+  t.check(file.good()) << "File with name " << filename << " should exist, but does not" << messageIfFailed;
 }

@@ -188,6 +188,9 @@ static auto vonMisesTrussTest() {
     checkScalars(t, NPK2, expectedPK2AxialForce, " Incorrect PK2 Axial force", tol);
   }
 
+  for (auto i : Dune::range(0, loadSteps))
+    fileExists(t, "vonMisesTruss" + std::to_string(i) + ".vtp");
+
   return t;
 }
 
