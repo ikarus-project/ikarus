@@ -250,7 +250,7 @@ int main(int argc, char** argv) {
   auto f  = Ikarus::DifferentiableFunctionFactory::op(sparseFlatAssembler);
   auto lc = ControlRoutineFactory::create(LoadControlConfig{1, 0.0, 1.0}, nr, sparseFlatAssembler);
 
-  auto state = decltype(lc)::State{"LoadControl", req};
+  auto state = decltype(lc)::State{"LoadControl", req, {}};
   lc.notify(Ikarus::ControlMessages::CONTROL_STARTED, state);
   checkMatrixAndVector(10, testLocation());
 
