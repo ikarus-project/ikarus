@@ -50,7 +50,7 @@ public:
         dNorm_ = state.information.correctionNorm;
         break;
       case NonLinearSolverMessages::FINISHED_SUCESSFULLY:
-        finishedSucessfully(state.information.iterations);
+        finishedSuccessfully(state.information.iterations);
         break;
       default:
         break;
@@ -65,6 +65,6 @@ private:
 
   void init();
   void iterationEnded();
-  void finishedSucessfully(int numberOfIterations);
+  void finishedSuccessfully(int numberOfIterations);
 };
 } // namespace Ikarus

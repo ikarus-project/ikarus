@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <cassert>
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -37,10 +38,11 @@ public:
    * \param callback the function
    */
   template <typename Broadcaster>
-  void subscribe(Broadcaster& broadcaster,
+  auto subscribe(Broadcaster& broadcaster,
                  std::function<void(typename Broadcaster::MessageType, const typename Broadcaster::State&)> callback) {
     auto token = broadcaster.registerListener(std::move(callback));
     tokens.push_back(token);
+    return token;
   }
 
   /**
@@ -66,12 +68,11 @@ public:
   }
 
   /**
-   * \brief Unsubscribe from a specific token..
+   * \brief Unsubscribe from a specific token.
    */
   void unSubscribe(const Token& token) {
     auto it = std::ranges::find(tokens, token);
     if (it != tokens.end()) {
-      assert(it->use_count() == 1 && "The token has external references");
       (*it).reset();
       tokens.erase(it);
     }
