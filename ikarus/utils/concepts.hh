@@ -642,7 +642,7 @@ namespace Concepts {
 
   /**
    * \concept ControlRoutineState
-   * \brief Conecpt to check if a type represents a control routine state
+   * \brief Concept to check if a type represents a control routine state
    * \tparam S the type to be checked
    */
   template <typename S>
@@ -657,7 +657,7 @@ namespace Concepts {
 
   /**
    * \concept NonLinearSolverState
-   * \brief Conecpt to check if a type represents a nonlinear solver state
+   * \brief Concept to check if a type represents a nonlinear solver state
    * \tparam S the type to be checked
    */
   template <typename S>
