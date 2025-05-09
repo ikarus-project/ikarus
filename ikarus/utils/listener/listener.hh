@@ -4,83 +4,82 @@
 /**
  * \file listener.hh
  * \brief Implementation of the observer design pattern with broadcasters
+ * \ingroup observer
  */
 
 #pragma once
+#include <algorithm>
+#include <cassert>
+#include <functional>
+#include <iostream>
 #include <memory>
 #include <vector>
-
-#include <ikarus/utils/functionhelper.hh>
-#include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
 
 /**
- * \brief
+ * \brief Implements a listener
  * \details The functions that the listener is listening to are stored in a vector of shared_ptr<void>. This type
  * erasure has the advantage that we can listen to different function signatures and the Listener not being a template.
  * This works, because the deleter of the stored objects is not bound to the type information and thus there are no
  * memory leaks possible.
- *
  */
-struct Listener
+class Listener
 {
+public:
   using Token = std::shared_ptr<void>;
 
   /**
    * \brief Function to subscribe to a broadcaster with a given function (either a lambda, std::function or function
    * pointer).
-   * \details This function deducts the types of the arguments itself and then forwards it. If there are problems with
-   * type deduction use the function below and specify the types of the arguments manually.
    *
-   * \tparam Broadcaster the type of the Broadcaster (for example a NonlinearSolver or ControlRoutine), can either be a
-   * pointer or value.
-   * \tparam F the type of the function
+   * \tparam Broadcaster the type of the Broadcaster (for example a NonlinearSolver or ControlRoutine)
    * \param broadcaster the broadcaster
-   * \param f the function
+   * \param callback the function
    */
-  template <typename Broadcaster, typename F>
-  auto subscribe(Broadcaster& broadcaster, F&& f) {
-    using Signature = typename traits::FunctionTraits<F>::FreeSignature;
-    return subscribe<traits::MaybeDereferencedType<Broadcaster>, Signature>(utils::maybeDeref(broadcaster),
-                                                                            std::forward<F>(f));
-  }
-
-  /**
-   * \brief Function to subscribe to a broadcaster with a given function (either a lambda, std::function or function
-   * pointer).
-   * \tparam Broadcaster the type of the Broadcaster (for example a NonlinearSolver or ControlRoutine), can either be a
-   * pointer or value.
-   * \tparam Signature the exact signature of the function F
-   * \tparam F the type of the function
-   * \param broadcaster the broadcaster
-   * \param f the function
-   */
-  template <typename Broadcaster, typename Signature, typename F>
-  requires(not Concepts::PointerOrSmartPointer<Broadcaster>)
-  auto subscribe(Broadcaster& broadcaster, F&& f) {
-    t.push_back(broadcaster.template station<Signature>().registerListener(std::forward<F>(f)));
-    return t.back();
+  template <typename Broadcaster>
+  auto subscribe(Broadcaster& broadcaster,
+                 std::function<void(typename Broadcaster::MessageType, const typename Broadcaster::State&)> callback) {
+    auto token = broadcaster.registerListener(std::move(callback));
+    tokens.push_back(token);
+    return token;
   }
 
   /**
    * \brief Unsubscribe from all listeners. At the moment unsubscribing can't be done more granularly.
    */
-  void unSubscribeAll() { t.clear(); }
+  void unSubscribeAll() {
+    for (auto& token : tokens) {
+      if (token) {
+        token.reset();
+      }
+    }
+    tokens.clear();
+  }
 
   /**
    * \brief Unsubscribe from the last subscribed listener.
    */
-  void unSubscribeLast() { t.pop_back(); }
+  void unSubscribeLast() {
+    if (!tokens.empty()) {
+      tokens.back().reset();
+      tokens.pop_back();
+    }
+  }
 
-  void unSubscribe(Token&& ts) {
-    t.erase(std::ranges::find(t, ts)); // erase the shared ptr in t
-    assert(ts.unique() && "The given token has external references");
-    ts.reset();
+  /**
+   * \brief Unsubscribe from a specific token.
+   */
+  void unSubscribe(const Token& token) {
+    auto it = std::ranges::find(tokens, token);
+    if (it != tokens.end()) {
+      (*it).reset();
+      tokens.erase(it);
+    }
   }
 
 private:
-  std::vector<Token> t;
+  std::vector<Token> tokens;
 };
 
 } // namespace Ikarus

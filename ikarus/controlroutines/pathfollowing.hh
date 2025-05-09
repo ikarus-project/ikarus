@@ -33,7 +33,9 @@ struct PathFollowingState
   using Domain = D;
 
   const Domain& domain;
+  const ControlInformation& information;
   const SubsidiaryArgs& subsidiaryArgs;
+
   int loadStep{};
   double stepSize{};
 };

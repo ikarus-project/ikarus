@@ -3,6 +3,7 @@
 
 #pragma once
 #include <concepts>
+#include <fstream>
 #include <iomanip>
 #include <source_location>
 #include <vector>
@@ -152,4 +153,11 @@ double transformStrainAccordingToStrain(auto& e) {
 template <typename Derived>
 void replaceNaNWithZero(Eigen::MatrixBase<Derived>& val) {
   val = val.unaryExpr([](double x) { return std::isnan(x) ? 0.0 : x; });
+}
+
+// This does not check, if the file was created recently
+template <typename TestSuiteType>
+void fileExists(TestSuiteType& t, const std::string& filename, const std::string& messageIfFailed = "") {
+  std::ifstream file(filename);
+  t.check(file.good()) << "File with name " << filename << " should exist, but does not" << messageIfFailed;
 }

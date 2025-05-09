@@ -20,10 +20,7 @@ namespace Ikarus {
  * \tparam Args Additional custom message signatures, that can be broadcasted
  */
 template <typename F, typename S = ControlRoutineStateType<F>, typename... Args>
-struct ControlRoutineBase
-    : public Broadcasters<void(ControlMessages), void(ControlMessages, const std::string&),
-                          void(ControlMessages, int, const std::string&), void(ControlMessages, int, double),
-                          void(ControlMessages, const S&), Args...>
+struct ControlRoutineBase : Broadcaster<ControlMessages, S>
 {
   using State = S;
 };

@@ -24,25 +24,25 @@ template <typename NLS, typename PF, typename ASS>
 requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
 ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   using enum ControlMessages;
-
-  ControlInformation info;
   auto& residual = nonLinearSolver_->residual();
-  this->notify(CONTROL_STARTED, pathFollowingType_.name());
+
+  ControlInformation info{};
+  auto state = typename PathFollowing::State{.domain = req, .information = info, .subsidiaryArgs = subsidiaryArgs_};
+  this->notify(CONTROL_STARTED, state);
 
   info.totalIterations = 0;
   subsidiaryArgs_.setZero(req.globalSolution());
   subsidiaryArgs_.stepSize = stepSize_;
 
   /// Initializing solver
-  this->notify(STEP_STARTED, 0, subsidiaryArgs_.stepSize);
+  this->notify(STEP_STARTED, state);
+
   pathFollowingType_.initialPrediction(req, residual, subsidiaryArgs_);
   auto solverInfo = nonLinearSolver_->solve(req, pathFollowingType_, subsidiaryArgs_);
   info.solverInfos.push_back(solverInfo);
   info.totalIterations += solverInfo.iterations;
   if (not solverInfo.success)
     return info;
-
-  auto state = typename PathFollowing::State{.domain = req, .subsidiaryArgs = subsidiaryArgs_};
 
   this->notify(SOLUTION_CHANGED, state);
   this->notify(STEP_ENDED, state);
@@ -53,7 +53,7 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
 
     adaptiveStepSizing_(solverInfo, subsidiaryArgs_, residual);
 
-    this->notify(STEP_STARTED, subsidiaryArgs_.currentStep, subsidiaryArgs_.stepSize);
+    this->notify(STEP_STARTED, state);
 
     pathFollowingType_.intermediatePrediction(req, residual, subsidiaryArgs_);
 
@@ -70,7 +70,7 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
     this->notify(STEP_ENDED, state);
   }
 
-  this->notify(CONTROL_ENDED, info.totalIterations, pathFollowingType_.name());
+  this->notify(CONTROL_ENDED, state);
   info.success = true;
   return info;
 }

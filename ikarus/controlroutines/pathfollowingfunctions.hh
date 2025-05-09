@@ -226,7 +226,7 @@ struct LoadControlSubsidiaryFunction
   }
 
   /** \brief The name of the PathFollowing method. */
-  constexpr auto name() const { return std::string("Load Control"); }
+  std::string name() const { return std::string("Load Control"); }
 };
 
 /**

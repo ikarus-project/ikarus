@@ -248,7 +248,7 @@ static auto secondOrderVectorValuedOperatorNonlinearAutodiff() {
   Ikarus::NewtonRaphson nr(subOperator, [&](auto& r, auto& A_) { return A_.inverse() * r; });
 
   const Eigen::Vector3d xSol(-4.9131804394348836888, 2.0287578381104342236, 2.0287578381104342236);
-  auto nonLinearSolverObserver = NonLinearSolverLogger().subscribeTo(nr);
+  // auto nonLinearSolverObserver = NonLinearSolverLogger().subscribeTo(nr);
 
   t.subTest(checkNewtonRaphson(nr, x, eps, maxIter, 5, xSol));
 

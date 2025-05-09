@@ -4,6 +4,7 @@
 /**
  * \file controlvtkwriter.hh
  * \brief Observer implementation for writing vtk files when notified
+ * \ingroup observer
  */
 
 #pragma once
@@ -15,10 +16,8 @@
 #include <Eigen/Core>
 
 #include <ikarus/utils/broadcaster/broadcastermessages.hh>
+#include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/listener/listener.hh>
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wswitch-enum"
 
 namespace Ikarus {
 
@@ -42,17 +41,15 @@ public:
    * Initializes the VTK writer with the provided basis, solution, and refinement levels.
    *
    * \param basis The grid basis.
-   * \param sol The solution vector.
    * \param refinementLevels The refinement levels for subsampling.
    */
-  ControlSubsamplingVertexVTKWriter(const Basis& basis, const Eigen::VectorXd& sol, int refinementLevels = 0)
-      : basis_{&basis},
-        vtkWriter_(basis.gridView(), Dune::refinementLevels(refinementLevels)),
-        solution_{&sol} {}
+  ControlSubsamplingVertexVTKWriter(const Basis& basis, int refinementLevels = 0)
+      : basis_{basis},
+        vtkWriter_(basis.gridView(), Dune::refinementLevels(refinementLevels)) {}
 
   template <typename BC>
   ControlSubsamplingVertexVTKWriter& subscribeTo(BC& bc) {
-    this->subscribe(bc, [&](ControlMessages message) { this->updateImpl(message); });
+    this->subscribe(bc, [&](ControlMessages message, const BC::State& state) { this->update(message, state); });
     return *this;
   }
 
@@ -85,13 +82,14 @@ public:
    * It writes VTK files with subsampling based on the provided field information.
    *
    * \param message The received control message.
+   * \param state The received control state.
    */
-  void updateImpl(ControlMessages message) {
+  void update(ControlMessages message, const Concepts::ControlRoutineState auto& state) {
     assert(isFieldInfoSet_ && "You need to call setFieldInfo first!");
     switch (message) {
       case ControlMessages::SOLUTION_CHANGED: {
-        auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, components>>(*basis_,
-                                                                                                            *solution_);
+        auto disp = Dune::Functions::makeDiscreteGlobalBasisFunction<Dune::FieldVector<double, components>>(
+            basis_, state.domain.globalSolution());
         vtkWriter_.addVertexData(disp, fieldInfo_);
         vtkWriter_.write(prefixString_ + std::to_string(step_++));
       } break;
@@ -101,13 +99,17 @@ public:
   }
 
 private:
-  const Basis* basis_;
+  const Basis& basis_;
   Dune::SubsamplingVTKWriter<typename Basis::GridView> vtkWriter_;
-  const Eigen::VectorXd* solution_;
   int step_{0};
   Dune::VTK::FieldInfo fieldInfo_{"Default", Dune::VTK::FieldInfo::Type::scalar, 1};
   std::string prefixString_{};
   bool isFieldInfoSet_{false};
 };
+
+#ifndef DOXYGEN
+template <typename Basis>
+ControlSubsamplingVertexVTKWriter(const Basis&, int) -> ControlSubsamplingVertexVTKWriter<Basis>;
+#endif
+
 } // namespace Ikarus
-#pragma GCC diagnostic pop
