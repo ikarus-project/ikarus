@@ -175,7 +175,7 @@ public:
   solve(Domain& req, SubsidiaryType&& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs) {
     using enum NonLinearSolverMessages;
 
-    Ikarus::NonLinearSolverInformation solverInformation;
+    Ikarus::NonLinearSolverInformation solverInformation{};
     auto state = typename NewtonRaphsonWithSubsidiaryFunction::State{
         .domain = req, .correction = correction_, .information = solverInformation};
     this->notify(INIT, state);
@@ -266,7 +266,7 @@ public:
 
     if (iter == settings_.maxIter)
       solverInformation.success = false;
-
+    solverInformation.iterations = iter;
     if (solverInformation.success)
       this->notify(FINISHED_SUCESSFULLY, state);
 

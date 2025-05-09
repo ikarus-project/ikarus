@@ -160,11 +160,11 @@ public:
    */
   [[nodiscard(
       "The solve method returns information of the solution process. You should store this information and check if "
-      "it was successful")]] Ikarus::NonLinearSolverInformation
+      "it was successful")]] NonLinearSolverInformation
   solve(Domain& x) {
     using enum NonLinearSolverMessages;
 
-    Ikarus::NonLinearSolverInformation solverInformation;
+    NonLinearSolverInformation solverInformation{};
     auto state =
         typename NewtonRaphson::State{.domain = x, .correction = correction_, .information = solverInformation};
     this->notify(INIT, state);
@@ -209,7 +209,7 @@ public:
     }
     if (iter == settings_.maxIter)
       solverInformation.success = false;
-
+    solverInformation.iterations = iter;
     if (solverInformation.success)
       this->notify(FINISHED_SUCESSFULLY, state);
     return solverInformation;
