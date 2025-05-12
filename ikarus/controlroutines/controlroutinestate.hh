@@ -26,7 +26,7 @@ struct ControlRoutineState
   const Domain& domain;
   const ControlInformation& information;
 
-  int loadStep{};
+  int loadStep{-1};
   double stepSize{};
 };
 

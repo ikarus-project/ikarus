@@ -149,12 +149,12 @@ static auto vonMisesTrussTest() {
   vtkWriter.subscribeTo(lc);
 
   auto lvkObserver = GenericListener(lc, ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
-    const auto& d          = state.domain.globalSolution();
-    const auto& lambda     = state.domain.parameter();
-    int step               = state.loadStep;
-    lambdaAndDisp(0, step) = lambda; // load factor
-    lambdaAndDisp(1, step) = d[2];   // horizontal displacement at center node
-    lambdaAndDisp(2, step) = d[3];   // vertical displacement at center node
+    const auto& d              = state.domain.globalSolution();
+    const auto& lambda         = state.domain.parameter();
+    int step                   = state.loadStep;
+    lambdaAndDisp(0, step + 1) = lambda; // load factor
+    lambdaAndDisp(1, step + 1) = d[2];   // horizontal displacement at center node
+    lambdaAndDisp(2, step + 1) = d[3];   // vertical displacement at center node
   });
 
   /// Execute!
@@ -164,6 +164,10 @@ static auto vonMisesTrussTest() {
   Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
   Eigen::VectorXd uVec      = lambdaAndDisp.row(1);
   Eigen::VectorXd vVec      = -lambdaAndDisp.row(2);
+
+  t.check(Dune::FloatCmp::ne(vVec.tail(1)[0], 0.0, tol))
+      << std::setprecision(16) << "Displacement value should not be zero. Actual:\t" << vVec.tail(1)[0];
+  checkScalars(t, lambdaVec.tail(1)[0], 0.5, " Incorrect last load factor", tol);
 
   // return the load factor as a function of the vertical displacement
   auto analyticalLoadDisplacementCurve = [&](auto& v) {

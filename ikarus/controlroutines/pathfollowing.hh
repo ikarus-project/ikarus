@@ -36,7 +36,7 @@ struct PathFollowingState
   const ControlInformation& information;
   const SubsidiaryArgs& subsidiaryArgs;
 
-  int loadStep{};
+  int loadStep{-1};
   double stepSize{};
 };
 

@@ -35,6 +35,7 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
   state.stepSize = stepSize_;
 
   for (int ls = 0; ls < loadSteps_; ++ls) {
+    state.loadStep = ls;
     this->notify(STEP_STARTED, state);
     loadParameter += stepSize_;
     solverInfo = nonLinearSolver_->solve(x);
@@ -43,7 +44,6 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
     if (not solverInfo.success)
       return info;
 
-    state.loadStep = ls;
     this->notify(SOLUTION_CHANGED, state);
     this->notify(STEP_ENDED, state);
   }

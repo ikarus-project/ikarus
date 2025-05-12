@@ -97,7 +97,8 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Add `AssumedStress` class to extend linear and nonlinear solid elements. The implementation is similar to EAS elements, hence the
   internal variables here and in EAS were renamed to `internalVariable` ([#371](https://github.com/ikarus-project/ikarus/pull/371)).
 - Add push-forward and pull-back operations for stress measures ([#372](https://github.com/ikarus-project/ikarus/pull/372)).
-- Fix and simplify observers, listeners and loggers. Broadcasters can now only emit Messages with a single signature, i.e. `void(MessageType message, const State& state)` [#376](https://github.com/ikarus-project/ikarus/pull/376).
+- Fix and simplify broadcasters and listeners.
+  Broadcasters can now only emit messages with a single signature, i.e. `void(MessageType message, const State& state)` [#376](https://github.com/ikarus-project/ikarus/pull/376).
 
 ## Release v0.4 (Ganymede)
 
