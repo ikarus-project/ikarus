@@ -12,7 +12,9 @@
 
 #include <ikarus/finiteelements/autodifffe.hh>
 #include <ikarus/finiteelements/fefactory.hh>
+#include <ikarus/solver/nonlinearsolver/nonlinearsolverstate.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/utils/broadcaster/broadcaster.hh>
 
 template <typename GridView, typename BasisHandler, typename Skills, typename AffordanceColl, typename VectorType>
 auto checkFESByAutoDiffImpl(const GridView& gridView, const BasisHandler& basis, Skills&& skills,
@@ -83,6 +85,16 @@ auto checkFESByAutoDiffImpl(const GridView& gridView, const BasisHandler& basis,
                    calculateScalar(feAutoDiff, req, affordance.scalarAffordance()),
                    testLocation() + "\nIncorrect Energies." + feClassName, tol);
     }
+
+    using NRStateDummy = Ikarus::NonlinearSolverState<int, int>;
+    struct DummyBroadcaster : public Ikarus::Broadcaster<Ikarus::ControlMessages, NRStateDummy>
+    {
+      using State = NRStateDummy;
+    };
+    auto broadcaster = DummyBroadcaster{};
+
+    fe.template subscribeTo<Ikarus::ControlMessages>(broadcaster);
+    feAutoDiff.template subscribeTo<Ikarus::ControlMessages>(broadcaster);
   }
 
   return t;

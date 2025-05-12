@@ -141,10 +141,10 @@ static auto vonMisesTrussTest() {
   /// Create loadcontrol
   auto lc = ControlRoutineFactory::create(LoadControlConfig{loadSteps, 0.0, 0.5}, nr, denseFlatAssembler);
 
-  auto nonLinearSolverObserver = NonLinearSolverLogger();
-  auto controlLogger           = ControlLogger();
+  auto nonLinearSolverLogger = NonLinearSolverLogger();
+  auto controlLogger         = ControlLogger();
 
-  nonLinearSolverObserver.subscribeTo(lc.nonLinearSolver());
+  nonLinearSolverLogger.subscribeTo(lc.nonLinearSolver());
   controlLogger.subscribeTo(lc);
   vtkWriter.subscribeTo(lc);
 

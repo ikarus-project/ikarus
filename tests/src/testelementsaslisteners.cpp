@@ -65,7 +65,8 @@ protected:
         this->updateState(message, state.domain, state.correction);
       });
     } else if constexpr (std::same_as<MT, UpdateMessages>) {
-      underlying().subscribe(bc, [&](UpdateMessages message, State val) { this->updateState(message, val.domain); });
+      underlying().subscribe(bc,
+                             [&](UpdateMessages message, const State& val) { this->updateState(message, val.domain); });
     } else if constexpr (std::same_as<MT, ControlMessages>) {
       underlying().subscribe(bc, [&](ControlMessages message, const State& state) { this->updateState(message); });
     } else

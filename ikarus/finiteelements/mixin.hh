@@ -307,7 +307,7 @@ public:
    * \tparam MT the message type (for example NonlinerSolverMessages or ControlMessages)
    * \tparam BC the type of the broadcaster
    * \param bc the broadcaster (for example a nonlinearsolver or control routine)
-   * \return auto
+   * \return this-pointer
    */
   template <typename MT, typename BC>
   auto subscribeTo(BC& bc) {

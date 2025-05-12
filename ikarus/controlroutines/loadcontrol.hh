@@ -60,7 +60,7 @@ class LoadControl : public ControlRoutineBase<typename NLS::DifferentiableFuncti
 {
 public:
   /** \brief The name of the LoadControl method. */
-  constexpr auto name() const { return std::string("Load Control Method"); }
+  constexpr std::string name() const { return "Load Control Method"; }
 
   /**
    * \brief Constructor for LoadControl.
