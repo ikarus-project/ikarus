@@ -50,11 +50,11 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   /// Calculate predictor for a particular step
   for (int ls = 1; ls < steps_; ++ls) {
     subsidiaryArgs_.currentStep = ls;
+    state.loadStep = ls;
 
     adaptiveStepSizing_(solverInfo, subsidiaryArgs_, residual);
     pathFollowingType_.intermediatePrediction(req, residual, subsidiaryArgs_);
 
-    state.loadStep = subsidiaryArgs_.currentStep;
     state.stepSize = subsidiaryArgs_.stepSize;
     this->notify(STEP_STARTED, state);
 
