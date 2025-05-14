@@ -69,4 +69,4 @@ jobs:
       - name: Run Tests
         run: |
           cd ../pytests
-          pathon runalltests.py
+          python runalltests.py
