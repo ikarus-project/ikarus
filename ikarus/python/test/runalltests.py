@@ -1,31 +1,26 @@
 # SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
-import dirichletvaluetest
-import linearelastictest
-import nonlinearelastictest
-import kltest
-import testmaterials
-import trusstest
-import vtkwritertest
+import runpy
 
 print("Running dirichletvaluetest")
-dirichletvaluetest.main()
+runpy.run_module("dirichletvaluetest", run_name="__main__")
 
 print("Running linearelastictest")
-linearelastictest.main()
+runpy.run_module("linearelastictest", run_name="__main__")
 
 print("Running nonlinearelastictest")
-nonlinearelastictest.main()
+runpy.run_module("nonlinearelastictest", run_name="__main__")
 
 print("Running testmaterials")
-testmaterials.main()
+runpy.run_module("testmaterials", run_name="__main__")
 
 print("Running trusstest")
-trusstest.main()
+runpy.run_module("trusstest", run_name="__main__")
 
 print("Running vtkwritertest")
-vtkwritertest.main()
+runpy.run_module("vtkwritertest", run_name="__main__")
 
 # Currently disabled because of brakage of dune-iga
-# kltest.main()
+# print("Running kltest")
+# runpy.run_module("kltest", run_name="__main__")
