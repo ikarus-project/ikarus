@@ -148,7 +148,8 @@ static auto vonMisesTrussTest() {
   controlLogger.subscribeTo(lc);
   vtkWriter.subscribeTo(lc);
 
-  auto lvkObserver = GenericListener(lc, ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
+  auto lvkObserver = GenericListener(ControlMessages::SOLUTION_CHANGED);
+  lvkObserver.subscribeTo(lc, [&](const auto& state) {
     const auto& d              = state.domain.globalSolution();
     const auto& lambda         = state.domain.parameter();
     int step                   = state.loadStep;

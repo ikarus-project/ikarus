@@ -21,11 +21,11 @@ namespace Ikarus {
  *
  * \tparam M The type of messages to be listend to.
  */
-template <typename BC>
+template <typename MT>
 class GenericListener : public Listener
 {
-  using Messages = BC::MessageType;
-  using State    = BC::State;
+  using MessageType = MT;
+  // using State    = BC::State;
 
 public:
   /**
@@ -37,24 +37,32 @@ public:
    * \param message The message to be listend to.
    * \param f The function to be executed with the current step.
    */
-  template <typename F>
-  GenericListener(BC& bc, Messages message, F&& f)
-      : message_{message},
-        f_{f} {
-    this->subscribe(bc, [&](Messages message, const BC::State& state) { this->updateImpl(message, state); });
-  }
+  GenericListener(MessageType message)
+      : message_(message) {}
 
-  void updateImpl(Messages message, const State& state) {
-    if (message_ == message)
-      f_(state);
+  /**
+   * \brief Registers a given function to the broadcaster
+   *
+   * \tparam BC the type of the broadcaster
+   * \tparam F the type of the function
+   * \param bc the broadcaster
+   * \param f the function
+   * \return GenericListener&
+   */
+  template <typename BC, typename F>
+  GenericListener& subscribeTo(BC& bc, F&& f) {
+    this->subscribe(bc, [&](BC::MessageType message, const BC::State& state) {
+      if (message_ == message)
+        f(state);
+    });
+    return *this;
   }
 
 private:
-  Messages message_;
-  std::function<void(const State&)> f_;
+  MessageType message_;
 };
 
-template <typename BC, typename MT, typename F>
-GenericListener(BC&, MT, F&&) -> GenericListener<BC>;
+template <typename MT>
+GenericListener(MT) -> GenericListener<MT>;
 
 } // namespace Ikarus
