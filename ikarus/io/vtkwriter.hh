@@ -137,7 +137,7 @@ public:
   template <template <typename, int, int> class RT, typename UserFunction = Ikarus::Impl::DefaultUserFunction>
   requires(Concepts::ResultType<RT>)
   void addResult(DataTag dataTag = DataTag::asPointData, UserFunction&& userFunction = {}) {
-    auto resFunction = makeResultVtkFunction<RT>(assembler_, std::forward<UserFunction>(userFunction));
+    auto resFunction = makeResultFunction<RT>(assembler_, std::forward<UserFunction>(userFunction));
     addResultFunction(std::move(resFunction), dataTag);
   }
 
