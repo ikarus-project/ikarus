@@ -58,7 +58,7 @@ struct DummyProblem
         basis_([&]() {
           using namespace Dune::Functions::BasisFactory;
 
-          return Ikarus::makeBasis(gridView_, power<2>(lagrange<1>()));
+          return Ikarus::makeBasis(gridView_, power<2>(lagrange<1>(), BlockedInterleaved{}));
         }()),
         dirichletValues_([&]() { return Ikarus::DirichletValues(basis_.flat()); }()),
         fes_([&]() {

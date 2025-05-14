@@ -331,7 +331,7 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
   sparseAssembler->bind(Ikarus::DBCOption::Full);
 
   auto vtkResultFunction =
-      Ikarus::makeResultVtkFunction<resType>(sparseAssembler, std::forward<ResultEvaluator>(resultEvaluator));
+      Ikarus::makeResultFunction<resType>(sparseAssembler, std::forward<ResultEvaluator>(resultEvaluator));
 
   auto localResultFunction = localFunction(vtkResultFunction);
   localResultFunction.bind(element);

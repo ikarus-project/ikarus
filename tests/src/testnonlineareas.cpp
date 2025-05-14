@@ -74,14 +74,15 @@ void easAutoDiffTest(TestSuitType& t, const MAT& mat) {
 
     for (const int numberOfInternalVariables : easParameters) {
       auto sk = skills(nonLinearElastic(mat), eas<ES>(numberOfInternalVariables));
-      t.subTest(checkFESByAutoDiff(gridView, power<gridDim>(lagrange<order>()), sk,
+      t.subTest(checkFESByAutoDiff(gridView, power<gridDim>(lagrange<order>(), FlatInterleaved{}), sk,
                                    AffordanceCollections::elastoStatics,
                                    " (numberOfInternalVariables = " + std::to_string(numberOfInternalVariables) +
                                        ") and EnhancedStrainTag = " + ES::name()));
       if (numberOfInternalVariables != 0) {
         t.template checkThrow<Dune::NotImplemented>(
             [&]() {
-              checkFESByAutoDiff(gridView, power<gridDim>(lagrange<3>()), sk, AffordanceCollections::elastoStatics,
+              checkFESByAutoDiff(gridView, power<gridDim>(lagrange<3>(), FlatInterleaved{}), sk,
+                                 AffordanceCollections::elastoStatics,
                                  " (numberOfInternalVariables = " + std::to_string(numberOfInternalVariables) +
                                      ") and EnhancedStrainTag = " + ES::name());
             },
@@ -101,7 +102,7 @@ auto checkOrthogonalityCondition(const MAT& mat) {
     const auto easParameters  = easParametersFunc<order, gridDim, ES>();
     auto grid                 = createUGGridFromCorners<gridDim>(CornerDistortionFlag::randomlyDistorted);
     auto gridView             = grid->leafGridView();
-    auto basis                = Ikarus::makeBasis(gridView, power<gridDim>(lagrange<order>()));
+    auto basis                = Ikarus::makeBasis(gridView, power<gridDim>(lagrange<order>(), FlatInterleaved{}));
     constexpr auto affordance = AffordanceCollections::elastoStatics;
 
     const auto orthogonalityFunc = [&]<typename FE>(const FE& fe) {
@@ -149,7 +150,7 @@ auto recoverNonlinearElastic(const MAT& mat) {
   using namespace Dune::Functions::BasisFactory;
   auto grid                 = createUGGridFromCorners<gridDim>(CornerDistortionFlag::randomlyDistorted);
   auto gridView             = grid->leafGridView();
-  auto basis                = Ikarus::makeBasis(gridView, power<gridDim>(lagrange<order>()));
+  auto basis                = Ikarus::makeBasis(gridView, power<gridDim>(lagrange<order>(), FlatInterleaved{}));
   constexpr auto affordance = AffordanceCollections::elastoStatics;
   auto element              = gridView.template begin<0>();
   auto nDOF                 = basis.flat().size();

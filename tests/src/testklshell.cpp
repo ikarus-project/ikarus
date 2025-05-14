@@ -200,7 +200,7 @@ auto singleElementTest() {
     auto klShell = Ikarus::kirchhoffLoveShell({.youngs_modulus = 1000, .nu = 0.0, .thickness = 0.1});
 
     t.subTest(checkFESByAutoDiff(
-        gridView, power<3>(nurbs()),
+        gridView, power<3>(nurbs(), FlatInterleaved{}),
         Ikarus::skills(klShell, Ikarus::volumeLoad<3>(vL), Ikarus::neumannBoundaryLoad(&neumannBoundary, nBL)),
         Ikarus::AffordanceCollections::elastoStatics));
   }

@@ -55,7 +55,7 @@ static auto vonMisesTrussTest() {
 
   /// Construct basis
   using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
+  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved{}));
 
   /// Create finite elements
   constexpr double E   = 30000;
@@ -194,7 +194,7 @@ static auto truss3dTest() {
 
   /// Construct basis
   using namespace Dune::Functions::BasisFactory;
-  auto basis      = Ikarus::makeBasis(gridView, power<3>(lagrange<1>()));
+  auto basis      = Ikarus::makeBasis(gridView, power<3>(lagrange<1>(), FlatInterleaved{}));
   using LocalView = std::remove_cvref_t<decltype(basis.flat().localView())>;
 
   /// Create finite elements
@@ -280,8 +280,8 @@ auto trussAutoDiffTest() {
   {
     auto grid     = createGrid<GridType>();
     auto gridView = grid->leafGridView();
-    t.subTest(checkFESByAutoDiff(gridView, power<worldDim>(lagrange<1>()), skills(truss(1000.0, 0.0956)),
-                                 AffordanceCollections::elastoStatics));
+    t.subTest(checkFESByAutoDiff(gridView, power<worldDim>(lagrange<1>(), FlatInterleaved{}),
+                                 skills(truss(1000.0, 0.0956)), AffordanceCollections::elastoStatics));
   }
   return t;
 }

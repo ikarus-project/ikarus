@@ -97,8 +97,8 @@ auto FEBaseTest() {
   const auto firstOrderLagrangePreBasis  = lagrange<1>();
   const auto secondOrderLagrangePreBasis = lagrange<2>();
 
-  const auto firstOrderLagrangePowerPreBasis  = power<2>(firstOrderLagrangePreBasis);
-  const auto secondOrderLagrangePowerPreBasis = power<5>(secondOrderLagrangePreBasis);
+  const auto firstOrderLagrangePowerPreBasis  = power<2>(firstOrderLagrangePreBasis, FlatInterleaved{});
+  const auto secondOrderLagrangePowerPreBasis = power<5>(secondOrderLagrangePreBasis, FlatInterleaved{});
 
   const auto scalarScalarCompositePreBasis = composite(firstOrderLagrangePreBasis, secondOrderLagrangePreBasis);
   const auto scalarPowerCompositePreBasis  = composite(firstOrderLagrangePreBasis, secondOrderLagrangePowerPreBasis);
@@ -113,9 +113,10 @@ auto FEBaseTest() {
       composite(composite(scalarCompositePreBasis, powerPowerCompositePreBasis, firstOrderLagrangePreBasis),
                 secondOrderLagrangePowerPreBasis);
 
-  const auto compositePowerCombinedBasis = composite(power<10>(combinedPreBasis), secondOrderLagrangePreBasis);
+  const auto compositePowerCombinedBasis =
+      composite(power<10>(combinedPreBasis, FlatInterleaved{}), secondOrderLagrangePreBasis);
 
-  const auto lagrangeDGPowerPreBasis     = power<6>(lagrangeDG<3>());
+  const auto lagrangeDGPowerPreBasis     = power<6>(lagrangeDG<3>(), FlatInterleaved{});
   const auto nedelecScalarPreBasis       = nedelec<1, 1>();
   const auto raviartThomasScalarPreBasis = raviartThomas<2>();
   const auto specialCompositePreBasis =
