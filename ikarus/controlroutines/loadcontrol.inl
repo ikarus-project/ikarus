@@ -9,13 +9,15 @@
 
 #pragma once
 
+#include <ikarus/controlroutines/loadcontrol.hh>
+
 namespace Ikarus {
 template <typename NLS>
 ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
   using enum ControlMessages;
   decltype(auto) nonOp = nonLinearSolver_->residual();
 
-  ControlInformation info{};
+  ControlInformation info{.name = this->name()};
   auto state = typename LoadControl::State{.domain = x, .information = info};
   this->notify(CONTROL_STARTED, state);
 

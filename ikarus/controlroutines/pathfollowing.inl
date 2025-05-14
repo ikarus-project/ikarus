@@ -13,7 +13,7 @@
 
 #include <ikarus/controlroutines/adaptivestepsizing.hh>
 #include <ikarus/controlroutines/controlinfos.hh>
-#include <ikarus/controlroutines/pathfollowingfunctions.hh>
+#include <ikarus/controlroutines/pathfollowing.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/utils/broadcaster/broadcastermessages.hh>
 #include <ikarus/utils/differentiablefunction.hh>
@@ -26,7 +26,7 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   using enum ControlMessages;
   auto& residual = nonLinearSolver_->residual();
 
-  ControlInformation info{};
+  ControlInformation info{.name = this->name()};
   auto state = typename PathFollowing::State{.domain = req, .information = info, .subsidiaryArgs = subsidiaryArgs_};
   this->notify(CONTROL_STARTED, state);
 

@@ -40,13 +40,13 @@ public:
         stepEnded();
         break;
       case ControlMessages::CONTROL_STARTED:
-        controlStarted();
+        controlStarted(state.information.name);
         break;
       case ControlMessages::STEP_STARTED:
         stepStarted(state.loadStep, state.stepSize);
         break;
       case ControlMessages::CONTROL_ENDED:
-        controlEnded(state.information.totalIterations);
+        controlEnded(state.information.totalIterations, state.information.name);
         break;
       default:
         break; // default: do nothing when notified
@@ -60,8 +60,8 @@ private:
   std::chrono::milliseconds duration_{};
 
   void stepEnded();
-  void controlStarted();
-  void controlEnded(int totalIterations);
+  void controlStarted(const std::string& name);
+  void controlEnded(int totalIterations, const std::string& name);
   void stepStarted(int stepNumber, double stepSize);
 };
 } // namespace Ikarus

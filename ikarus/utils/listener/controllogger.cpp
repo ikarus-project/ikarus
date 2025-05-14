@@ -11,10 +11,10 @@ void ControlLogger::stepEnded() {
   spdlog::info("===============================================================================");
 }
 
-void ControlLogger::controlStarted() {
+void ControlLogger::controlStarted(const std::string& name) {
   start_ = std::chrono::high_resolution_clock::now();
   spdlog::info("===============================================================================");
-  spdlog::info("Started path following");
+  spdlog::info("Started " + name);
   spdlog::info("===============================================================================");
 }
 
@@ -23,10 +23,10 @@ void ControlLogger::stepStarted(int stepNumber, double stepSize) {
   spdlog::info("-------------------------------------------------------------------------------");
 }
 
-void ControlLogger::controlEnded(int totalIterations) {
+void ControlLogger::controlEnded(int totalIterations, const std::string& name) {
   stop_     = std::chrono::high_resolution_clock::now();
   duration_ = duration_cast<std::chrono::milliseconds>(stop_ - start_);
-  spdlog::info("End of path following with control");
+  spdlog::info("End of " + name);
   spdlog::info("Total number of iterations: {:3d}", totalIterations);
   spdlog::info("Elapsed time: {} ms", duration_.count());
 }
