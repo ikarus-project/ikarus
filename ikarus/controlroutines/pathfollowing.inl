@@ -32,6 +32,12 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   auto state = typename PathFollowing::State{.domain = req, .information = info, .subsidiaryArgs = subsidiaryArgs_};
 
   this->notify(CONTROL_STARTED, state);
+
+  // For Clang, loadStep value gets corrupted only after CONTROL_STARTED and hence it is re-written here
+#if defined(__clang__)
+  state.loadStep = 0;
+#endif
+
   subsidiaryArgs_.stepSize = stepSize_;
 
   /// Initializing solver
