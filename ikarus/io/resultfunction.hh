@@ -193,4 +193,23 @@ auto makeResultFunction(std::shared_ptr<AS> assembler, UserFunction&& userFuncti
   return makeResultFunction<RT>(assembler, Dune::VTK::Precision::float64, std::forward<UserFunction>(userFunction));
 }
 
+/**
+ * \brief Function to create a ResultFunction as a gridfunction that can be used with dune-vtk
+ * \details
+ * Constructs a ResultFunction object with given finite elements, ferequirements as a VTK::VTKFunctionWrapper to be used
+ * with dune-vtk It is possible to construct a localFunction from this as follows. \code auto localResultFunction =
+ * localFunction(vtkResultFunction); localResultFunction.bind(element); \endcode \tparam AS  type of the assembler
+ * \tparam RT requested result type
+ * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
+ * DefaultUserFunction)
+ * \param userFunction (optional) the user function (default is DefaultUserFunction)
+ * \param assembler shared pointer to the underlying assembler (provides the finite elements and the requested results)
+ */
+template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction,
+          Concepts::FlatAssembler AS>
+auto makeResultVtkFunction(std::shared_ptr<AS> assembler, UserFunction&& userFunction = {}) {
+  return Dune::Vtk::VTKFunctionWrapper<typename AS::GridView>(std::make_shared<ResultFunction<AS, RT, UserFunction>>(
+      assembler, Dune::VTK::Precision::float64, std::forward<UserFunction>(userFunction)));
+}
+
 } // namespace Ikarus

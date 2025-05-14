@@ -331,15 +331,19 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
   sparseAssembler->bind(Ikarus::DBCOption::Full);
 
   auto vtkResultFunction =
+      Ikarus::makeResultVtkFunction<resType>(sparseAssembler, std::forward<ResultEvaluator>(resultEvaluator));
+
+  auto resultFunction =
       Ikarus::makeResultFunction<resType>(sparseAssembler, std::forward<ResultEvaluator>(resultEvaluator));
 
   auto localResultFunction = localFunction(vtkResultFunction);
   localResultFunction.bind(element);
 
   for (int i = 0; const auto& pos : evaluationPositions) {
-    auto result = localResultFunction(pos);
-    for (auto j : std::views::iota(0ul, result.size()))
-      computedResults(i, j) = result[j];
+    for (auto j : std::views::iota(0ul, 3ul)) {
+      auto result           = localResultFunction.evaluate(j, pos);
+      computedResults(i, j) = result;
+    }
     ++i;
   }
 
@@ -354,19 +358,16 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
 
   Dune::Vtk::VtkWriter vtkWriter(gridView);
 
-  vtkWriter.addPointData(vtkResultFunction);
-  vtkWriter.write("Vtk_VtkWriter_resultfunction_" + vtkResultFunction.name() + "_" +
+  vtkWriter.addPointData(resultFunction);
+  vtkWriter.write("Vtk_VtkWriter_resultfunction_" + resultFunction->name() + "_" +
                   std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
   auto vtkWriter2 = Ikarus::Vtk::Writer(sparseAssembler);
-  vtkWriter2.addResultFunction(vtkResultFunction, Ikarus::Vtk::DataTag::asCellData);
-  vtkWriter2.write("ikarus_vtkwriter_resultfunction_" + vtkResultFunction.name() + "_" +
+  vtkWriter2.addResultFunction(resultFunction, Ikarus::Vtk::DataTag::asCellData);
+  vtkWriter2.write("ikarus_vtkwriter_resultfunction_" + resultFunction->name() + "_" +
                    std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
   Dune::VTKWriter<decltype(gridView)> vtkWriter3(gridView);
-  auto resultFunction =
-      Ikarus::makeResultFunction<resType>(sparseAssembler, std::forward<ResultEvaluator>(resultEvaluator));
-
   vtkWriter3.addVertexData(resultFunction);
   vtkWriter3.write("native_vtkwriter_resultfunction_" + resultFunction->name() + "_" +
                    std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
