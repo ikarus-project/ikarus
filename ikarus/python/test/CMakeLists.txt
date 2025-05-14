@@ -67,5 +67,15 @@ dune_python_add_test(
   python
 )
 
-# Currently disabled because of brakage of dune-iga if(HAVE_DUNE_IGA) dune_python_add_test( NAME
-# pykltest SCRIPT kltest.py WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} LABELS python ) endif()
+if(HAVE_DUNE_IGA)
+  dune_python_add_test(
+    NAME
+    pykltest
+    SCRIPT
+    kltest.py
+    WORKING_DIRECTORY
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    LABELS
+    python
+  )
+endif()
