@@ -166,16 +166,17 @@ public:
    \param dataTag The data tag.
    */
   template <typename Basis, typename R>
-  void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DataTag dataTag = DataTag::asPointData) {
-    using Container = Impl::ResultContainer_t<Basis>;
+  void addInterpolation(R&& vals, Basis&& basis, const std::string& name, DataTag dataTag = DataTag::asPointData) {
+    using Container = Impl::ResultContainer_t<std::remove_cvref_t<Basis>>;
 
-    auto gridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Container>(basis, std::forward<R>(vals));
-    auto fieldInfo    = Dune::Vtk::FieldInfo(name, Impl::sizeOfContainer<Container>);
+    auto gridFunction =
+        Dune::Functions::makeDiscreteGlobalBasisFunction<Container>(std::forward<Basis>(basis), std::forward<R>(vals));
+    auto fieldInfo = Dune::Vtk::FieldInfo(name, Impl::sizeOfContainer<Container>);
 
     if (dataTag == DataTag::asCellData or dataTag == DataTag::asCellAndPointData)
-      Base::addCellData(std::move(gridFunction), fieldInfo);
+      Base::addCellData(gridFunction, fieldInfo);
     if (dataTag == DataTag::asPointData or dataTag == DataTag::asCellAndPointData)
-      Base::addPointData(std::move(gridFunction), fieldInfo);
+      Base::addPointData(gridFunction, fieldInfo);
   }
 
 private:
