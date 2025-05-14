@@ -48,11 +48,11 @@ static auto simple2DOperatorArcLengthTest(DifferentiableFunction& f, typename Di
   auto linSolver  = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
   auto pft        = Ikarus::ArcLength{}; // Type of path following technique
 
-  auto nrSettings              = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig({}, linSolver);
-  auto nr                      = Ikarus::createNonlinearSolver(nrSettings, f);
-  auto alc                     = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
-  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
-  auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(alc);
+  auto nrSettings            = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig({}, linSolver);
+  auto nr                    = Ikarus::createNonlinearSolver(nrSettings, f);
+  auto alc                   = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
+  auto nonLinearSolverLogger = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
+  auto pathFollowingLogger   = Ikarus::ControlLogger().subscribeTo(alc);
 
   const auto controlInfo              = alc.run(req);
   std::vector<int> expectedIterations = {1, 3, 3, 3, 3};
@@ -79,8 +79,8 @@ static auto simple2DOperatorArcLengthTestAsDefault(DifferentiableFunction& f,
   auto nrSettings = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.linearSolver = linSolver};
   auto nr         = Ikarus::createNonlinearSolver(nrSettings, f);
   auto alc        = Ikarus::PathFollowing(nr, loadSteps, stepSize);
-  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
-  auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(alc);
+  auto nonLinearSolverLogger = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
+  auto pathFollowingLogger   = Ikarus::ControlLogger().subscribeTo(alc);
 
   const auto controlInfo              = alc.run(req);
   std::vector<int> expectedIterations = {1, 3, 3, 3, 3};
@@ -105,11 +105,11 @@ static auto simple2DOperatorLoadControlTestPF(DifferentiableFunction& f, typenam
   auto linSolver  = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
   auto pft        = Ikarus::LoadControlSubsidiaryFunction{}; // Type of path following technique
 
-  auto nrSettings              = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig({}, linSolver);
-  auto nr                      = Ikarus::createNonlinearSolver(nrSettings, f);
-  auto lc                      = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
-  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
-  auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(lc);
+  auto nrSettings            = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig({}, linSolver);
+  auto nr                    = Ikarus::createNonlinearSolver(nrSettings, f);
+  auto lc                    = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
+  auto nonLinearSolverLogger = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
+  auto pathFollowingLogger   = Ikarus::ControlLogger().subscribeTo(lc);
 
   const auto controlInfo              = lc.run(req);
   std::vector<int> expectedIterations = {2, 3, 3, 3, 3};
@@ -140,11 +140,11 @@ static auto simple2DOperatorLoadControlTestLC(DifferentiableFunction& f, typenam
       0.3581294588381901;
   double expectedLambda = 0.5;
 
-  auto linSolver               = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
-  auto nrSettings              = Ikarus::NewtonRaphsonConfig({}, linSolver);
-  auto nr                      = Ikarus::createNonlinearSolver(nrSettings, f);
-  auto lc                      = Ikarus::LoadControl(nr, loadSteps, {0.0, 0.5});
-  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
+  auto linSolver             = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
+  auto nrSettings            = Ikarus::NewtonRaphsonConfig({}, linSolver);
+  auto nr                    = Ikarus::createNonlinearSolver(nrSettings, f);
+  auto lc                    = Ikarus::LoadControl(nr, loadSteps, {0.0, 0.5});
+  auto nonLinearSolverLogger = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
 
   auto controlLogger = Ikarus::ControlLogger().subscribeTo(lc);
 
@@ -171,6 +171,51 @@ static auto simple2DOperatorLoadControlTestLC(DifferentiableFunction& f, typenam
 }
 
 template <typename DifferentiableFunction>
+static auto simple2DOperatorLoadControlTestLCWithDifferentListenerOrder(DifferentiableFunction& f,
+                                                                        typename DifferentiableFunction::Domain& req,
+                                                                        double stepSize, int loadSteps) {
+  req.globalSolution().setZero();
+  req.parameter() = 0.0;
+  TestSuite t("Load Control Method");
+  std::vector<int> expectedIterations = {0, 2, 3, 3, 3, 3};
+  Eigen::Matrix2Xd expectedDisplacement;
+  expectedDisplacement.setZero(Eigen::NoChange, loadSteps + 1);
+  expectedDisplacement << 0.0, 0.01715872957844366, 0.0345464428730192, 0.0524126112865617, 0.0710534689402604,
+      0.0908533884835060, 0.0, 0.0691806374841585, 0.1389097864303651, 0.2097895325120464, 0.2825443193976919,
+      0.3581294588381901;
+  double expectedLambda = 0.5;
+
+  auto linSolver  = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
+  auto nrSettings = Ikarus::NewtonRaphsonConfig({}, linSolver);
+  auto nr         = Ikarus::createNonlinearSolver(nrSettings, f);
+  auto lc         = Ikarus::LoadControl(nr, loadSteps, {0.0, 0.5});
+
+  /// Create GenericListener which executes when control routines messages to check displacements at every step
+  Eigen::Matrix2Xd dispMat;
+  dispMat.setZero(Eigen::NoChange, loadSteps + 1);
+
+  auto dispObserver = Ikarus::GenericListener(lc, Ikarus::ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
+    const auto& d        = state.domain.globalSolution();
+    int step             = state.loadStep;
+    dispMat(0, step + 1) = d[0];
+    dispMat(1, step + 1) = d[1];
+  });
+
+  auto controlLogger         = Ikarus::ControlLogger().subscribeTo(lc);
+  auto nonLinearSolverLogger = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
+
+  const auto controlInfo = lc.run(req);
+
+  t.check(controlInfo.success, "No convergence");
+  for (auto i = 0; i < 2; ++i)
+    for (auto j = 0; j < loadSteps; ++j)
+      checkScalars(t, dispMat(i, j), expectedDisplacement(i, j), " --> " + lc.name());
+  checkScalars(t, req.parameter(), expectedLambda, " --> " + lc.name());
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+  return t;
+}
+
+template <typename DifferentiableFunction>
 static auto simple2DOperatorDisplacementControlTest(DifferentiableFunction& f,
                                                     typename DifferentiableFunction::Domain& req, double stepSize,
                                                     int loadSteps) {
@@ -181,11 +226,11 @@ static auto simple2DOperatorDisplacementControlTest(DifferentiableFunction& f,
 
   auto pft = Ikarus::DisplacementControl{controlledIndices}; // Type of path following technique
 
-  auto nrSettings              = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig({}, linSolver);
-  auto nr                      = Ikarus::createNonlinearSolver(nrSettings, f);
-  auto dc                      = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
-  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
-  auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(dc);
+  auto nrSettings            = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig({}, linSolver);
+  auto nr                    = Ikarus::createNonlinearSolver(nrSettings, f);
+  auto dc                    = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
+  auto nonLinearSolverLogger = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
+  auto pathFollowingLogger   = Ikarus::ControlLogger().subscribeTo(dc);
 
   const auto controlInfo              = dc.run(req);
   std::vector<int> expectedIterations = {3, 3, 3, 3, 3};
@@ -225,6 +270,7 @@ int main(int argc, char** argv) {
   t.subTest(simple2DOperatorArcLengthTestAsDefault(f, req, stepSize, loadSteps));
   t.subTest(simple2DOperatorLoadControlTestPF(f, req, stepSize, loadSteps));
   t.subTest(simple2DOperatorLoadControlTestLC(f, req, stepSize, loadSteps));
+  t.subTest(simple2DOperatorLoadControlTestLCWithDifferentListenerOrder(f, req, stepSize, loadSteps));
   t.subTest(simple2DOperatorDisplacementControlTest(f, req, stepSize, loadSteps));
 
   return t.exit();

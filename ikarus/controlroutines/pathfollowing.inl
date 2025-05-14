@@ -27,11 +27,11 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   auto& residual = nonLinearSolver_->residual();
 
   ControlInformation info{.name = this->name()};
-  auto state = typename PathFollowing::State{.domain = req, .information = info, .subsidiaryArgs = subsidiaryArgs_};
-  this->notify(CONTROL_STARTED, state);
-
   info.totalIterations = 0;
   subsidiaryArgs_.setZero(req.globalSolution());
+  auto state = typename PathFollowing::State{.domain = req, .information = info, .subsidiaryArgs = subsidiaryArgs_};
+
+  this->notify(CONTROL_STARTED, state);
   subsidiaryArgs_.stepSize = stepSize_;
 
   /// Initializing solver

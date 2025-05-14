@@ -145,12 +145,12 @@ auto cantileverBeamTest(const MAT& material, Skills&& additionalSkills, std::pai
   // automatically.
   auto lc = ControlRoutineFactory::create(LoadControlConfig{20, 0.0, 1.0}, nr, sparseFlatAssembler);
 
-  auto nonLinearSolverObserver = NonLinearSolverLogger();
-  auto controlLogger           = ControlLogger();
-  auto vtkWriter               = ControlSubsamplingVertexVTKWriter(basis.flat());
+  auto nonLinearSolverLogger = NonLinearSolverLogger();
+  auto controlLogger         = ControlLogger();
+  auto vtkWriter             = ControlSubsamplingVertexVTKWriter(basis.flat());
 
   if (logToConsole) {
-    nonLinearSolverObserver.subscribeTo(lc.nonLinearSolver());
+    nonLinearSolverLogger.subscribeTo(lc.nonLinearSolver());
     controlLogger.subscribeTo(lc);
   }
   if (writeVTK) {
