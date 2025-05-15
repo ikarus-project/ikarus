@@ -25,7 +25,7 @@ struct DummyProblem
   using Grid     = G;
   using GridView = typename Grid::LeafGridView;
 
-  using PreBasis = Dune::Functions::PowerPreBasis<Dune::Functions::BasisFactory::BlockedInterleaved,
+  using PreBasis = Dune::Functions::PowerPreBasis<Dune::Functions::BasisFactory::FlatInterleaved,
                                                   Dune::Functions::LagrangePreBasis<GridView, 1>, 2ul>;
   using Basis    = Ikarus::BasisHandler<PreBasis>;
 
@@ -58,7 +58,7 @@ struct DummyProblem
         basis_([&]() {
           using namespace Dune::Functions::BasisFactory;
 
-          return Ikarus::makeBasis(gridView_, power<2>(lagrange<1>(), BlockedInterleaved{}));
+          return Ikarus::makeBasis(gridView_, power<2>(lagrange<1>(), FlatInterleaved{}));
         }()),
         dirichletValues_([&]() { return Ikarus::DirichletValues(basis_.flat()); }()),
         fes_([&]() {

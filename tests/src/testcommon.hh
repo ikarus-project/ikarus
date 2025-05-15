@@ -340,10 +340,8 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
   localResultFunction.bind(element);
 
   for (int i = 0; const auto& pos : evaluationPositions) {
-    for (auto j : std::views::iota(Eigen::Index{0}, expectedResult.cols())) {
-      auto result           = localResultFunction.evaluate(j, pos);
-      computedResults(i, j) = result;
-    }
+    for (auto j : std::views::iota(Eigen::Index{0}, expectedResult.cols()))
+      computedResults(i, j) = localResultFunction.evaluate(j, pos);
     ++i;
   }
 

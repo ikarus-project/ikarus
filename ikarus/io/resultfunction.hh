@@ -38,7 +38,7 @@ namespace Impl {
 } // namespace Impl
 
 /**
- * \brief Wrapper to evaluate results for a vtkwriter.
+ * \brief Wrapper to evaluate results for a vtkwriter. Works both out-of-the-box with `Dune::VTK` and `Dune::Vtk`.
  * \details
  * Usage:
  * \code
@@ -196,9 +196,13 @@ auto makeResultFunction(std::shared_ptr<AS> assembler, UserFunction&& userFuncti
 /**
  * \brief Function to create a ResultFunction as a gridfunction that can be used with dune-vtk
  * \details
- * Constructs a ResultFunction object with given finite elements, ferequirements as a VTK::VTKFunctionWrapper to be used
- * with dune-vtk It is possible to construct a localFunction from this as follows. \code auto localResultFunction =
- * localFunction(vtkResultFunction); localResultFunction.bind(element); \endcode \tparam AS  type of the assembler
+ * Constructs a ResultFunction object with given finite elements, ferequirements as a VTK::Function to be used with
+ * dune-vtk It is possible to construct a localFunction from this as follows
+ * \code
+ * auto localResultFunction = localFunction(vtkResultFunction);
+ * localResultFunction.bind(element);
+ * \endcode
+ * \tparam AS type of the assembler
  * \tparam RT requested result type
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
  * DefaultUserFunction)
