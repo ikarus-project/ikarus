@@ -39,7 +39,7 @@ static auto dirichletBCTest() {
   auto gridView = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
+  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved{}));
 
   auto flatBasis = basis.flat();
 

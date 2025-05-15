@@ -176,7 +176,7 @@ int main(int argc, char** argv) {
 
   /// Construct basis
   using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
+  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved{}));
 
   auto sk      = skills(dummySkill());
   using FEType = decltype(makeFE(basis, sk));

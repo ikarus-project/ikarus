@@ -55,7 +55,7 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   using Assembler     = typename Writer::Assembler;
   using FE            = typename Writer::FEType;
   using GridView      = typename Writer::GridView;
-  using VirtualizedGF = Dune::Vtk::Function<GridView>;
+  using VirtualizedGF = Dune::Vtk::GridFunction<GridView>;
 
   cls.def(pybind11::init(
               [](std::shared_ptr<Assembler> assembler, Dune::Vtk::FormatTypes format, Dune::Vtk::DataTypes datatype,

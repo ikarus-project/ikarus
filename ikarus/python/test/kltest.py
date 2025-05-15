@@ -53,7 +53,7 @@ if __name__ == "__main__":
     gridView = IGAGrid(nurbsPatchDataFinal)
 
     gridView.hierarchicalGrid.globalRefine(2)
-    basis = globalBasis(gridView, Power(Nurbs(), 3))
+    basis = globalBasis(gridView, Power(Nurbs(), 3, layout="lexicographic"))
 
     flatBasis = basis.flat()
     print("Number of dofs: ", len(flatBasis))

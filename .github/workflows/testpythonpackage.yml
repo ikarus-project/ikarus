@@ -69,7 +69,4 @@ jobs:
       - name: Run Tests
         run: |
           cd ../pytests
-          for file in *.py; do
-            echo Testing $file
-            python "$file"
-          done
+          python runalltests.py

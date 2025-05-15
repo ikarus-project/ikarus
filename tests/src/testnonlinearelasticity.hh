@@ -155,7 +155,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
       << "Test resultName: " << resultFunction->name() << "should be PK2Stress";
   t.check(resultFunction->ncomps() == 3) << "Test result comps: " << resultFunction->ncomps() << "should be 3";
 
-  vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction));
+  vtkWriter2.addPointData(resultFunction);
 
   auto resultFunction2 =
       makeResultFunction<ResultTypes::PK2Stress>(sparseAssembler, ResultEvaluators::PrincipalStress<2>{});
@@ -163,15 +163,15 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
       << "Test resultName: " << resultFunction2->name() << "should be PrincipalStress";
 
   t.check(resultFunction2->ncomps() == 2) << "Test result comps: " << resultFunction2->ncomps() << "should be 2";
-  vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction2));
+  vtkWriter2.addPointData(resultFunction2);
 
   auto resultFunction3 = makeResultFunction<ResultTypes::PK2Stress>(sparseAssembler, ResultEvaluators::VonMises{});
   t.check(resultFunction3->name() == "VonMises")
       << "Test resultName: " << resultFunction3->name() << "should be VonMises";
   t.check(resultFunction3->ncomps() == 1) << "Test result comps: " << resultFunction3->ncomps() << "should be 1";
-  vtkWriter2.addPointData(Dune::Vtk::Function<GridView>(resultFunction3));
+  vtkWriter2.addPointData(resultFunction3);
 
-  auto resultFunction4 = makeResultVtkFunction<ResultTypes::PK2Stress>(sparseAssembler, OwnResultFunction{});
+  auto resultFunction4 = makeResultFunction<ResultTypes::PK2Stress>(sparseAssembler, OwnResultFunction{});
   vtkWriter2.addPointData(resultFunction4);
   vtkWriter2.write("EndResult" + Dune::className<Grid>());
 
@@ -200,7 +200,7 @@ auto GreenLagrangeStrainTest(const Material& mat) {
   auto gridView    = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis   = Ikarus::makeBasis(gridView, power<gridDim>(lagrange<1>()));
+  auto basis   = Ikarus::makeBasis(gridView, power<gridDim>(lagrange<1>(), FlatInterleaved{}));
   auto element = gridView.template begin<0>();
   auto nDOF    = basis.flat().size();
 
@@ -256,7 +256,7 @@ auto SingleElementTest(const Material& mat) {
   using namespace Ikarus;
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis       = Ikarus::makeBasis(gridView, power<gridDim>(lagrange<1>()));
+  auto basis       = Ikarus::makeBasis(gridView, power<gridDim>(lagrange<1>(), FlatInterleaved{}));
   auto element     = gridView.template begin<0>();
   auto nDOF        = basis.flat().size();
   const double tol = 1e-10;
@@ -320,7 +320,7 @@ void autoDiffTest(TestSuiteType& t, const MAT& mat, const std::string& testName 
   BoundaryPatch neumannBoundary(gridView, neumannVertices);
 
   t.subTest(checkFESByAutoDiff(
-      gridView, power<gridDim>(lagrange<1>()),
+      gridView, power<gridDim>(lagrange<1>(), FlatInterleaved{}),
       skills(Ikarus::nonLinearElastic(mat), volumeLoad<gridDim>(vL), neumannBoundaryLoad(&neumannBoundary, nBL)),
       Ikarus::AffordanceCollections::elastoStatics, testName, tol));
 }
