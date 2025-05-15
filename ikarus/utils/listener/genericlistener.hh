@@ -25,7 +25,6 @@ template <typename MT>
 class GenericListener : public Listener
 {
   using MessageType = MT;
-  // using State    = BC::State;
 
 public:
   /**
@@ -33,9 +32,7 @@ public:
    *
    * Initializes the listener with a specific message and a function to be executed upon listening.
    *
-   * \tparam F Type of the function to be executed.
    * \param message The message to be listend to.
-   * \param f The function to be executed with the current step.
    */
   GenericListener(MessageType message)
       : message_(message) {}
@@ -62,7 +59,9 @@ private:
   MessageType message_;
 };
 
+#ifndef DOXYGEN
 template <typename MT>
 GenericListener(MT) -> GenericListener<MT>;
+#endif
 
 } // namespace Ikarus

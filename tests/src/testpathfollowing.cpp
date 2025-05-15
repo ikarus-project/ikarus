@@ -195,7 +195,8 @@ static auto simple2DOperatorLoadControlTestLCWithDifferentListenerOrder(Differen
   Eigen::Matrix2Xd dispMat;
   dispMat.setZero(Eigen::NoChange, loadSteps + 1);
 
-  auto dispObserver = Ikarus::GenericListener(lc, Ikarus::ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
+  auto dispObserver = Ikarus::GenericListener(Ikarus::ControlMessages::SOLUTION_CHANGED);
+  dispObserver.subscribeTo(lc, [&](const auto& state) {
     const auto& d        = state.domain.globalSolution();
     int step             = state.loadStep;
     dispMat(0, step + 1) = d[0];

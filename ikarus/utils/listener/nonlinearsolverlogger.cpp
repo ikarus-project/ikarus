@@ -17,7 +17,10 @@ void NonLinearSolverLogger::init() {
 }
 
 void NonLinearSolverLogger::iterationEnded() {
-  spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e} {:<20.2e}", "", iters_, rNorm_, dNorm_, lambda_);
+  if (lambda_.has_value())
+    spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e} {:<20.2e}", "", iters_, rNorm_, dNorm_, lambda_.value());
+  else
+    spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e} {:^20}", "", iters_, rNorm_, dNorm_, " - ");
   ++iters_;
 }
 

@@ -44,7 +44,8 @@ public:
         rNorm_ = state.information.residualNorm;
         break;
       case NonLinearSolverMessages::SOLUTION_CHANGED:
-        lambda_ = state.domain.parameter();
+        if constexpr (requires { state.domain.parameter(); })
+          lambda_ = state.domain.parameter();
         break;
       case NonLinearSolverMessages::CORRECTIONNORM_UPDATED:
         dNorm_ = state.information.correctionNorm;
@@ -61,7 +62,7 @@ private:
   int iters_{0};
   double dNorm_{0};
   double rNorm_{0};
-  double lambda_{0};
+  std::optional<double> lambda_{};
 
   void init();
   void iterationEnded();

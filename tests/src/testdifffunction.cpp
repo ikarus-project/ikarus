@@ -246,6 +246,7 @@ static auto secondOrderVectorValuedOperatorNonlinearAutodiff() {
   const double eps  = 1e-14;
   const int maxIter = 20;
   Ikarus::NewtonRaphson nr(subOperator, [&](auto& r, auto& A_) { return A_.inverse() * r; });
+  auto nonLinearSolverObserver = NonLinearSolverLogger().subscribeTo(nr);
 
   const Eigen::Vector3d xSol(-4.9131804394348836888, 2.0287578381104342236, 2.0287578381104342236);
 
