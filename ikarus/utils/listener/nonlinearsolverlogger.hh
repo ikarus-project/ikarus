@@ -8,6 +8,8 @@
  */
 
 #pragma once
+#include <spdlog/spdlog.h>
+
 #include <ikarus/utils/broadcaster/broadcastermessages.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/listener/listener.hh>
@@ -33,18 +35,19 @@ public:
    * \param state The received nonlinear solver state.
    */
   void update(NonLinearSolverMessages message, const Concepts::NonLinearSolverState auto& state) {
+    constexpr bool isDomainAVector = Concepts::EigenVector<typename std::remove_cvref_t<decltype(state)>::Domain>;
     switch (message) {
       case NonLinearSolverMessages::INIT:
-        init();
+        init<isDomainAVector>();
         break;
       case NonLinearSolverMessages::ITERATION_ENDED:
-        iterationEnded();
+        iterationEnded<isDomainAVector>();
         break;
       case NonLinearSolverMessages::RESIDUALNORM_UPDATED:
         rNorm_ = state.information.residualNorm;
         break;
       case NonLinearSolverMessages::SOLUTION_CHANGED:
-        if constexpr (requires { state.domain.parameter(); })
+        if constexpr (not isDomainAVector)
           lambda_ = state.domain.parameter();
         break;
       case NonLinearSolverMessages::CORRECTIONNORM_UPDATED:
@@ -62,10 +65,32 @@ private:
   int iters_{0};
   double dNorm_{0};
   double rNorm_{0};
-  std::optional<double> lambda_{};
+  double lambda_{};
 
-  void init();
-  void iterationEnded();
-  void finishedSuccessfully(int numberOfIterations);
+  template <bool isDomainAVector>
+  void init() {
+    iters_ = 1;
+    rNorm_ = 0.0;
+    dNorm_ = 0.0;
+    spdlog::info("Non-linear solver started:");
+    if (not isDomainAVector) {
+      spdlog::info("{:<11} {:<20} {:<20} {:<20}", "Ite", "normR", "normD", "lambda");
+      spdlog::info("-------------------------------------------------------------------------------");
+    } else {
+      spdlog::info("{:<11} {:<20} {:<20}", "Ite", "normR", "normD");
+      spdlog::info("-------------------------------------------------");
+    }
+  }
+
+  template <bool isDomainAVector>
+  void iterationEnded() {
+    if (not isDomainAVector)
+      spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e} {:<20.2e}", "", iters_, rNorm_, dNorm_, lambda_);
+    else
+      spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e}", "", iters_, rNorm_, dNorm_);
+    ++iters_;
+  }
+
+  void finishedSuccessfully(int numberOfIterations) { spdlog::info("Number of iterations: {}", numberOfIterations); }
 };
 } // namespace Ikarus
