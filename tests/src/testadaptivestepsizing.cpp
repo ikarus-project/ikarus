@@ -77,7 +77,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   const double E         = 4.32e4;
   const double nu        = 0.3;
   const double thickness = 0.00001;
-  auto basis             = Ikarus::makeBasis(gridView, power<3>(nurbs()));
+  auto basis             = Ikarus::makeBasis(gridView, power<3>(nurbs(), FlatInterleaved{}));
 
   /// Neumann boundary condition at right edge (x=0.5)
   Dune::BitSetVector<1> neumannVertices(gridView.size(2), false);
@@ -95,7 +95,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
   };
 
   Ikarus::KlArgs args = {E, nu, thickness};
-  t.subTest(checkFESByAutoDiff(gridView, power<3>(nurbs()),
+  t.subTest(checkFESByAutoDiff(gridView, power<3>(nurbs(), FlatInterleaved{}),
                                skills(kirchhoffLoveShell(args), neumannBoundaryLoad(&neumannBoundary, nBL)),
                                Ikarus::AffordanceCollections::elastoStatics));
   auto sk = skills(kirchhoffLoveShell(args), neumannBoundaryLoad(&neumannBoundary, nBL));

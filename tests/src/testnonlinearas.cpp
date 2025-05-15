@@ -56,7 +56,8 @@ void asAutoDiffTest(TestSuitType& t, const MAT& mat) {
 
   for (const int numberOfASParameters : asParameters) {
     auto sk = skills(nonLinearElastic(mat), assumedStress<PS::PK2Stress>(numberOfASParameters));
-    t.subTest(checkFESByAutoDiff(gridView, power<gridDim>(lagrange<1>()), sk, AffordanceCollections::elastoStatics,
+    t.subTest(checkFESByAutoDiff(gridView, power<gridDim>(lagrange<1>(), FlatInterleaved{}), sk,
+                                 AffordanceCollections::elastoStatics,
                                  " (numberOfInternalVariables = " + std::to_string(numberOfASParameters) + ")"));
   }
 }
@@ -73,7 +74,7 @@ auto singleElementTest() {
   using namespace Ikarus;
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis        = Ikarus::makeBasis(gridView, power<gridDim>(lagrange<1>()));
+  auto basis        = Ikarus::makeBasis(gridView, power<gridDim>(lagrange<1>(), FlatInterleaved{}));
   auto element      = gridView.template begin<0>();
   auto nDOF         = basis.flat().size();
   const double tol  = 1e-10;

@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
   auto secondOrderLagrangePrePower2Basis        = power<2>(lagrange<2>(), FlatInterleaved());
   auto firstOrderLagrangePrePower3Basis         = power<3>(lagrange<1>(), FlatInterleaved());
   auto secondOrderLagrangePrePower3Basis        = power<3>(lagrange<2>(), FlatInterleaved());
-  auto secondOrderLagrangePrePower3BasisBlocked = power<3>(lagrange<2>());
+  auto secondOrderLagrangePrePower3BasisBlocked = power<3>(lagrange<2>(), FlatInterleaved());
   constexpr auto randomlyDistorted              = CornerDistortionFlag::randomlyDistorted;
   constexpr auto unDistorted                    = CornerDistortionFlag::unDistorted;
 
