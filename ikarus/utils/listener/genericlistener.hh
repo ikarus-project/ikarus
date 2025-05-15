@@ -4,6 +4,7 @@
 /**
  * \file genericlistener.hh
  * \brief Listener implementation for calling a callback function
+ * \ingroup observer
  */
 
 #pragma once
@@ -20,10 +21,11 @@ namespace Ikarus {
  *
  * \tparam M The type of messages to be listend to.
  */
-template <typename M>
+template <typename BC>
 class GenericListener : public Listener
 {
-  using Messages = M;
+  using Messages = BC::MessageType;
+  using State    = BC::State;
 
 public:
   /**
@@ -36,26 +38,23 @@ public:
    * \param f The function to be executed with the current step.
    */
   template <typename F>
-  GenericListener(Messages message, F&& f)
+  GenericListener(BC& bc, Messages message, F&& f)
       : message_{message},
-        f_{f} {}
-
-  template <typename BC>
-  GenericListener& subscribeTo(BC& bc) {
-    this->subscribe(bc, [&](M message) { this->updateImpl(message); });
-    return *this;
+        f_{std::forward<F>(f)} {
+    this->subscribe(bc, [&](Messages message, const BC::State& state) { this->updateImpl(message, state); });
   }
 
-  void updateImpl(Messages message) {
-    if (message_ == message) {
-      f_(step_);
-      ++step_;
-    }
+  void updateImpl(Messages message, const State& state) {
+    if (message_ == message)
+      f_(state);
   }
 
 private:
   Messages message_;
-  std::function<void(int)> f_;
-  int step_{0};
+  std::function<void(const State&)> f_;
 };
+
+template <typename BC, typename MT, typename F>
+GenericListener(BC&, MT, F&&) -> GenericListener<BC>;
+
 } // namespace Ikarus

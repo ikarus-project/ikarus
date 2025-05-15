@@ -103,7 +103,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
   Ikarus::NonlinearSolverFactory trFactory(trConfig);
   auto tr = trFactory.create(sparseAssembler);
 
-  auto vtkWriter = ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>(basis.flat(), d, 2);
+  auto vtkWriter = ControlSubsamplingVertexVTKWriter(basis.flat(), 2);
   vtkWriter.setFileNamePrefix("Test2DSolid");
   vtkWriter.setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
 

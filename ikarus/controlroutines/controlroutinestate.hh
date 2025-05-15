@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include <ikarus/controlroutines/controlinfos.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
@@ -23,7 +24,9 @@ struct ControlRoutineState
   using Domain = D;
 
   const Domain& domain;
-  int loadStep{};
+  const ControlInformation& information;
+
+  int loadStep{-1};
   double stepSize{};
 };
 

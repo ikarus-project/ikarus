@@ -32,6 +32,9 @@ struct EigenBase;
 
 namespace Ikarus {
 
+struct ControlInformation;
+struct NonLinearSolverInformation;
+
 template <typename Derived>
 auto transpose(const Eigen::EigenBase<Derived>& A);
 namespace Concepts {
@@ -637,13 +640,34 @@ namespace Concepts {
   template <typename T>
   concept PointerOrSmartPointer = SmartPointer<T> || traits::Pointer<T>;
 
+  /**
+   * \concept ControlRoutineState
+   * \brief Concept to check if a type represents a control routine state
+   * \tparam S the type to be checked
+   */
   template <typename S>
   concept ControlRoutineState = requires(S s) {
     typename S::Domain;
 
-    // { s.domain } -> std::convertible_to<const typename S::Domain>;
+    { s.information } -> std::same_as<const ControlInformation&>;
     { s.loadStep } -> std::convertible_to<int>;
     { s.stepSize } -> std::convertible_to<double>;
+    { s.domain } -> std::same_as<const typename S::Domain&>;
+  };
+
+  /**
+   * \concept NonLinearSolverState
+   * \brief Concept to check if a type represents a nonlinear solver state
+   * \tparam S the type to be checked
+   */
+  template <typename S>
+  concept NonLinearSolverState = requires(S s) {
+    typename S::Domain;
+    typename S::CorrectionType;
+
+    { s.information } -> std::same_as<const NonLinearSolverInformation&>;
+    { s.domain } -> std::same_as<const typename S::Domain&>;
+    { s.correction } -> std::same_as<const typename S::CorrectionType&>;
   };
 
   /**

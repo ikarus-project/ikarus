@@ -48,7 +48,7 @@ auto gridView = grid->leafGridView();
 
 The Lagrange basis is used to approximate the displacement field. The `Truss` elements are then created, followed by the fixing of the
 degrees of freedom at the boundaries (`{0,0}` and `{2 * L,0}`). A vertical downward load is applied to the center node.
-The non-linear operator is then constructed. The Newton-Raphson method is used as the non-linear solver, and an `nonLinearSolverObserver` is
+The non-linear operator is then constructed. The Newton-Raphson method is used as the non-linear solver, and an `nonLinearSolverLogger` is
 created to write messages as desired by the non-linear solver. An additional `lvkObserver` is created using the `Ikarus::GenericControlObserver`
 feature. This observer helps to fill up the matrix `lambdaAndDisp` with the load factor `lambda` and the two unconstrained degrees of
 freedom whenever

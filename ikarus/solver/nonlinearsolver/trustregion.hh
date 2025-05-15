@@ -212,11 +212,15 @@ public:
    * \return NonLinearSolverInformation containing information about the solver result.
    */
   [[nodiscard]] NonLinearSolverInformation solve(Domain& x) {
-    this->notify(NonLinearSolverMessages::INIT);
+    using enum NonLinearSolverMessages;
+
+    NonLinearSolverInformation solverInformation;
+    auto state = typename TrustRegion::State{.domain = x, .correction = eta_, .information = solverInformation};
+
+    this->notify(INIT, state);
     stats_ = Stats{};
     info_  = AlgoInfo{};
 
-    NonLinearSolverInformation solverInformation;
     auto& energyF    = energyFunction_;
     auto gradientF   = derivative(energyF);
     auto hessianF    = derivative(gradientF);
@@ -231,15 +235,13 @@ public:
     stats_.gradNorm = norm(g);
     truncatedConjugateGradient_.analyzePattern(h);
 
-    auto solverState = typename TrustRegion::State{.domain = x, .correction = eta_};
-
     innerInfo_.Delta = settings_.Delta0;
     spdlog::info(
         "        | iter | inner_i |   rho |   energy | energy_p | energy_inc |  norm(g) |    Delta | norm(corr) | "
         "InnerBreakReason");
     spdlog::info("{:-^143}", "-");
     while (not stoppingCriterion(e)) {
-      this->notify(NonLinearSolverMessages::ITERATION_STARTED);
+      this->notify(ITERATION_STARTED, state);
       if (settings_.useRand) {
         if (stats_.outerIter == 0) {
           eta_.setRandom();
@@ -374,15 +376,15 @@ public:
 
       info_.randomPredictionString = "";
 
-      solverState.dNorm = stats_.etaNorm;
-      solverState.rNorm = stats_.gradNorm;
-      this->notify(NonLinearSolverMessages::CORRECTION_UPDATED, solverState);
+      solverInformation.correctionNorm = stats_.etaNorm;
+      solverInformation.residualNorm   = stats_.gradNorm;
+      this->notify(CORRECTION_UPDATED, state);
 
       if (info_.acceptProposal) {
         stats_.energy = stats_.energyProposal;
-        this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, stats_.etaNorm);
-        this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, stats_.gradNorm);
-        this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
+        this->notify(CORRECTIONNORM_UPDATED, state);
+        this->notify(RESIDUALNORM_UPDATED, state);
+        this->notify(SOLUTION_CHANGED, state);
       } else {
         updateFunction_(x, -eta_);
         eta_.setZero();
@@ -391,7 +393,7 @@ public:
       g               = gradientF(x);
       h               = hessianF(x);
       stats_.gradNorm = g.norm();
-      this->notify(NonLinearSolverMessages::ITERATION_ENDED);
+      this->notify(NonLinearSolverMessages::ITERATION_ENDED, state);
     }
     spdlog::info("{}", info_.reasonString);
     spdlog::info("Total iterations: {} Total CG Iterations: {}", stats_.outerIter, stats_.innerIterSum);
@@ -402,7 +404,7 @@ public:
     solverInformation.iterations   = stats_.outerIter;
     solverInformation.residualNorm = stats_.gradNorm;
     if (solverInformation.success)
-      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, solverInformation.iterations);
+      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, state);
     return solverInformation;
   }
   /**

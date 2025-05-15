@@ -161,7 +161,7 @@ struct ArcLength
   }
 
   /** \brief The name of the PathFollowing method. */
-  constexpr auto name() const { return std::string("Arc length"); }
+  constexpr std::string name() const { return "Arc length"; }
 
 private:
   std::optional<double> psi;
@@ -226,7 +226,7 @@ struct LoadControlSubsidiaryFunction
   }
 
   /** \brief The name of the PathFollowing method. */
-  constexpr auto name() const { return std::string("Load Control"); }
+  constexpr std::string name() const { return "Load Control"; }
 };
 
 /**
@@ -298,7 +298,7 @@ struct DisplacementControl
   }
 
   /** \brief The name of the PathFollowing method. */
-  constexpr auto name() const { return std::string("Displacement Control"); }
+  constexpr std::string name() const { return "Displacement Control"; }
 
 private:
   std::vector<int> controlledIndices; /**< Vector containing the indices of the controlled degrees of freedom. */

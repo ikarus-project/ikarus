@@ -3,58 +3,94 @@
 
 /**
  * \file nonlinearsolverlogger.hh
- * \brief Observer implementation for logging non-linear solvers
+ * \brief Listener implementation for logging non-linear solvers
+ * \ingroup observer
  */
 
 #pragma once
+#include <spdlog/spdlog.h>
+
 #include <ikarus/utils/broadcaster/broadcastermessages.hh>
+#include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/listener/listener.hh>
 
 namespace Ikarus {
+
 /**
  * \brief Implementation of an observer for logging non-linear solvers.
- * \ingroup observer
- * This class inherits from the IObserver class and provides specific
- * implementations for updating based on NonLinearSolverMessages.
  */
 class NonLinearSolverLogger : public Listener
 {
 public:
   template <typename BC>
   NonLinearSolverLogger& subscribeTo(BC& bc) {
-    this->subscribe(bc, [&](NonLinearSolverMessages message) { this->updateImpl(message); });
-    this->subscribe(bc, [&](NonLinearSolverMessages message, double val) { this->updateImpl(message, val); });
-    this->subscribe(bc, [&](NonLinearSolverMessages message, int intVal) { this->updateImpl(message, intVal); });
+    this->subscribe(bc, [&](NonLinearSolverMessages message, const BC::State& state) { this->update(message, state); });
     return *this;
   }
 
   /**
-   * \brief Handles the update when a NonLinearSolverMessages is received.
+   * \brief Implementation of the update method for logging control messages with a control routine state.
    *
-   * \param message The NonLinearSolverMessages received.
+   * \param message The received nonlinear solver message.
+   * \param state The received nonlinear solver state.
    */
-  void updateImpl(NonLinearSolverMessages message);
-
-  /**
-   * \brief Handles the update when a NonLinearSolverMessages with a double value is received.
-   *
-   * \param message The NonLinearSolverMessages received.
-   * \param val The double value associated with the message.
-   */
-  void updateImpl(NonLinearSolverMessages message, double val);
-
-  /**
-   * \brief Handles the update when a NonLinearSolverMessages with an integer value is received.
-   *
-   * \param message The NonLinearSolverMessages received.
-   * \param intVal The integer value associated with numberOfIterations.
-   */
-  void updateImpl(NonLinearSolverMessages message, int intVal);
+  void update(NonLinearSolverMessages message, const Concepts::NonLinearSolverState auto& state) {
+    constexpr bool isDomainAVector = Concepts::EigenVector<typename std::remove_cvref_t<decltype(state)>::Domain>;
+    switch (message) {
+      case NonLinearSolverMessages::INIT:
+        init<isDomainAVector>();
+        break;
+      case NonLinearSolverMessages::ITERATION_ENDED:
+        iterationEnded<isDomainAVector>();
+        break;
+      case NonLinearSolverMessages::RESIDUALNORM_UPDATED:
+        rNorm_ = state.information.residualNorm;
+        break;
+      case NonLinearSolverMessages::SOLUTION_CHANGED:
+        if constexpr (not isDomainAVector)
+          lambda_ = state.domain.parameter();
+        break;
+      case NonLinearSolverMessages::CORRECTIONNORM_UPDATED:
+        dNorm_ = state.information.correctionNorm;
+        break;
+      case NonLinearSolverMessages::FINISHED_SUCESSFULLY:
+        finishedSuccessfully(state.information.iterations);
+        break;
+      default:
+        break;
+    }
+  }
 
 private:
   int iters_{0};
   double dNorm_{0};
   double rNorm_{0};
   double lambda_{0};
+
+  template <bool isDomainAVector>
+  void init() {
+    iters_ = 1;
+    rNorm_ = 0.0;
+    dNorm_ = 0.0;
+    spdlog::info("Non-linear solver started:");
+    if (not isDomainAVector) {
+      spdlog::info("{:<11} {:<20} {:<20} {:<20}", "Ite", "normR", "normD", "lambda");
+      spdlog::info("-------------------------------------------------------------------------------");
+    } else {
+      spdlog::info("{:<11} {:<20} {:<20}", "Ite", "normR", "normD");
+      spdlog::info("-------------------------------------------------");
+    }
+  }
+
+  template <bool isDomainAVector>
+  void iterationEnded() {
+    if (not isDomainAVector)
+      spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e} {:<20.2e}", "", iters_, rNorm_, dNorm_, lambda_);
+    else
+      spdlog::info("{} {:<10d} {:<20.2e} {:<20.2e}", "", iters_, rNorm_, dNorm_);
+    ++iters_;
+  }
+
+  void finishedSuccessfully(int numberOfIterations) { spdlog::info("Number of iterations: {}", numberOfIterations); }
 };
 } // namespace Ikarus

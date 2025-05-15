@@ -25,6 +25,7 @@
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
+#include <ikarus/utils/listener/controllogger.hh>
 #include <ikarus/utils/listener/controlvtkwriter.hh>
 #include <ikarus/utils/listener/genericlistener.hh>
 #include <ikarus/utils/listener/nonlinearsolverlogger.hh>
@@ -131,26 +132,30 @@ static auto vonMisesTrussTest() {
 
   Eigen::Matrix3Xd lambdaAndDisp;
   lambdaAndDisp.setZero(Eigen::NoChange, loadSteps + 1);
-  /// Create Observer which executes when control routines messages
-  auto lvkObserver = GenericListener<ControlMessages>(ControlMessages::SOLUTION_CHANGED, [&](int step) {
-    lambdaAndDisp(0, step) = lambda; // load factor
-    lambdaAndDisp(1, step) = d[2];   // horizontal displacement at center node
-    lambdaAndDisp(2, step) = d[3];   // vertical displacement at center node
-  });
 
   /// Create Observer which writes vtk files when control routines messages
-  auto vtkWriter = ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>(basis.flat(), d, 2);
+  auto vtkWriter = ControlSubsamplingVertexVTKWriter(basis.flat(), 2);
   vtkWriter.setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2);
   vtkWriter.setFileNamePrefix("vonMisesTruss");
 
   /// Create loadcontrol
   auto lc = ControlRoutineFactory::create(LoadControlConfig{loadSteps, 0.0, 0.5}, nr, denseFlatAssembler);
 
-  auto nonLinearSolverObserver = NonLinearSolverLogger();
+  auto nonLinearSolverLogger = NonLinearSolverLogger();
+  auto controlLogger         = ControlLogger();
 
-  nonLinearSolverObserver.subscribeTo(lc.nonLinearSolver());
+  nonLinearSolverLogger.subscribeTo(lc.nonLinearSolver());
+  controlLogger.subscribeTo(lc);
   vtkWriter.subscribeTo(lc);
-  lvkObserver.subscribeTo(lc);
+
+  auto lvkObserver = GenericListener(lc, ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
+    const auto& d              = state.domain.globalSolution();
+    const auto& lambda         = state.domain.parameter();
+    int step                   = state.loadStep;
+    lambdaAndDisp(0, step + 1) = lambda; // load factor
+    lambdaAndDisp(1, step + 1) = d[2];   // horizontal displacement at center node
+    lambdaAndDisp(2, step + 1) = d[3];   // vertical displacement at center node
+  });
 
   /// Execute!
   auto controlInfo = lc.run(req);
@@ -159,6 +164,10 @@ static auto vonMisesTrussTest() {
   Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
   Eigen::VectorXd uVec      = lambdaAndDisp.row(1);
   Eigen::VectorXd vVec      = -lambdaAndDisp.row(2);
+
+  t.check(Dune::FloatCmp::ne(vVec.tail(1)[0], 0.0, tol))
+      << std::setprecision(16) << "Displacement value should not be zero. Actual:\t" << vVec.tail(1)[0];
+  checkScalars(t, lambdaVec.tail(1)[0], 0.5, " Incorrect last load factor", tol);
 
   // return the load factor as a function of the vertical displacement
   auto analyticalLoadDisplacementCurve = [&](auto& v) {
@@ -182,6 +191,9 @@ static auto vonMisesTrussTest() {
     checkScalars(t, N, expectedCauchyAxialForce, " Incorrect Cauchy Axial force", tol);
     checkScalars(t, NPK2, expectedPK2AxialForce, " Incorrect PK2 Axial force", tol);
   }
+
+  for (auto i : Dune::range(0, loadSteps))
+    fileExists(t, "vonMisesTruss" + std::to_string(i) + ".vtp");
 
   return t;
 }

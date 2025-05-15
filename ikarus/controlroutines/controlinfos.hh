@@ -8,6 +8,7 @@
  */
 
 #pragma once
+#include <string>
 #include <vector>
 
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
@@ -20,10 +21,14 @@ namespace Ikarus {
  */
 struct ControlInformation
 {
+  ControlInformation(const std::string& n = "")
+      : name(n) {}
+
   bool success{false}; ///< Flag indicating the success of the control.
   std::vector<Ikarus::NonLinearSolverInformation>
       solverInfos{};      ///< Vector containing information from nonlinear solvers.
   int totalIterations{0}; ///< Total number of iterations performed.
+  std::string name{};     ///< Information about the name of the control method.
 };
 
 } // namespace Ikarus

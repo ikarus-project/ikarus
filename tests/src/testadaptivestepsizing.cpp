@@ -164,21 +164,21 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
     auto cf3 = PathFollowingConfig(loadSteps, stepSize, {}, dass);
   }
 
-  auto nonLinearSolverObserver =
+  auto nonLinearSolverLogger =
       NonLinearSolverLogger().subscribeTo(crWSS.nonLinearSolver()).subscribeTo(crWoSS.nonLinearSolver());
-  auto pathFollowingObserver = ControlLogger();
+  auto pathFollowingLogger = ControlLogger();
 
   /// Create Observer which writes vtk files when control routines messages
-  auto vtkWriter = ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>(basis.flat(), d, 2);
+  auto vtkWriter = ControlSubsamplingVertexVTKWriter(basis.flat(), 2);
   vtkWriter.setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 3);
   vtkWriter.setFileNamePrefix("testAdaptiveStepSizing" + pft.name());
   vtkWriter.subscribeTo(crWoSS);
 
-  pathFollowingObserver.subscribeTo(crWoSS);
+  pathFollowingLogger.subscribeTo(crWoSS);
   vtkWriter.subscribeTo(crWoSS);
 
   vtkWriter.unSubscribeAll();
-  pathFollowingObserver.subscribeTo(crWSS);
+  pathFollowingLogger.subscribeTo(crWSS);
 
   const std::string& message1 = " --> " + pft.name() + " with default adaptive step sizing";
   const std::string& message2 = " --> " + pft.name() + " without default adaptive step sizing";

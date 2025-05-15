@@ -110,8 +110,8 @@ An object for the Newton-Raphson method or the trust region method can then be d
 All the available output messages are subscribed to be displayed by using the following commands:
 
 ```cpp
-auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-nr->subscribeAll(nonLinearSolverObserver);
+auto nonLinearSolverLogger = std::make_shared<NonLinearSolverLogger>();
+nr->subscribeAll(nonLinearSolverLogger);
 ```
 
 The [load control](../01_framework/controlRoutines.md#load-control) method is finally used as the path-following technique to solve this
