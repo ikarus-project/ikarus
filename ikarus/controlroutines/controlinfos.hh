@@ -21,6 +21,9 @@ namespace Ikarus {
  */
 struct ControlInformation
 {
+  ControlInformation(const std::string& n)
+      : name(n) {}
+
   bool success{false}; ///< Flag indicating the success of the control.
   std::vector<Ikarus::NonLinearSolverInformation>
       solverInfos{};      ///< Vector containing information from nonlinear solvers.

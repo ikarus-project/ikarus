@@ -21,10 +21,11 @@ namespace Ikarus {
  *
  * \tparam M The type of messages to be listend to.
  */
-template <typename MT>
+template <typename BC>
 class GenericListener : public Listener
 {
-  using MessageType = MT;
+  using Messages = BC::MessageType;
+  using State    = BC::State;
 
 public:
   /**
@@ -32,36 +33,28 @@ public:
    *
    * Initializes the listener with a specific message and a function to be executed upon listening.
    *
+   * \tparam F Type of the function to be executed.
    * \param message The message to be listend to.
+   * \param f The function to be executed with the current step.
    */
-  GenericListener(MessageType message)
-      : message_(message) {}
+  template <typename F>
+  GenericListener(BC& bc, Messages message, F&& f)
+      : message_{message},
+        f_{std::forward<F>(f)} {
+    this->subscribe(bc, [&](Messages message, const BC::State& state) { this->updateImpl(message, state); });
+  }
 
-  /**
-   * \brief Registers a given function to the broadcaster
-   *
-   * \tparam BC the type of the broadcaster
-   * \tparam F the type of the function
-   * \param bc the broadcaster
-   * \param f the function
-   * \return GenericListener&
-   */
-  template <typename BC, typename F>
-  GenericListener& subscribeTo(BC& bc, F&& f) {
-    this->subscribe(bc, [&](BC::MessageType message, const BC::State& state) {
-      if (message_ == message)
-        f(state);
-    });
-    return *this;
+  void updateImpl(Messages message, const State& state) {
+    if (message_ == message)
+      f_(state);
   }
 
 private:
-  MessageType message_;
+  Messages message_;
+  std::function<void(const State&)> f_;
 };
 
-#ifndef DOXYGEN
-template <typename MT>
-GenericListener(MT) -> GenericListener<MT>;
-#endif
+template <typename BC, typename MT, typename F>
+GenericListener(BC&, MT, F&&) -> GenericListener<BC>;
 
 } // namespace Ikarus

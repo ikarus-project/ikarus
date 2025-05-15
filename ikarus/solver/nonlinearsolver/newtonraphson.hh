@@ -165,8 +165,7 @@ public:
     using enum NonLinearSolverMessages;
 
     NonLinearSolverInformation solverInformation{};
-    auto state =
-        typename NewtonRaphson::State{.domain = x, .correction = correction_, .information = solverInformation};
+    auto state = typename NewtonRaphson::State(x, correction_, solverInformation);
     this->notify(INIT, state);
     solverInformation.success = true;
 

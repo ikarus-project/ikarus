@@ -17,8 +17,8 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
   using enum ControlMessages;
   decltype(auto) nonOp = nonLinearSolver_->residual();
 
-  ControlInformation info{.name = this->name()};
-  auto state = typename LoadControl::State{.domain = x, .information = info};
+  ControlInformation info(this->name());
+  auto state = typename LoadControl::State(x, info);
   this->notify(CONTROL_STARTED, state);
 
   auto& loadParameter = x.parameter();

@@ -26,10 +26,10 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   using enum ControlMessages;
   auto& residual = nonLinearSolver_->residual();
 
-  ControlInformation info{.name = this->name()};
+  ControlInformation info(this->name());
   info.totalIterations = 0;
   subsidiaryArgs_.setZero(req.globalSolution());
-  auto state = typename PathFollowing::State{.domain = req, .information = info, .subsidiaryArgs = subsidiaryArgs_};
+  auto state = typename PathFollowing::State(req, info, subsidiaryArgs_);
 
   this->notify(CONTROL_STARTED, state);
 
