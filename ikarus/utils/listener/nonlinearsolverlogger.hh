@@ -65,7 +65,7 @@ private:
   int iters_{0};
   double dNorm_{0};
   double rNorm_{0};
-  double lambda_{};
+  double lambda_{0};
 
   template <bool isDomainAVector>
   void init() {
