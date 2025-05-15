@@ -21,6 +21,5 @@ runpy.run_module("trusstest", run_name="__main__")
 print("Running vtkwritertest")
 runpy.run_module("vtkwritertest", run_name="__main__")
 
-# Currently disabled because of brakage of dune-iga
 print("Running kltest")
 runpy.run_module("kltest", run_name="__main__")
