@@ -110,7 +110,7 @@ static auto simple2DOperatorLoadControlTestPF(DifferentiableFunction& f, typenam
   auto lc                    = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
   auto nonLinearSolverLogger = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
   auto pathFollowingLogger   = Ikarus::ControlLogger().subscribeTo(lc);
-  
+
   /// Create GenericListener which executes when control routines messages to check displacements at every step
   Eigen::Matrix2Xd dispMat;
   dispMat.setZero(Eigen::NoChange, loadSteps + 1);
