@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <config.h>
@@ -97,29 +97,34 @@ auto FEBaseTest() {
   const auto firstOrderLagrangePreBasis  = lagrange<1>();
   const auto secondOrderLagrangePreBasis = lagrange<2>();
 
-  const auto firstOrderLagrangePowerPreBasis  = power<2>(firstOrderLagrangePreBasis);
-  const auto secondOrderLagrangePowerPreBasis = power<5>(secondOrderLagrangePreBasis);
+  const auto firstOrderLagrangePowerPreBasis  = power<2>(firstOrderLagrangePreBasis, FlatInterleaved{});
+  const auto secondOrderLagrangePowerPreBasis = power<5>(secondOrderLagrangePreBasis, FlatInterleaved{});
 
-  const auto scalarScalarCompositePreBasis = composite(firstOrderLagrangePreBasis, secondOrderLagrangePreBasis);
-  const auto scalarPowerCompositePreBasis  = composite(firstOrderLagrangePreBasis, secondOrderLagrangePowerPreBasis);
+  const auto scalarScalarCompositePreBasis =
+      composite(firstOrderLagrangePreBasis, secondOrderLagrangePreBasis, BlockedLexicographic{});
+  const auto scalarPowerCompositePreBasis =
+      composite(firstOrderLagrangePreBasis, secondOrderLagrangePowerPreBasis, BlockedLexicographic{});
 
-  const auto powerScalarCompositePreBasis = composite(firstOrderLagrangePowerPreBasis, secondOrderLagrangePreBasis);
-  const auto powerPowerCompositePreBasis = composite(firstOrderLagrangePowerPreBasis, secondOrderLagrangePowerPreBasis);
+  const auto powerScalarCompositePreBasis =
+      composite(firstOrderLagrangePowerPreBasis, secondOrderLagrangePreBasis, BlockedLexicographic{});
+  const auto powerPowerCompositePreBasis =
+      composite(firstOrderLagrangePowerPreBasis, secondOrderLagrangePowerPreBasis, BlockedLexicographic{});
 
-  const auto scalarCompositePreBasis = composite(firstOrderLagrangePreBasis);
-  const auto powerCompositePreBasis  = composite(firstOrderLagrangePowerPreBasis);
+  const auto scalarCompositePreBasis = composite(firstOrderLagrangePreBasis, BlockedLexicographic{});
+  const auto powerCompositePreBasis  = composite(firstOrderLagrangePowerPreBasis, BlockedLexicographic{});
 
-  const auto combinedPreBasis =
-      composite(composite(scalarCompositePreBasis, powerPowerCompositePreBasis, firstOrderLagrangePreBasis),
-                secondOrderLagrangePowerPreBasis);
+  const auto combinedPreBasis = composite(composite(scalarCompositePreBasis, powerPowerCompositePreBasis,
+                                                    firstOrderLagrangePreBasis, BlockedLexicographic{}),
+                                          secondOrderLagrangePowerPreBasis, BlockedLexicographic{});
 
-  const auto compositePowerCombinedBasis = composite(power<10>(combinedPreBasis), secondOrderLagrangePreBasis);
+  const auto compositePowerCombinedBasis =
+      composite(power<10>(combinedPreBasis, FlatInterleaved{}), secondOrderLagrangePreBasis, BlockedLexicographic{});
 
-  const auto lagrangeDGPowerPreBasis     = power<6>(lagrangeDG<3>());
+  const auto lagrangeDGPowerPreBasis     = power<6>(lagrangeDG<3>(), FlatInterleaved{});
   const auto nedelecScalarPreBasis       = nedelec<1, 1>();
   const auto raviartThomasScalarPreBasis = raviartThomas<2>();
   const auto specialCompositePreBasis =
-      composite(lagrangeDGPowerPreBasis, nedelecScalarPreBasis, raviartThomasScalarPreBasis);
+      composite(lagrangeDGPowerPreBasis, nedelecScalarPreBasis, raviartThomasScalarPreBasis, BlockedLexicographic{});
 
   /// Types of scalar bases
   const auto scalar1 = getFEBase<useFlat>(gridView, firstOrderLagrangePreBasis);

@@ -1,10 +1,10 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /*!
  * \file pathfollowing.inl
  * \brief Implementation of the run function
- * @ingroup  controlroutines
+ * \ingroup  controlroutines
  */
 
 #pragma once
@@ -13,60 +13,65 @@
 
 #include <ikarus/controlroutines/adaptivestepsizing.hh>
 #include <ikarus/controlroutines/controlinfos.hh>
-#include <ikarus/controlroutines/pathfollowingfunctions.hh>
+#include <ikarus/controlroutines/pathfollowing.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
-#include <ikarus/utils/observer/observer.hh>
-#include <ikarus/utils/observer/observermessages.hh>
+#include <ikarus/utils/broadcaster/broadcastermessages.hh>
+#include <ikarus/utils/differentiablefunction.hh>
 
 namespace Ikarus {
 
 template <typename NLS, typename PF, typename ASS>
 requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
-ControlInformation PathFollowing<NLS, PF, ASS>::run() {
-  ControlInformation info;
-  auto& nonOp = nonLinearSolver_->nonLinearOperator();
-  this->notify(ControlMessages::CONTROL_STARTED, pathFollowingType_.name());
+[[nodiscard(
+    "The run method returns information of the control routine. You should store this information and check if "
+    "it was successful")]] ControlInformation
+PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
+  using enum ControlMessages;
+  auto& residual = nonLinearSolver_->residual();
 
-  SubsidiaryArgs subsidiaryArgs;
+  ControlInformation info(this->name());
+  info.totalIterations = 0;
+  subsidiaryArgs_.setZero(req.globalSolution());
+  auto state = typename PathFollowing::State(req, info, subsidiaryArgs_);
 
-  info.totalIterations    = 0;
-  subsidiaryArgs.stepSize = stepSize_;
-  subsidiaryArgs.DD.resizeLike(nonOp.firstParameter());
-  subsidiaryArgs.DD.setZero();
+  this->notify(CONTROL_STARTED, state);
+  subsidiaryArgs_.stepSize = stepSize_;
 
-  /// Initializing solver
-  this->notify(ControlMessages::STEP_STARTED, 0, subsidiaryArgs.stepSize);
-  pathFollowingType_.initialPrediction(nonOp, subsidiaryArgs);
-  auto solverInfo = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
-  info.solverInfos.push_back(solverInfo);
-  info.totalIterations += solverInfo.iterations;
+  // Initial step to check if the undeformed (or initial) state is in equilibrium
+  state.loadStep = -1;
+  this->notify(STEP_STARTED, state);
+  auto solverInfo = nonLinearSolver_->solve(req, pathFollowingType_, subsidiaryArgs_);
+  updateAndNotifyControlInfo(info, solverInfo, state);
   if (not solverInfo.success)
     return info;
-  this->notify(ControlMessages::SOLUTION_CHANGED);
-  this->notify(ControlMessages::STEP_ENDED);
+
+  state.loadStep = 0;
+  state.stepSize = stepSize_;
+  this->notify(STEP_STARTED, state);
+  pathFollowingType_.initialPrediction(req, residual, subsidiaryArgs_);
+  solverInfo = nonLinearSolver_->solve(req, pathFollowingType_, subsidiaryArgs_);
+  updateAndNotifyControlInfo(info, solverInfo, state);
+  if (not solverInfo.success)
+    return info;
 
   /// Calculate predictor for a particular step
   for (int ls = 1; ls < steps_; ++ls) {
-    subsidiaryArgs.currentStep = ls;
+    subsidiaryArgs_.currentStep = ls;
+    state.loadStep              = ls;
 
-    adaptiveStepSizing_(solverInfo, subsidiaryArgs, nonOp);
+    adaptiveStepSizing_(solverInfo, subsidiaryArgs_, residual);
+    pathFollowingType_.intermediatePrediction(req, residual, subsidiaryArgs_);
 
-    this->notify(ControlMessages::STEP_STARTED, subsidiaryArgs.currentStep, subsidiaryArgs.stepSize);
+    state.stepSize = subsidiaryArgs_.stepSize;
+    this->notify(STEP_STARTED, state);
 
-    pathFollowingType_.intermediatePrediction(nonOp, subsidiaryArgs);
-
-    solverInfo = nonLinearSolver_->solve(pathFollowingType_, subsidiaryArgs);
-
-    info.solverInfos.push_back(solverInfo);
-    info.totalIterations += solverInfo.iterations;
+    solverInfo = nonLinearSolver_->solve(req, pathFollowingType_, subsidiaryArgs_);
+    updateAndNotifyControlInfo(info, solverInfo, state);
     if (not solverInfo.success)
       return info;
-    this->notify(ControlMessages::SOLUTION_CHANGED);
-    this->notify(ControlMessages::STEP_ENDED);
   }
 
-  this->notify(ControlMessages::CONTROL_ENDED, info.totalIterations, pathFollowingType_.name());
+  this->notify(CONTROL_ENDED, state);
   info.success = true;
   return info;
 }

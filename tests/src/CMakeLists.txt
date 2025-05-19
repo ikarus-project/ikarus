@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 option(ENABLE_TEST_COVERAGE "Enable test coverage" OFF)
@@ -27,9 +27,10 @@ set(programSourceFiles
     testlinearelasticity.cpp
     testmanifolds.cpp
     testmaterial.cpp
+    testnonlineareas.cpp
     testnonlinearelasticityneohooke.cpp
     testnonlinearelasticitysvk.cpp
-    testnonlinearoperator.cpp
+    testdifffunction.cpp
     testpathfollowing.cpp
     testpolyfit.cpp
     testpythonconversion.cpp
@@ -37,9 +38,19 @@ set(programSourceFiles
     testtrustregion.cpp
     testresultfunction.cpp
     testtruss.cpp
+    testelementsaslisteners.cpp
     testvtkwriter.cpp
-    testmodalanalysis.cpp
+    testhyperelasticity.cpp
+    testmaterialswithad.cpp
     testeigenvaluesolver.cpp
+    testmaterialinversion.cpp
+    testmueslimaterials.cpp
+    testcantileverbeamAS.cpp
+    testassumedstress.cpp
+    testcantileverbeamEAS.cpp
+    testnonlinearas.cpp
+    testconversions.cpp
+    testmodalanalysis.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
@@ -47,6 +58,7 @@ set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
     testdirichletvalue
     testtrustregion
     testenhancedassumedstrains
+    testassumedstress
     testassembler
     testlinearelasticity
     testnonlinearelasticityneohooke
@@ -84,16 +96,22 @@ target_compile_features(testfunctiontraits PUBLIC cxx_std_20)
 
 set(TEST_DEPENDING_ON_IGA testklshell testadaptivestepsizing)
 
-set(TEST_NEED_MORE_TIME testadaptivestepsizing)
+set(TEST_NEED_MORE_TIME testadaptivestepsizing testcantileverbeamEAS)
+
+set(TEST_DEPENDING_ON_MUESLI testmueslimaterials)
 
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)
   if(${programName} IN_LIST TEST_DEPENDING_ON_LOCALFEFUNCTIONS AND NOT HAVE_DUNE_LOCALFEFUNCTIONS)
-    message(STATUS "Skipping test ${programName}, since dune-localfefunctions were not found")
+    message(STATUS "Skipping test ${programName}, since dune-localfefunctions was not found")
     continue()
   endif()
   if(${programName} IN_LIST TEST_DEPENDING_ON_IGA AND NOT HAVE_DUNE_IGA)
-    message(STATUS "Skipping test ${programName}, since dune-iga were not found")
+    message(STATUS "Skipping test ${programName}, since dune-iga was not found")
+    continue()
+  endif()
+  if(${programName} IN_LIST TEST_DEPENDING_ON_MUESLI AND NOT HAVE_MUESLI)
+    message(STATUS "Skipping test ${programName}, since muesli was not found")
     continue()
   endif()
   if(${programName} IN_LIST TEST_NEED_MORE_TIME)

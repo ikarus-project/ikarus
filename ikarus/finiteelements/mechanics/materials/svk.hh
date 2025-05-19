@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -12,22 +12,23 @@
 #pragma once
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
+#include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
 #include <ikarus/utils/tensorutils.hh>
 
-namespace Ikarus {
+namespace Ikarus::Materials {
 
 /**
  * \brief Implementation of the Saint Venant-Kirchhoff material model.
  * \ingroup materials
  *   The energy is computed as
- *  \f[ \psi(\BE) = \frac{\lambda}{2} (\tr \BE)^2   +\mu \tr (\BE^2) ,\f]
+ *  \f[ \psi(\BE) = \frac{\la}{2} (\tr \BE)^2   +\mu \tr (\BE^2) ,\f]
  *  where \f$ \BE \f$ denotes the Green-Lagrangian strain.
  *
  *  The second Piola-Kirchhoff stresses are computed as
- *     \f[ \BS(\BE) =\fracpt{\psi(\BE)}{\BE} = \lambda \tr \BE \BI  +2 \mu \BE,\f]
+ *     \f[ \BS(\BE) =\fracpt{\psi(\BE)}{\BE} = \la \tr \BE \BI  +2 \mu \BE,\f]
  *
  * and the material tangent moduli are computed as
- *      \f[ \BBC(\BE) =\fracpt{^2\psi(\BE)}{\BE^2} =  \lambda \tr \BE \CI  +2 \mu \CI^{\mathrm{sym}},\f]
+ *      \f[ \BBC(\BE) =\fracpt{^2\psi(\BE)}{\BE^2} =  \la \tr \BE \CI  +2 \mu \CI^{\mathrm{sym}},\f]
  *      where \f$ \CI_{IJKL} =  \de_{IJ}\de_{KL}\f$ and \f$ \CI_{IJKL}^\mathrm{sym} =  \frac{1}{2}(\de_{IK}\de_{JL}+
  * \de_{IL}\de_{JK})\f$.
  * \tparam ST The scalar type used in the material.
@@ -35,11 +36,13 @@ namespace Ikarus {
 template <typename ST>
 struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ST>>
 {
-  using ScalarType                    = ST;
-  static constexpr int worldDimension = 3;
-  using StrainMatrix                  = Eigen::Matrix<ScalarType, worldDimension, worldDimension>;
-  using StressMatrix                  = StrainMatrix;
-  using MaterialParameters            = LamesFirstParameterAndShearModulus;
+  using ScalarType         = ST;
+  static constexpr int dim = 3;
+  using StrainMatrix       = Eigen::Matrix<ScalarType, dim, dim>;
+  using StressMatrix       = StrainMatrix;
+  using MaterialTensor     = Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>>;
+
+  using MaterialParameters = LamesFirstParameterAndShearModulus;
 
   static constexpr auto strainTag              = StrainTags::greenLagrangian;
   static constexpr auto stressTag              = StressTags::PK2;
@@ -99,7 +102,7 @@ struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ST>>
     if constexpr (!voigt) {
       if constexpr (Concepts::EigenVector<Derived>) {
         static_assert(Concepts::EigenVector6<Derived>);
-        Eigen::Matrix<ScalarType, 3, 3> S;
+        StressMatrix S;
         const ScalarType traceE = Ed.template segment<3>(0).sum();
         S.diagonal().array() =
             materialParameter_.lambda * traceE + 2 * materialParameter_.mu * Ed.template segment<3>(0).array();
@@ -138,14 +141,15 @@ struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ST>>
    * \brief Computes the tangent moduli in the Saint Venant-Kirchhoff material model.
    * \tparam voigt A boolean indicating whether to return tangent moduli in Voigt notation.
    * \tparam Derived The derived type of the input matrix.
-   * \param E The Green-Lagrangian strain.
-   * \return Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> The tangent moduli.
+   * \param E The Green-Lagrangian strain (not used).
+   * \return Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> or Eigen::Matrix<ScalarType, 6, 6> The tangent
+   * moduli.
    */
   template <bool voigt, typename Derived>
-  auto tangentModuliImpl([[maybe_unused]] const Eigen::MatrixBase<Derived>& E) const {
+  auto tangentModuliImpl(const Eigen::MatrixBase<Derived>& /* E */) const {
     static_assert(Concepts::EigenMatrixOrVoigtNotation3<Derived>);
     if constexpr (!voigt) {
-      Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> moduli;
+      MaterialTensor moduli;
       moduli = materialParameter_.lambda * identityFourthOrder() +
                2 * materialParameter_.mu * symmetricIdentityFourthOrder();
       return moduli;
@@ -169,6 +173,22 @@ struct StVenantKirchhoffT : public Material<StVenantKirchhoffT<ST>>
     return StVenantKirchhoffT<ScalarTypeOther>(materialParameter_);
   }
 
+  /**
+   * \brief Computes the strain measure and inverse material tangent for a given stress state.
+   *
+   * \tparam Derived The derived type of the input matrix.
+   * \param Sraw the input stress matrix.
+   * \return pair of inverse material tangent and Green-Lagrangian strain tensor in voigt notation.
+   */
+  template <typename Derived>
+  auto materialInversionImpl(const Eigen::MatrixBase<Derived>& Sraw) const {
+    auto tangentModulus = tangentModuliImpl<true>(Eigen::Matrix3<ScalarType>::Zero());
+    auto D              = tangentModulus.inverse().eval();
+    auto S              = Impl::maybeToVoigt(Sraw, false);
+    auto E              = (D * S).eval();
+    return std::make_pair(D, E);
+  }
+
 private:
   MaterialParameters materialParameter_;
 };
@@ -178,4 +198,4 @@ private:
  */
 using StVenantKirchhoff = StVenantKirchhoffT<double>;
 
-} // namespace Ikarus
+} // namespace Ikarus::Materials

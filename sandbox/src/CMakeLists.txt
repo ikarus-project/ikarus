@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
@@ -8,6 +8,7 @@ add_custom_target(AllExamples) # Create target that includes all examples
 foreach(programSourceFile ${programSourceFiles})
   get_filename_component(programName ${programSourceFile} NAME_WLE)
   add_executable(${programName} ${programSourceFile})
+  set_property(TARGET ${programName} PROPERTY EXCLUDE_FROM_ALL 1)
   set_target_properties(${programName} PROPERTIES CXX_STANDARD 20 OUTPUT_NAME "Ikarus")
   add_dune_pythonlibs_flags(${programName})
   target_compile_options(

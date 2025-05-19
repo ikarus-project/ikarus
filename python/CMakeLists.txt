@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 add_subdirectory(ikarus)
 set(CMAKE_CXX_STANDARD 20)
@@ -8,6 +8,7 @@ dune_python_configure_bindings(
   "."
   PACKAGENAME
   ikarus
+  REQUIRED
   CMAKE_METADATA_FLAGS
   DUNE_OPTS_FILE
   HAVE_MPI

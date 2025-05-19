@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 import types
@@ -47,7 +47,7 @@ def dirichletValues(basis):
     element_type = f"Ikarus::DirichletValues<{basis.cppTypeName},Eigen::VectorX<bool>>"
 
     includes = []
-    includes += basis._includes
+    includes += basis.cppIncludes
     includes += ["ikarus/utils/dirichletvalues.hh"]
     includes += ["ikarus/python/dirichletvalues/dirichletvalues.hh"]
     moduleName = "dirichletValues_" + hashIt(element_type)

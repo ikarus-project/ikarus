@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -12,7 +12,7 @@
 
 #include <type_traits>
 
-#include <dune/vtk/function.hh>
+#include <dune/vtk/gridfunctions/vtkfunctionwrapper.hh>
 #include <dune/vtk/vtkwriter.hh>
 
 #include <ikarus/finiteelements/ferequirements.hh>
@@ -38,15 +38,10 @@ namespace Impl {
 } // namespace Impl
 
 /**
- * \brief Wrapper to evaluate results for a vtkwriter.
+ * \brief Wrapper to evaluate results for a vtkwriter. Works both out-of-the-box with `Dune::VTK` and `Dune::Vtk`.
  * \details
  * Usage:
  * \code
- * // Usage with Dune::Vtk::VtkWriter
- * auto resultFunction = Ikarus::makeResultVtkFunction<resType>(assembler);
- * vtkwriter.addPointData(resultFunction);
- *
- * // Usage with the native Dune::VTKWriter
  * auto resultFunction = Ikarus::makeResultFunction<resType>(assembler);
  * vtkWriter.addVertexData(resultFunction);
  * \endcode
@@ -207,7 +202,7 @@ auto makeResultFunction(std::shared_ptr<AS> assembler, UserFunction&& userFuncti
  * auto localResultFunction = localFunction(vtkResultFunction);
  * localResultFunction.bind(element);
  * \endcode
- * \tparam AS  type of the assembler
+ * \tparam AS type of the assembler
  * \tparam RT requested result type
  * \tparam UserFunction Type of the user-defined function for custom result evaluation (default is
  * DefaultUserFunction)
@@ -217,7 +212,7 @@ auto makeResultFunction(std::shared_ptr<AS> assembler, UserFunction&& userFuncti
 template <template <typename, int, int> class RT, typename UserFunction = Impl::DefaultUserFunction,
           Concepts::FlatAssembler AS>
 auto makeResultVtkFunction(std::shared_ptr<AS> assembler, UserFunction&& userFunction = {}) {
-  return Dune::Vtk::Function<typename AS::GridView>(std::make_shared<ResultFunction<AS, RT, UserFunction>>(
+  return Dune::Vtk::VTKFunctionWrapper<typename AS::GridView>(std::make_shared<ResultFunction<AS, RT, UserFunction>>(
       assembler, Dune::VTK::Precision::float64, std::forward<UserFunction>(userFunction)));
 }
 

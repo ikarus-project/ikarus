@@ -59,7 +59,7 @@ nav:
       - Assembler: 01_framework/assembler.md
       - Dirichlet boundary conditions: 01_framework/dirichletBCs.md
       - Solvers: 01_framework/solvers.md
-      - Nonlinear operator: 01_framework/nonlinearOperator.md
+      - Differentiable Function: 01_framework/differentiablefunction.md
       - Control routines: 01_framework/controlRoutines.md
       - Manifolds: 01_framework/manifolds.md
       - Observer and observables: 01_framework/observer.md

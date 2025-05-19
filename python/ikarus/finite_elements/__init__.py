@@ -1,8 +1,9 @@
-# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 from dune.common.hashit import hashIt
 from ikarus.generator import MySimpleGenerator
+from ikarus import materials
 
 
 def registerPreElement(name, includes, element_type, *args):
@@ -92,7 +93,7 @@ def neumannBoundaryLoad(boundaryPatch, f):
     includes += ["dune/python/pybind11/functional.h"]
     includes += ["dune/python/pybind11/stl.h"]
     includes += ["dune/python/pybind11/eigen.h"]
-    includes += boundaryPatch._includes
+    includes += boundaryPatch.cppIncludes
     element_type = (
         f"Ikarus::NeumannBoundaryLoadPre<{boundaryPatch.gridView().cppTypeName}>"
     )
@@ -151,7 +152,7 @@ def truss(youngs_modulus, cross_section, density: float = 1.0):
     )
 
 
-def eas(numberofparameters):
+def eas(numberofparameters, strainTag="LinearStrain"):
     """
     @brief Creates an enhanced assumed strains pre-element.
 
@@ -160,7 +161,8 @@ def eas(numberofparameters):
     @return: The registered enhanced assumed strains pre-element function.
     """
     includes = ["ikarus/finiteelements/mechanics/enhancedassumedstrains.hh"]
-    element_type = "Ikarus::EnhancedAssumedStrainsPre"
+    formatted_strainTag = "Ikarus::EAS::" + strainTag
+    element_type = f"Ikarus::EnhancedAssumedStrainsPre<{formatted_strainTag}>"
     return registerPreElement(
         "EnhancedAssumedStrainsPre", includes, element_type, numberofparameters
     )
@@ -210,9 +212,9 @@ def makeFE(basis, *skills):
 
     generator = MySimpleGenerator("FE", "Ikarus::Python")
 
-    includes += basis._includes
+    includes += basis.cppIncludes
     for arg in skills:
-        includes += arg._includes
+        includes += arg.cppIncludes
 
     moduleName = "FE" + "_" + hashIt(element_type)
     module = generator.load(

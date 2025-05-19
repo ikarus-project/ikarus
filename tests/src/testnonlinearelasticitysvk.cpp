@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <config.h>
@@ -18,11 +18,11 @@ int main(int argc, char** argv) {
   auto matParameter1 = toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.3});
   auto matParameter2 = toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.0});
 
-  StVenantKirchhoff matSVK1(matParameter1);
-  StVenantKirchhoff matSVK2(matParameter2);
-  auto planeStressMat1 = planeStress(matSVK1, 1e-8);
-  auto planeStressMat2 = planeStress(matSVK2, 1e-8);
-  auto planeStrainMat  = planeStrain(matSVK1);
+  Materials::StVenantKirchhoff matSVK1(matParameter1);
+  Materials::StVenantKirchhoff matSVK2(matParameter2);
+  auto planeStressMat1 = Materials::planeStress(matSVK1, 1e-8);
+  auto planeStressMat2 = Materials::planeStress(matSVK2, 1e-8);
+  auto planeStrainMat  = Materials::planeStrain(matSVK1);
 
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Alu>(matSVK1));
   t.subTest(NonLinearElasticityLoadControlNRandTR<Grids::Yasp>(matSVK1));

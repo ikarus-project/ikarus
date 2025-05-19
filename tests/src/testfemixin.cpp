@@ -1,9 +1,7 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <config.h>
-
-#include "testhelpers.hh"
 
 #include <dune/common/test/testsuite.hh>
 #include <dune/functions/functionspacebases/basistags.hh>
@@ -37,8 +35,8 @@ auto mixinTest(const PreBasis& preBasis) {
   auto matParameter = Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 1000, .nu = 0.3});
   auto totalDOFs    = basis.flat().size();
 
-  Ikarus::StVenantKirchhoff matSVK(matParameter);
-  auto reducedMat = planeStress(matSVK, 1e-8);
+  Ikarus::Materials::StVenantKirchhoff matSVK(matParameter);
+  auto reducedMat = Ikarus::Materials::planeStress(matSVK, 1e-8);
   using namespace Ikarus;
 
   auto vL = []([[maybe_unused]] const Dune::FieldVector<double, 2>& globalCoord, const double& lamb) {

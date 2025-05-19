@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 import debug_info
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     gridView = IGAGrid(nurbsPatchDataFinal)
 
     gridView.hierarchicalGrid.globalRefine(2)
-    basis = globalBasis(gridView, Power(Nurbs(), 3))
+    basis = globalBasis(gridView, Power(Nurbs(), 3, layout="lexicographic"))
 
     flatBasis = basis.flat()
     print("Number of dofs: ", len(flatBasis))

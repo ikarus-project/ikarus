@@ -1,11 +1,9 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <config.h>
 
 #include "testhelpers.hh"
-
-#include <array>
 
 #include <dune/common/test/testsuite.hh>
 #if HAVE_DUNE_LOCALFEFUNCTIONS

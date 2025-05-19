@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -30,12 +30,11 @@ struct NoOp
    *
    * \param solverInfo Information about the nonlinear solver.
    * \param subsidiaryArgs Subsidiary arguments for adaptive step sizing.
-   * \param nonLinearOperator The nonlinear operator.
-   * \tparam NLO The nonlinear operator type.
+   * \param f The function.
+   * \tparam F The Differentiable Function type.
    */
-  template <typename NLO>
-  void operator()(const NonLinearSolverInformation& solverInfo, SubsidiaryArgs& subsidiaryArgs,
-                  const NLO& nonLinearOperator) {}
+  template <typename F>
+  void operator()(const NonLinearSolverInformation& solverInfo, SubsidiaryArgs& subsidiaryArgs, const F& f) {}
 
   /**
    * \brief Get the target iterations.
@@ -69,12 +68,11 @@ struct IterationBased
    *
    * \param solverInfo Information about the nonlinear solver.
    * \param subsidiaryArgs Subsidiary arguments for adaptive step sizing.
-   * \param nonLinearOperator The nonlinear operator.
-   * \tparam NLO The nonlinear operator.
+   * \param f The Differentiable Function.
+   * \tparam F The Differentiable Function.
    */
-  template <typename NLO>
-  void operator()(const NonLinearSolverInformation& solverInfo, SubsidiaryArgs& subsidiaryArgs,
-                  const NLO& nonLinearOperator) {
+  template <typename F>
+  void operator()(const NonLinearSolverInformation& solverInfo, SubsidiaryArgs& subsidiaryArgs, const F& f) {
     if (subsidiaryArgs.currentStep == 0)
       return;
     if (targetIterations_ == 0)

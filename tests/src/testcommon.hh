@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
@@ -16,8 +16,8 @@
 #include <dune/grid/yaspgrid.hh>
 #include <dune/vtk/vtkwriter.hh>
 
-#include "ikarus/assembler/simpleassemblers.hh"
-#include "ikarus/utils/dirichletvalues.hh"
+#include <ikarus/assembler/simpleassemblers.hh>
+#include <ikarus/utils/dirichletvalues.hh>
 
 #if HAVE_DUNE_IGA
   #include <dune/iga/nurbsgrid.hh>
@@ -193,14 +193,25 @@ struct ValidCornerFactory
     if (distortionFlag == CornerDistortionFlag::unDistorted)
       return;
     else if (distortionFlag == CornerDistortionFlag::fixedDistorted) {
-      if (not((gridDim == 2) and (numberOfVertices == 4)))
-        DUNE_THROW(Dune::NotImplemented, "Fixed distortion is only implemented for a 2D 4-node element (Q1)");
+      if (not(((gridDim == 2) and (numberOfVertices == 4)) or ((gridDim == 3) and (numberOfVertices == 8))))
+        DUNE_THROW(Dune::NotImplemented, "Fixed distortion is only implemented for a Q1 and a H1 element");
       std::vector<Dune::FieldVector<double, gridDim>> randomnessOnNodes;
-      randomnessOnNodes.push_back({-0.2, -0.05});
-      randomnessOnNodes.push_back({-0.15, 0.05});
-      randomnessOnNodes.push_back({0.15, 0.15});
-      randomnessOnNodes.push_back({-0.05, -0.1});
-      for (long i = 0; i < 4; ++i)
+      if constexpr (gridDim == 3) {
+        randomnessOnNodes.push_back({-0.2, -0.05, 0.01});
+        randomnessOnNodes.push_back({-0.15, 0.05, 0.01});
+        randomnessOnNodes.push_back({0.15, 0.15, 0.02});
+        randomnessOnNodes.push_back({-0.05, -0.1, 0.02});
+        randomnessOnNodes.push_back({-0.2, -0.05, 0.01});
+        randomnessOnNodes.push_back({-0.15, 0.05, 0.01});
+        randomnessOnNodes.push_back({0.15, 0.15, 0.02});
+        randomnessOnNodes.push_back({-0.05, -0.1, 0.02});
+      } else {
+        randomnessOnNodes.push_back({-0.2, -0.05});
+        randomnessOnNodes.push_back({-0.15, 0.05});
+        randomnessOnNodes.push_back({0.15, 0.15});
+        randomnessOnNodes.push_back({-0.05, -0.1});
+      }
+      for (long i = 0; i < numberOfVertices; ++i)
         values[i] += randomnessOnNodes[i];
     } else if (distortionFlag == CornerDistortionFlag::randomlyDistorted) {
       std::transform(values.begin(), values.end(), values.begin(), [](const auto& vec) {
@@ -241,37 +252,36 @@ struct ElementTest
 {
 };
 
-template <typename NonLinearOperator>
-[[nodiscard]] auto checkGradientOfElement(NonLinearOperator& nonLinearOperator,
+template <typename DifferentiableFunction>
+[[nodiscard]] auto checkGradientOfElement(DifferentiableFunction& f, const typename DifferentiableFunction::Domain& req,
                                           const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check gradient");
-  t.check(Ikarus::utils::checkGradient(nonLinearOperator, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(Ikarus::utils::checkGradient(f, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "calculateVector is not the gradient of calculateScalar." << messageIfFailed;
   return t;
 }
 
-template <typename NonLinearOperator>
-[[nodiscard]] auto checkHessianOfElement(NonLinearOperator& nonLinearOperator,
+template <typename DifferentiableFunction>
+[[nodiscard]] auto checkHessianOfElement(DifferentiableFunction& f, const typename DifferentiableFunction::Domain& req,
                                          const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check Hessian");
-  t.check(Ikarus::utils::checkHessian(nonLinearOperator, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(Ikarus::utils::checkHessian(f, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "calculateMatrix is not the Hessian of calculateScalar. " << messageIfFailed;
   return t;
 }
 
-template <typename NonLinearOperator>
-[[nodiscard]] auto checkJacobianOfElement(NonLinearOperator& nonLinearOperator,
+template <typename DifferentiableFunction>
+[[nodiscard]] auto checkJacobianOfElement(DifferentiableFunction& f, const typename DifferentiableFunction::Domain& req,
                                           const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check Jacobian");
-  t.check(Ikarus::utils::checkJacobian(nonLinearOperator, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(Ikarus::utils::checkJacobian(f, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "The Jacobian of calculateVector is not calculateMatrix." << messageIfFailed;
   return t;
 }
 
 template <template <typename, int, int> class RT, bool vectorizedResult = true>
-[[nodiscard]] auto checkCalculateAt(auto& /*nonLinearOperator*/, auto& fe, const auto& feRequirements,
-                                    const auto& expectedResult, const auto& evaluationPositions,
-                                    const std::string& messageIfFailed = "") {
+[[nodiscard]] auto checkCalculateAt(auto& /*f*/, auto& fe, const auto& feRequirements, const auto& expectedResult,
+                                    const auto& evaluationPositions, const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Test of the calulateAt function for " + Dune::className(fe), Dune::TestSuite::AlwaysThrow);
 
   using FiniteElement = std::remove_cvref_t<decltype(fe)>;
@@ -301,9 +311,8 @@ template <template <typename, int, int> class RT, bool vectorizedResult = true>
 }
 
 template <template <typename, int, int> class resType, typename ResultEvaluator>
-[[nodiscard]] auto checkResultFunction(auto& /*nonLinearOperator*/, auto& fe, const auto& feRequirements,
-                                       auto& expectedResult, const auto& evaluationPositions,
-                                       ResultEvaluator&& resultEvaluator  = {},
+[[nodiscard]] auto checkResultFunction(auto& /*f*/, auto& fe, const auto& feRequirements, auto& expectedResult,
+                                       const auto& evaluationPositions, ResultEvaluator&& resultEvaluator = {},
                                        const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Result Function Test" + Dune::className(fe));
 
@@ -324,13 +333,15 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
   auto vtkResultFunction =
       Ikarus::makeResultVtkFunction<resType>(sparseAssembler, std::forward<ResultEvaluator>(resultEvaluator));
 
+  auto resultFunction =
+      Ikarus::makeResultFunction<resType>(sparseAssembler, std::forward<ResultEvaluator>(resultEvaluator));
+
   auto localResultFunction = localFunction(vtkResultFunction);
   localResultFunction.bind(element);
 
   for (int i = 0; const auto& pos : evaluationPositions) {
-    auto result = localResultFunction(pos);
-    for (auto j : std::views::iota(0ul, result.size()))
-      computedResults(i, j) = result[j];
+    for (auto j : std::views::iota(Eigen::Index{0}, expectedResult.cols()))
+      computedResults(i, j) = localResultFunction.evaluate(j, pos);
     ++i;
   }
 
@@ -345,19 +356,16 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
 
   Dune::Vtk::VtkWriter vtkWriter(gridView);
 
-  vtkWriter.addPointData(vtkResultFunction);
-  vtkWriter.write("Vtk_VtkWriter_resultfunction_" + vtkResultFunction.name() + "_" +
+  vtkWriter.addPointData(resultFunction);
+  vtkWriter.write("Vtk_VtkWriter_resultfunction_" + resultFunction->name() + "_" +
                   std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
   auto vtkWriter2 = Ikarus::Vtk::Writer(sparseAssembler);
-  vtkWriter2.addResultFunction(vtkResultFunction, Ikarus::Vtk::DataTag::asCellData);
-  vtkWriter2.write("ikarus_vtkwriter_resultfunction_" + vtkResultFunction.name() + "_" +
+  vtkWriter2.addResultFunction(resultFunction, Ikarus::Vtk::DataTag::asCellData);
+  vtkWriter2.write("ikarus_vtkwriter_resultfunction_" + resultFunction->name() + "_" +
                    std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
 
   Dune::VTKWriter<decltype(gridView)> vtkWriter3(gridView);
-  auto resultFunction =
-      Ikarus::makeResultFunction<resType>(sparseAssembler, std::forward<ResultEvaluator>(resultEvaluator));
-
   vtkWriter3.addVertexData(resultFunction);
   vtkWriter3.write("native_vtkwriter_resultfunction_" + resultFunction->name() + "_" +
                    std::to_string(FiniteElement::myDim) + std::to_string(element.geometry().type().id()));
@@ -365,9 +373,9 @@ template <template <typename, int, int> class resType, typename ResultEvaluator>
   return t;
 }
 
-template <typename NonLinearOperator, typename FiniteElement,
+template <typename DifferentiableFunction, typename FiniteElement,
           typename FERequirementType = typename FiniteElement::FERequirementType, typename AffordanceColl>
-[[nodiscard]] auto checkFEByAutoDiff(NonLinearOperator&, FiniteElement& fe, FERequirementType req,
+[[nodiscard]] auto checkFEByAutoDiff(DifferentiableFunction&, FiniteElement& fe, FERequirementType req,
                                      AffordanceColl affordance, const std::string& messageIfFailed = "") {
   Dune::TestSuite t("Check calculateScalarImpl() and calculateVectorImpl() by Automatic Differentiation");
   auto& basis           = fe.localView().globalBasis();

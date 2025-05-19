@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
@@ -25,16 +25,16 @@ struct DummyProblem
   using Grid     = G;
   using GridView = typename Grid::LeafGridView;
 
-  using PreBasis = Dune::Functions::PowerPreBasis<Dune::Functions::BasisFactory::BlockedInterleaved,
+  using PreBasis = Dune::Functions::PowerPreBasis<Dune::Functions::BasisFactory::FlatInterleaved,
                                                   Dune::Functions::LagrangePreBasis<GridView, 1>, 2ul>;
   using Basis    = Ikarus::BasisHandler<PreBasis>;
 
-  using Material = typename Ikarus::VanishingStress<std::array<Ikarus::Impl::MatrixIndexPair, 3ul>{
-                                                        {Ikarus::Impl::MatrixIndexPair{2ul, 1ul},
-                                                         Ikarus::Impl::MatrixIndexPair{2ul, 0ul},
-                                                         Ikarus::Impl::MatrixIndexPair{2ul, 2ul}}
+  using Material = typename Ikarus::Materials::VanishingStress<std::array<Ikarus::Materials::MatrixIndexPair, 3ul>{
+                                                                   {Ikarus::Materials::MatrixIndexPair{2ul, 1ul},
+                                                                    Ikarus::Materials::MatrixIndexPair{2ul, 0ul},
+                                                                    Ikarus::Materials::MatrixIndexPair{2ul, 2ul}}
   },
-                                                    Ikarus::LinearElasticityT<double>>;
+                                                               Ikarus::Materials::LinearElasticityT<double>>;
   using LinearElastic =
       Ikarus::FE<Ikarus::PreFE<Basis>, Ikarus::LinearElasticPre<Material>::Skill, Ikarus::VolumeLoadPre<2>::Skill>;
 
@@ -57,7 +57,7 @@ struct DummyProblem
         basis_([&]() {
           using namespace Dune::Functions::BasisFactory;
 
-          return Ikarus::makeBasis(gridView_, power<2>(lagrange<1>()));
+          return Ikarus::makeBasis(gridView_, power<2>(lagrange<1>(), FlatInterleaved{}));
         }()),
         dirichletValues_([&]() { return Ikarus::DirichletValues(basis_.flat()); }()),
         fes_([&]() {
@@ -66,10 +66,11 @@ struct DummyProblem
                 if (std::abs(intersection.geometry().center()[1]) < 1e-8)
                   dirichletFlags[localView.index(localIndex)] = true;
               });
-          auto vL = []([[maybe_unused]] auto& globalCoord, auto& lamb) { return Eigen::Vector2d{0, -1}; };
-          auto linMat =
-              Ikarus::LinearElasticity(Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 100, .nu = 0.2}));
-          auto skills_ = Ikarus::skills(Ikarus::linearElastic(Ikarus::planeStress(linMat)), Ikarus::volumeLoad<2>(vL));
+          auto vL     = []([[maybe_unused]] auto& globalCoord, auto& lamb) { return Eigen::Vector2d{0, -1}; };
+          auto linMat = Ikarus::Materials::LinearElasticity(
+              Ikarus::toLamesFirstParameterAndShearModulus({.emodul = 100, .nu = 0.2}));
+          auto skills_ =
+              Ikarus::skills(Ikarus::linearElastic(Ikarus::Materials::planeStress(linMat)), Ikarus::volumeLoad<2>(vL));
           std::vector<LinearElastic> fes;
 
           for (auto&& element : elements(gridView_)) {
@@ -79,27 +80,23 @@ struct DummyProblem
           return std::move(fes);
         }()),
         sparseAssembler_{std::make_shared<SparseAssmblerT>(fes_, dirichletValues_)},
-        requirement_(typename LinearElastic::Requirement())
+        requirement_(typename LinearElastic::Requirement(basis_))
 
   {
-    D_Glob_ = Eigen::VectorXd::Zero(basis_.flat().size());
-
-    auto lambdaLoad = 1.0;
-    requirement_.insertGlobalSolution(D_Glob_).insertParameter(lambdaLoad);
-
+    requirement_.parameter() = 1.0;
     sparseAssembler_->bind(requirement_);
-    sparseAssembler_->bind(Ikarus::DBCOption::Full);
-
-    auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(
+    auto f = Ikarus::DifferentiableFunctionFactory::op(
         sparseAssembler_,
         Ikarus::AffordanceCollection(Ikarus::VectorAffordance::forces, Ikarus::MatrixAffordance::stiffness));
 
-    const auto& K    = nonLinOp.derivative();
-    const auto& Fext = nonLinOp.value();
+    const auto& K    = derivative(f)(requirement_);
+    const auto& Fext = f(requirement_);
 
     auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_CholmodSupernodalLLT);
     linSolver.compute(K);
-    linSolver.solve(D_Glob_, -Fext);
+    linSolver.solve(requirement_.globalSolution(), -Fext);
+    sparseAssembler_->bind(requirement_); // the requirement has changed therefore, we have to bind again
+    sparseAssembler_->bind(Ikarus::DBCOption::Full);
   }
 
   const auto& grid() { return *grid_; }
@@ -118,5 +115,4 @@ private:
   std::vector<LinearElastic> fes_;
   std::shared_ptr<SparseAssmblerT> sparseAssembler_;
   typename LinearElastic::Requirement requirement_{};
-  Eigen::VectorXd D_Glob_;
 };

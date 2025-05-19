@@ -6,7 +6,7 @@
 a non-linear set of equations.
 A function that shows the algorithm explicitly is provided, and another function which is implemented in Ikarus is
 demonstrated. The function that depicts the Ikarus implementation uses a
-[non-linear operator](../01_framework/nonlinearOperator.md) to
+[Differentiable Function](../01_framework/differentiablefunction.md) to
 perform the Newton-Raphson iterations. A logger can also be subscribed to in order to observe the residual norms,
 for instance.
 
@@ -42,27 +42,30 @@ as shown below:
 ```cpp
 auto fvLambda  = [&](auto &&x) { return f(x); };
 auto dfvLambda = [&](auto &&x) { return df(x); };
-Ikarus::NonLinearOperator nonLinOp(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(x));
+auto f = Ikarus::makeDifferentiableFunction(Ikarus::functions(fvLambda, dfvLambda), x);
 ```
 
-The standard implementation of the Newton-Raphson method is illustrated in this function, which also uses `nonLinOp`.
+The standard implementation of the Newton-Raphson method is illustrated in this function, which also uses `f`.
 
 ```cpp
 int iterCount = 1;
-while (abs(nonLinOp.value()) > eps and iterCount <= maxIter) {
-  x -= nonLinOp.value() / nonLinOp.derivative();
-  nonLinOp.updateAll();
+typename Ikarus::DifferentiableFunction::Domain x;
+auto fv = f(x);
+auto dfv = derivative(f)(x);
+while (abs(fv) > eps and iterCount <= maxIter) {
+
+  x -= fv / dfv;
   iterCount++;
 
-  std::cout << "nonlinearOperator, value(): " << nonLinOp.value() << "\n";
-  std::cout << "nonlinearOperator, x: " << nonLinOp.firstParameter() << "\n";
+  std::cout << "differentiablefunction, value(): " << fv << "\n";
+  std::cout << "differentiablefunction arg, x: " << x << "\n";
 }
 ```
 
 One could also use the existing functionality in Ikarus to obtain a similar solution from the Newton-Raphson scheme, as depicted below:
 
 ```cpp
-Ikarus::NewtonRaphson nr(nonLinOp);
+Ikarus::NewtonRaphson nr(f);
 nr.setup({eps, maxIter});
 const auto solverInfo = nr.solve(x);
 
@@ -96,9 +99,9 @@ void newtonRaphsonBasicExampleWithLogger() {
 
   auto fvLambda  = [&](auto &&x) { return f(x); };
   auto dfvLambda = [&](auto &&x) { return df(x); };
-  Ikarus::NonLinearOperator nonLinOp(Ikarus::functions(fvLambda, dfvLambda), Ikarus::parameter(x));
+  auto f = Ikarus::makeDifferentiableFunction(Ikarus::functions(fvLambda, dfvLambda), x);
 
-  Ikarus::NewtonRaphson nr(nonLinOp);
+  Ikarus::NewtonRaphson nr(f);
   nr.setup({eps, maxIter});
 
   auto ourSimpleObserver = std::make_shared<OurFirstObserver>();
@@ -114,7 +117,7 @@ void newtonRaphsonBasicExampleWithLogger() {
 
 ## Takeaways
 
-- Functors for the function and its derivative can be used to create a simple non-linear operator.
-- A `NewtonRaphson` object can be created using the non-linear operator.
+- Functors for the function and its derivative can be used to create a simple differentiable function.
+- A `NewtonRaphson` object can be created using the differentiable function.
 - The settings for the Newton-Raphson scheme can be modified by using the `#!cpp setup()` function.
 - Nonlinear solver messages can be subscribed to print the desired quantities.

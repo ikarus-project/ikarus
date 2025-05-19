@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -31,12 +31,22 @@ struct EigenBase;
 }
 
 namespace Ikarus {
-template <auto matrixIndexPair, typename MaterialImpl>
-struct VanishingStress;
+
+struct ControlInformation;
+struct NonLinearSolverInformation;
 
 template <typename Derived>
 auto transpose(const Eigen::EigenBase<Derived>& A);
 namespace Concepts {
+
+  /**
+   * \concept EigenType
+   * \brief Concept to check if a type is derived from Eigen::MatrixBase.
+   *
+   * \tparam T The type to check.
+   */
+  template <typename T>
+  concept EigenType = std::is_base_of_v<Eigen::MatrixBase<std::decay_t<T>>, std::decay_t<T>>;
 
   /**
    * \concept FlatInterLeavedBasis
@@ -178,14 +188,14 @@ namespace Concepts {
    * \concept PathFollowingStrategy
    * \brief Concept defining the requirements for a path-following strategy.
    * \tparam PF Type representing the path-following strategy.
-   * \tparam NLO Type representing the non-linear operator.
+   * \tparam F Type representing the non-linear operator.
    * \tparam SA Type representing the subsidiary arguments.
    */
-  template <typename PF, typename NLO, typename SA>
-  concept PathFollowingStrategy = requires(PF pft, NLO nop, SA args) {
+  template <typename PF, typename F, typename SA>
+  concept PathFollowingStrategy = requires(PF pft, F nop, SA args, typename F::Domain req) {
     { pft(args) } -> std::same_as<void>;
-    { pft.initialPrediction(nop, args) } -> std::same_as<void>;
-    { pft.intermediatePrediction(nop, args) } -> std::same_as<void>;
+    { pft.initialPrediction(req, nop, args) } -> std::same_as<void>;
+    { pft.intermediatePrediction(req, nop, args) } -> std::same_as<void>;
   };
 
   /**
@@ -196,12 +206,13 @@ namespace Concepts {
    * \tparam NLSI The non-linear solver information type.
    * \tparam SA The subsidiary arguments type.
    */
-  template <typename ASS, typename NLSI, typename SA, typename NonLinearOperator>
-  concept AdaptiveStepSizingStrategy = requires(ASS adaptiveStepSizing, NLSI info, SA args, NonLinearOperator nop) {
-    { adaptiveStepSizing(info, args, nop) } -> std::same_as<void>;
-    { adaptiveStepSizing.targetIterations() } -> std::same_as<int>;
-    { adaptiveStepSizing.setTargetIterations(std::declval<int>()) } -> std::same_as<void>;
-  };
+  template <typename ASS, typename NLSI, typename SA, typename DifferentiableFunction>
+  concept AdaptiveStepSizingStrategy =
+      requires(ASS adaptiveStepSizing, NLSI info, SA args, DifferentiableFunction nop) {
+        { adaptiveStepSizing(info, args, nop) } -> std::same_as<void>;
+        { adaptiveStepSizing.targetIterations() } -> std::same_as<int>;
+        { adaptiveStepSizing.setTargetIterations(std::declval<int>()) } -> std::same_as<void>;
+      };
 
   /**
    * \concept LinearSolverCheck
@@ -212,7 +223,7 @@ namespace Concepts {
    * \tparam V The vector type.
    */
   template <typename LS, typename M, typename V>
-  concept LinearSolverCheck = requires(LS& linearSolver, M& A, V& vec) {
+  concept LinearSolverCheck = requires(LS linearSolver, M A, V vec) {
     linearSolver.analyzePattern(A);
     linearSolver.factorize(A);
     linearSolver.solve(vec, vec);
@@ -227,12 +238,11 @@ namespace Concepts {
    */
   template <typename NLS>
   concept NonLinearSolverCheckForPathFollowing = requires {
-    std::tuple_size<typename NLS::NonLinearOperator::ParameterValues>::value == 2;
-    not(std::is_same_v<typename NLS::NonLinearOperator::ValueType, double> and
-        ((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix,
-                                                  typename NLS::NonLinearOperator::DerivativeType>::value) or
-         (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix,
-                                                     typename NLS::NonLinearOperator::DerivativeType>::value)));
+    not(std::is_same_v<typename NLS::DifferentiableFunction::Domain, double> and
+        ((traits::isSpecializationTypeAndNonTypes<
+             Eigen::Matrix, typename NLS::DifferentiableFunction::Traits::template Range<1>>::value) or
+         (traits::isSpecializationTypeNonTypeAndType<
+             Eigen::SparseMatrix, typename NLS::DifferentiableFunction::Traits::template Range<1>>::value)));
   };
 
   /**
@@ -465,8 +475,8 @@ namespace Concepts {
    * \details A type satisfies the IsMaterial concept if it meets one of the following conditions:
    *
    * 1. The material is a specialization of the specified template `MaterialToCheck`.
-   * 2. The material is a specialization of `VanishingStress` with an underlying type that is a specialization of the
-   * specified template `MaterialToCheck`.
+   * 2. The material is a specialization of `VanishingStress` or `VanishingStrain` (i.e. reduced) with an underlying
+   * type that is a specialization of the specified template `MaterialToCheck`.
    *
    */
   template <template <typename...> class MaterialToCheck, typename Material>
@@ -481,15 +491,6 @@ namespace Concepts {
       { toString(t) } -> std::same_as<std::string>; // The toString function
     };
   } // namespace Impl
-
-  /**
-   * \concept GeometricallyLinearMaterial
-   * \brief Concepts defining the requirements for a material to be geometrically linear
-   * This is the case when the corresponding strainTag is linear.
-   * \tparam MAT the material implementation
-   */
-  template <typename MAT>
-  concept GeometricallyLinearMaterial = MAT::strainTag == StrainTags::linear;
 
   /**
    * \concept ResultType
@@ -624,6 +625,119 @@ namespace Concepts {
   concept AutodiffScalar = Impl::is_dual<T>::value;
 
   /**
+   \concept SmartPointer
+   \brief Concept to check if the type is either a unique_ptr or a shared_ptr.
+   \tparam T The type to be checked.
+   */
+  template <typename T>
+  concept SmartPointer = traits::isSharedPtr<T>::value || traits::isUniquePtr<T>::value;
+
+  /**
+   \concept SmartPointer
+   \brief Concept to check if the type is either a smart pointer or a raw pointer.
+   \tparam T The type to be checked.
+   */
+  template <typename T>
+  concept PointerOrSmartPointer = SmartPointer<T> || traits::Pointer<T>;
+
+  /**
+   * \concept ControlRoutineState
+   * \brief Concept to check if a type represents a control routine state
+   * \tparam S the type to be checked
+   */
+  template <typename S>
+  concept ControlRoutineState = requires(S s) {
+    typename S::Domain;
+
+    { s.information } -> std::same_as<const ControlInformation&>;
+    { s.loadStep } -> std::convertible_to<int>;
+    { s.stepSize } -> std::convertible_to<double>;
+    { s.domain } -> std::same_as<const typename S::Domain&>;
+  };
+
+  /**
+   * \concept NonLinearSolverState
+   * \brief Concept to check if a type represents a nonlinear solver state
+   * \tparam S the type to be checked
+   */
+  template <typename S>
+  concept NonLinearSolverState = requires(S s) {
+    typename S::Domain;
+    typename S::CorrectionType;
+
+    { s.information } -> std::same_as<const NonLinearSolverInformation&>;
+    { s.domain } -> std::same_as<const typename S::Domain&>;
+    { s.correction } -> std::same_as<const typename S::CorrectionType&>;
+  };
+
+  /**
+   * \brief Returns true if a given straintag is related only to the reference configuration
+   */
+  template <StrainTags tag>
+  concept ReferenceConfiguraionStrain = (tag == StrainTags::greenLagrangian) or
+                                        (tag == StrainTags::rightCauchyGreenTensor) or (tag == StrainTags::linear);
+
+  /**
+   * \brief Returns true if a given stresstag is related only to the reference configuration
+   */
+  template <StressTags tag>
+  concept ReferenceConfiguraionStress = (tag == StressTags::PK2) or (tag == StressTags::linear);
+
+  namespace Formulations {
+    /**
+    \concept TotalLagrangian
+    \brief Concept to check if the underlying strain and stress tag correspond to a total Lagrangian formulation.
+    \tparam T1 The underlying strain tag.
+    \tparam T2 The underlying stress tag.
+    */
+    template <StrainTags T1, StressTags T2>
+    concept TotalLagrangian = (T1 == StrainTags::linear and T2 == StressTags::linear) or
+                              (T1 == StrainTags::greenLagrangian and T2 == StressTags::PK2);
+
+    /**
+      \concept TwoPoint
+      \brief Concept to check if the underlying strain and stress tag correspond to a two point formulation.
+      \tparam T1 The underlying strain tag.
+      \tparam T2 The underlying stress tag.
+      */
+    template <StrainTags T1, StressTags T2>
+    concept TwoPoint =
+        (T1 == StrainTags::deformationGradient or T1 == StrainTags::displacementGradient) and T2 == StressTags::PK1;
+  } // namespace Formulations
+
+  /**
+   * \brief Concept representing a material interface
+   *
+   * \concept Material
+   * A type M satisfies the material interface if it provides the necessary member functions and type.
+   */
+  template <typename M>
+  concept Material = requires(M m, Eigen::Matrix3d C) {
+    M::strainTag;
+    M::stressTag;
+    M::tangentModuliTag;
+    M::derivativeFactor;
+    M::isReduced;
+
+    typename M::ScalarType;
+
+    { m.name() } -> std::convertible_to<std::string>;
+    { m.materialParameters() } -> std::same_as<typename M::MaterialParameters>;
+    { m.template storedEnergy<M::strainTag>(C) } -> std::same_as<typename M::ScalarType>;
+    { m.template stresses<M::strainTag>(C) };
+    { m.template tangentModuli<M::strainTag>(C) };
+  };
+
+  /**
+   * \concept GeometricallyLinearMaterial
+   * \brief Concepts defining the requirements for a material to be geometrically linear
+   * This is the case when the corresponding strainTag is linear.
+   * \tparam MAT the material implementation
+   */
+  template <typename MAT>
+  concept GeometricallyLinearMaterial = Material<MAT> && (MAT::strainTag == StrainTags::linear);
+
+  /**
    * \brief Concept representing an eigenvalue solver interface
    *
    * \concept EigenValueSolver
@@ -640,4 +754,29 @@ namespace Concepts {
   };
 
 } // namespace Concepts
+
+namespace traits {
+#ifndef DOXYGEN
+
+  // Primary template: for non-pointer types.
+  template <typename T, bool = Concepts::PointerOrSmartPointer<T>>
+  struct MaybeDereference
+  {
+    using type = T;
+  };
+
+  // Specialization: for pointer (or smart pointer) types.
+  template <typename T>
+  struct MaybeDereference<T, true>
+  {
+    // We know T is pointer-like, so *std::declval<T&>() is well-formed.
+    using type = std::remove_reference_t<decltype(*std::declval<T&>())>;
+  };
+#endif
+
+  template <typename T>
+  using MaybeDereferencedType = typename MaybeDereference<T>::type;
+
+} // namespace traits
+
 } // namespace Ikarus

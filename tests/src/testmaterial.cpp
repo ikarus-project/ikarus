@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <config.h>
@@ -10,42 +10,17 @@
 #include <Eigen/Eigenvalues>
 
 #include <ikarus/finiteelements/mechanics/materials.hh>
+#if ENABLE_MUESLI
+  #include <ikarus/finiteelements/mechanics/materials/muesli/mueslimaterials.hh>
+#endif
 #include <ikarus/finiteelements/physicshelper.hh>
+#include <ikarus/utils/differentiablefunction.hh>
 #include <ikarus/utils/functionsanitychecks.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
 
 using namespace Ikarus;
+using namespace Ikarus::Materials;
 using Dune::TestSuite;
-
-template <StrainTags strainTag>
-double transformStrainAccordingToStrain(auto& e) {
-  double strainDerivativeFactor = 1;
-
-  if (strainTag == StrainTags::greenLagrangian or strainTag == StrainTags::linear) {
-    e = ((e.transpose() + e + 3 * Eigen::Matrix3d::Identity()) / 10).eval();
-    e /= e.array().maxCoeff();
-    auto C = (2 * e + Eigen::Matrix3d::Identity()).eval();
-    Eigen::EigenSolver<Eigen::Matrix3d> esC(C);
-    e                      = 0.5 * (C / esC.eigenvalues().real().maxCoeff() - Eigen::Matrix3d::Identity());
-    strainDerivativeFactor = 1;
-  } else if (strainTag == StrainTags::rightCauchyGreenTensor) {
-    e = (e.transpose() + e).eval();
-    Eigen::EigenSolver<Eigen::Matrix3d> esC(e);
-    e += (-esC.eigenvalues().real().minCoeff() + 1) * Eigen::Matrix3d::Identity();
-    esC.compute(e);
-    e /= esC.eigenvalues().real().maxCoeff();
-
-    assert(esC.eigenvalues().real().minCoeff() > 0 &&
-           " The smallest eigenvalue is negative this is unsuitable for the tests");
-
-    strainDerivativeFactor = 0.5;
-  } else if (strainTag == StrainTags::deformationGradient) {
-    e = (e + 3 * Eigen::Matrix3d::Identity()).eval(); // create positive definite matrix
-    e = e.sqrt();
-  }
-  return strainDerivativeFactor;
-}
 
 template <StrainTags strainTag, typename MaterialImpl>
 auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
@@ -112,21 +87,21 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
                                                   << moduliV;
   }
 
-  auto f  = [&](auto& xv) { return mat.template storedEnergy<strainTag>(xv); };
-  auto df = [&](auto& xv) { return (mat.template stresses<strainTag>(xv) * strainDerivativeFactor).eval(); };
+  auto fl  = [&](auto& xv) { return mat.template storedEnergy<strainTag>(xv); };
+  auto dfl = [&](auto& xv) { return (mat.template stresses<strainTag>(xv) * strainDerivativeFactor).eval(); };
 
-  auto ddf = [&](auto& xv) {
+  auto ddfl = [&](auto& xv) {
     return (mat.template tangentModuli<strainTag>(xv) * strainDerivativeFactor * strainDerivativeFactor).eval();
   };
 
-  auto nonLinOp    = Ikarus::NonLinearOperator(functions(f, df, ddf), parameter(ev));
-  auto subNonLinOp = nonLinOp.template subOperator<1, 2>();
+  auto f  = Ikarus::makeDifferentiableFunction(functions(fl, dfl, ddfl), ev);
+  auto df = derivative(f);
 
-  t.check(utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkGradient(f, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << std::string("checkGradient Failed");
-  t.check(utils::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkHessian(f, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << std::string("checkHessian Failed");
-  t.check(utils::checkJacobian(subNonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkJacobian(df, ev, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << std::string("checkJacobian Failed");
 
   return t;
@@ -135,14 +110,10 @@ auto testMaterialWithStrain(const MaterialImpl& mat, const double tol = 1e-13) {
 template <typename Material>
 auto testMaterial(Material mat) {
   TestSuite t("testMaterial");
-  if constexpr (std::is_same_v<Material, LinearElasticity> or
-                std::is_same_v<Material,
-                               Ikarus::VanishingStress<std::array<Ikarus::Impl::MatrixIndexPair, 1>({{{2, 2}}}),
-                                                       Ikarus::LinearElasticity>>) {
+  if constexpr (Material::isLinear) {
     t.subTest(testMaterialWithStrain<StrainTags::linear>(mat));
-  } else if constexpr (std::is_same_v<Material,
-                                      Ikarus::VanishingStress<std::array<Ikarus::Impl::MatrixIndexPair, 1>({{{2, 2}}}),
-                                                              Ikarus::StVenantKirchhoff>>) {
+  } else if constexpr (std::is_same_v<Material, VanishingStress<std::array<MatrixIndexPair, 1>({{{2, 2}}}),
+                                                                Ikarus::Materials::StVenantKirchhoff>>) {
     t.subTest(testMaterialWithStrain<StrainTags::greenLagrangian>(mat));
   } else {
     if constexpr (Material::isReduced) {
@@ -228,29 +199,6 @@ auto testPlaneStrainAgainstPlaneStress(const double tol = 1e-10) {
   return t;
 }
 
-template <typename MAT>
-auto checkThrowNeoHooke(const MAT& matNH) {
-  static_assert(std::is_same_v<MAT, NeoHookeT<double>>,
-                "checkThrowNeoHooke is only implemented for Neo-Hooke material law.");
-  TestSuite t("NeoHooke Test - Checks the throw message for negative determinant of C");
-  Eigen::Vector3d E;
-  E << 2.045327969583023, 0.05875570522766141, 0.3423966429644326;
-  auto reducedMat = planeStress(matNH, 1e-8);
-
-  t.checkThrow<Dune::InvalidStateException>(
-      [&]() { const auto moduli = (reducedMat.template tangentModuli<StrainTags::greenLagrangian, true>(E)); },
-      "Neo-Hooke test (tangentModuli) should have failed with negative detC for the given E");
-
-  t.checkThrow<Dune::InvalidStateException>(
-      [&]() { const auto stress = (reducedMat.template stresses<StrainTags::greenLagrangian, true>(E)); },
-      "Neo-Hooke test (stresses) should have failed with negative detC for the given E");
-
-  t.checkThrow<Dune::InvalidStateException>(
-      [&]() { const auto energy = (reducedMat.template storedEnergy<StrainTags::greenLagrangian>(E)); },
-      "Neo-Hooke test (stresses) should have failed with negative detC for the given E");
-  return t;
-}
-
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
@@ -262,26 +210,23 @@ int main(int argc, char** argv) {
 
   auto nh = NeoHooke(matPar);
   t.subTest(testMaterial(nh));
-  t.subTest(checkThrowNeoHooke(nh));
 
   auto le = LinearElasticity(matPar);
   t.subTest(testMaterial(le));
 
-  auto leRed = makeVanishingStress<Impl::MatrixIndexPair{2, 2}>(le, 1e-12);
+  auto leRed = makeVanishingStress<MatrixIndexPair{2, 2}>(le, 1e-12);
   t.subTest(testMaterial(leRed));
 
-  auto svkRed = makeVanishingStress<Impl::MatrixIndexPair{2, 2}>(svk, 1e-12);
+  auto svkRed = makeVanishingStress<MatrixIndexPair{2, 2}>(svk, 1e-12);
   t.subTest(testMaterial(svkRed));
 
-  auto nhRed = makeVanishingStress<Impl::MatrixIndexPair{2, 2}>(nh, 1e-12);
+  auto nhRed = makeVanishingStress<MatrixIndexPair{2, 2}>(nh, 1e-12);
   t.subTest(testMaterial(nhRed));
 
-  auto nhRed2 = makeVanishingStress<Impl::MatrixIndexPair{1, 1}, Impl::MatrixIndexPair{2, 2}>(nh, 1e-12);
+  auto nhRed2 = makeVanishingStress<MatrixIndexPair{1, 1}, MatrixIndexPair{2, 2}>(nh, 1e-12);
   t.subTest(testMaterial(nhRed2));
 
-  auto nhRed3 =
-      makeVanishingStress<Impl::MatrixIndexPair{2, 1}, Impl::MatrixIndexPair{2, 0}, Impl::MatrixIndexPair{2, 2}>(nh,
-                                                                                                                 1e-12);
+  auto nhRed3 = makeVanishingStress<MatrixIndexPair{2, 1}, MatrixIndexPair{2, 0}, MatrixIndexPair{2, 2}>(nh, 1e-12);
   t.subTest(testMaterial(nhRed3));
 
   auto nhRed4 = shellMaterial(nh, 1e-12);
@@ -302,12 +247,84 @@ int main(int argc, char** argv) {
   auto linPlaneStrain = planeStrain(le);
   t.subTest(testMaterialWithStrain<StrainTags::linear>(linPlaneStrain));
 
-  auto nhRed8 = makeVanishingStrain<Impl::MatrixIndexPair{1, 1}, Impl::MatrixIndexPair{2, 2}>(nh);
+  auto nhRed8 = makeVanishingStrain<MatrixIndexPair{1, 1}, MatrixIndexPair{2, 2}>(nh);
   t.subTest(testMaterial(nhRed8));
+
+  // Hyperelasticity
+  double mu     = matPar.mu;
+  double lambda = matPar.lambda;
+  double K      = convertLameConstants(matPar).toBulkModulus();
+
+  auto bk = makeBlatzKo(mu);
+  t.subTest(testMaterial(bk));
+
+  // Material parameters (example values)
+  std::array<double, 1> mu_og    = {mu};
+  std::array<double, 1> alpha_og = {2.0};
+
+  std::array<double, 3> mu_og2    = {2.0 * mu / 3.0, mu / 6.0, mu / 6.0};
+  std::array<double, 3> alpha_og2 = {1.23, 0.59, 0.18};
+
+  auto ogden     = makeOgden<1, PrincipalStretchTags::total>(mu_og, alpha_og, lambda, VF3{});
+  auto ogden2    = makeOgden<3, PrincipalStretchTags::total>(mu_og2, alpha_og2, lambda, VF2{});
+  auto ogdenDev  = makeOgden<1, PrincipalStretchTags::deviatoric>(mu_og, alpha_og, K, VF3{});
+  auto ogdenDev2 = makeOgden<3, PrincipalStretchTags::deviatoric>(mu_og2, alpha_og2, K, VF2{});
+
+  t.subTest(testMaterial(ogden));
+  t.subTest(testMaterial(ogden2));
+  t.subTest(testMaterial(ogdenDev));
+  t.subTest(testMaterial(ogdenDev2));
+
+  auto mr   = makeMooneyRivlin({mu / 2.0, mu / 2.0});
+  auto yeoh = makeYeoh({mu / 2.0, mu / 6.0, mu / 3.0});
+  auto ab   = makeArrudaBoyce({mu, 0.85});
+  auto gent = makeGent({mu, 2.5});
+
+  t.subTest(testMaterial(mr));
+  t.subTest(testMaterial(yeoh));
+  t.subTest(testMaterial(ab));
+  t.subTest(testMaterial(gent));
+
+  auto psOgden  = planeStrain(ogden);
+  auto pstOgden = planeStress(ogden2, 1e-12);
+  auto psmr     = planeStrain(mr);
+
+  t.subTest(testMaterial(psOgden));
+  t.subTest(testMaterial(pstOgden));
+  t.subTest(testMaterial(psmr));
 
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::linear, LinearElasticity>());
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::greenLagrangian, StVenantKirchhoff>());
   t.subTest(testPlaneStrainAgainstPlaneStress<StrainTags::rightCauchyGreenTensor, NeoHooke>());
 
+#if ENABLE_MUESLI
+  // Muesli
+  auto muesliLin = makeMuesliLinearElasticity(matPar);
+  t.subTest(testMaterial(muesliLin));
+
+  auto muesliSVK = makeMuesliSVK(matPar);
+  t.subTest(testMaterial(muesliSVK));
+
+  auto muesliNeoHooke = makeMuesliNeoHooke(matPar, false);
+  t.subTest(testMaterial(muesliNeoHooke));
+
+  auto muesliNeoHookeReg = makeMuesliNeoHooke(matPar, true);
+  t.subTest(testMaterial(muesliNeoHookeReg));
+
+  auto muesliMR = makeMooneyRivlin({K, mu / 2, mu / 2});
+  t.subTest(testMaterial(muesliMR));
+
+  auto muesliYeoh = makeMuesliYeoh({mu / 2, mu / 6, mu / 3}, K);
+  t.subTest(testMaterial(muesliYeoh));
+
+  auto muesliAB = makeMuesliArrudaBoyce(mu, 0.85, K, false);
+  t.subTest(testMaterial(muesliAB));
+
+  auto muesliSVKPlaneStrain = planeStrain(muesliSVK);
+  t.subTest(testMaterial(muesliSVKPlaneStrain));
+
+  auto muesliNHPlaneStress = planeStress(muesliNeoHooke, 1e-11);
+  t.subTest(testMaterial(muesliNHPlaneStress));
+#endif
   return t.exit();
 }

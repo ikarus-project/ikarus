@@ -1,9 +1,9 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
  * \file interface.hh
- * \brief Defines the interface for flat, scalar, vector and matrix assemblers
+ * \brief Defines the interface for scalar, vector and matrix flat assemblers
  */
 
 #pragma once
@@ -86,7 +86,13 @@ public:
    * \brief Returns the container of finite elements.
    * \return Reference to the finite element container.
    */
-  auto& finiteElements() const { return Dune::resolveRef(feContainer_); }
+  const auto& finiteElements() const { return Dune::resolveRef(feContainer_); }
+
+  /**
+   * \brief Returns the container of finite elements.
+   * \return Reference to the finite element container.
+   */
+  auto& finiteElements() { return Dune::resolveRef(feContainer_); }
 
   /**
    * \brief Returns the dirichlet value object.
@@ -286,7 +292,7 @@ public:
    * \param affordance The scalar affordance
    * \return Const reference to the calculated scalar quantity.
    */
-  const ScalarType& scalar(const FERequirement& feRequirements, ScalarAffordance affordance) {
+  ScalarType& scalar(const FERequirement& feRequirements, ScalarAffordance affordance) {
     return underlying().getScalarImpl(feRequirements, affordance);
   }
 
@@ -295,7 +301,7 @@ public:
    *
    * \return Const reference to the calculated scalar quantity.
    */
-  const ScalarType& scalar() {
+  ScalarType& scalar() {
     return underlying().getScalarImpl(underlying().requirement(),
                                       underlying().affordanceCollection().scalarAffordance());
   }
@@ -341,8 +347,8 @@ public:
      * \param dbcOption The DBCOption
      * \return Const reference to the calculated vectorial quantity.
      */
-  const VectorType& vector(const FERequirement& feRequirements, VectorAffordance affordance,
-                           DBCOption dbcOption = DBCOption::Full) {
+  VectorType& vector(const FERequirement& feRequirements, VectorAffordance affordance,
+                     DBCOption dbcOption = DBCOption::Full) {
     if (dbcOption == DBCOption::Raw) {
       return underlying().getRawVectorImpl(feRequirements, affordance);
     } else if (dbcOption == DBCOption::Reduced) {
@@ -363,7 +369,7 @@ public:
  * \param dbcOption The DBCOption
  * \return Const reference to the calculated vectorial quantity.
  */
-  const VectorType& vector(DBCOption dbcOption) {
+  VectorType& vector(DBCOption dbcOption) {
     return vector(underlying().requirement(), underlying().affordanceCollection().vectorAffordance(), dbcOption);
   }
 
@@ -375,7 +381,7 @@ freedom associated with dirichlet boundary conditions are set to zero in the vec
 freedom associated with dirichlet boundary conditions are removed and the returned vector has reduced size.
 * \return Const reference to the calculated vectorial quantity.
 */
-  const VectorType& vector() { return vector(underlying().dBCOption()); }
+  VectorType& vector() { return vector(underlying().dBCOption()); }
 
 private:
   //> CRTP
@@ -416,8 +422,8 @@ public:
    * \param dbcOption The DBCOption
    * \return Const reference to the modified sparse matrix quantity.
    */
-  const MatrixType& matrix(const FERequirement& feRequirements, MatrixAffordance affordance,
-                           DBCOption dbcOption = DBCOption::Full) {
+  MatrixType& matrix(const FERequirement& feRequirements, MatrixAffordance affordance,
+                     DBCOption dbcOption = DBCOption::Full) {
     if (dbcOption == DBCOption::Raw) {
       return underlying().getRawMatrixImpl(feRequirements, affordance);
     } else if (dbcOption == DBCOption::Reduced) {
@@ -436,7 +442,7 @@ public:
    * \param dbcOption The DBCOption
    * \return Const reference to the modified sparse matrix quantity.
    */
-  const MatrixType& matrix(DBCOption dbcOption) {
+  MatrixType& matrix(DBCOption dbcOption) {
     return matrix(underlying().requirement(), underlying().affordanceCollection().matrixAffordance(), dbcOption);
   }
 
@@ -448,7 +454,7 @@ dBCOption.
 
  * \return Const reference to the modified sparse matrix quantity.
  */
-  const MatrixType& matrix() { return matrix(underlying().dBCOption()); }
+  MatrixType& matrix() { return matrix(underlying().dBCOption()); }
 
 private:
   //> CRTP

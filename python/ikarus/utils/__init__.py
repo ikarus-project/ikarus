@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 from dune.common.hashit import hashIt
@@ -20,7 +20,7 @@ def boundaryPatch(gridView, booleanVector):
     includes = []
     includes += ["dune/fufem/boundarypatch.hh"]
     includes += ["ikarus/python/utils/boundarypatch.hh"]
-    includes += gridView._includes
+    includes += gridView.cppIncludes
     moduleName = "boundaryPatch_" + hashIt(element_type)
     module = generator.load(
         includes=includes, typeName=element_type, moduleName=moduleName

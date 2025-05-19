@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 cmake_minimum_required(VERSION 3.18)
@@ -31,6 +31,7 @@ add_subdirectory(linearalgebra)
 add_subdirectory(solver)
 add_subdirectory(utils)
 add_subdirectory(io)
+add_subdirectory(experimental)
 if(DUNE_ENABLE_PYTHONBINDINGS)
   add_subdirectory(python)
 endif()

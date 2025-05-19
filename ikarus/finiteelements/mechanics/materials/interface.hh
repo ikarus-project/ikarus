@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <ikarus/finiteelements/mechanics/materials/materialhelpers.hh>
+#include <ikarus/finiteelements/mechanics/materials/numericalmaterialinversion.hh>
 #include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
 #include <ikarus/finiteelements/mechanics/materials/tags.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
@@ -16,7 +18,7 @@
 #include <ikarus/utils/linearalgebrahelper.hh>
 #include <ikarus/utils/traits.hh>
 
-namespace Ikarus {
+namespace Ikarus::Materials {
 
 #ifndef DOXYGEN
 template <class MImpl>
@@ -85,6 +87,8 @@ struct Material
    */
   static constexpr bool isReduced = traits::isSpecializationNonTypeAndTypes<VanishingStress, MaterialImpl>::value or
                                     traits::isSpecializationNonTypeAndTypes<VanishingStrain, MaterialImpl>::value;
+
+  static constexpr bool isLinear = MI::strainTag == StrainTags::linear;
 
   /**
    * \brief Const accessor to the underlying material (CRTP).
@@ -189,6 +193,49 @@ struct Material
   }
 
   /**
+   * \brief Computes the corresponding strain measure and inverse material tangent for a given stress state.
+   * \details This assumes the existence of a complementary stored energy function $\chi(\BS)$, such that
+   * $$ \partial_{\BS} \chi(\BS) := \BE$$. Except for linear materials, this is not just the inverse of the material
+   * tangent, but needs the inversion of the materials stored energy function. For SVK and Linear Elasticity, the
+   * inverse of $\BC$ is taken. For NeoHooke an analytical solution exists, and for the general hyperelastic framework
+   * (and for all materials that don't implement the material inversion, for that a strain energy function exists) a
+   * numerical approach is used.
+   *
+   * \tparam tag Strain tag indicating which strain tensor components are expected as result.
+   * \tparam voigt Boolean indicating whether to return Voigt-shaped result.
+   * \tparam useNumeric forces the function to use the generic numerical approach
+   * \tparam Derived the type of the stress matrix
+   * \param Sraw input stress matrix
+   * \param EstartRaw optionally define a starting value for the numerical algorithm (applies only to numerical
+   * inversion)
+   * \param tol tolerance for the Newton-Raphson solver (applies only to numerical inversion).
+   * \param maxIter maximum number of iterations for the Newton-Raphson solver (applies only to numerical inversion).
+   * \return pair of inverse material tangent and strain tensor
+   */
+  template <StrainTags tag, bool voigt = true, bool useNumeric = false, typename Derived>
+  requires CorrectStrainSize<MaterialImpl, Derived>
+  [[nodiscard]] auto materialInversion(const Eigen::MatrixBase<Derived>& Sraw,
+                                       const Eigen::MatrixBase<Derived>& EstartRaw = Derived::Zero().eval(),
+                                       const double tol = 1e-12, const int maxIter = 20) const {
+    const auto S = Impl::maybeFromVoigt(Sraw.derived(), false).eval();
+
+    auto [D, Eraw] = [&]() {
+      if constexpr (requires { impl().materialInversionImpl(S); } and not useNumeric)
+        return impl().materialInversionImpl(S);
+      else {
+        const auto Estart = Impl::maybeFromVoigt(EstartRaw.derived(), true).eval();
+        return numericalMaterialInversion(impl(), S, Estart, tol, maxIter);
+      }
+    }();
+
+    const auto E = transformStrain<MaterialImpl::strainTag, tag>(Eraw).eval();
+    if constexpr (voigt)
+      return std::make_pair(D, toVoigt(E));
+    else
+      return std::make_pair(fromVoigt(D), E);
+  }
+
+  /**
    * \brief Rebind material to a different scalar type.
    *
    * Useful for using automatic differentiation.
@@ -225,4 +272,4 @@ private:
   }
 };
 
-} // namespace Ikarus
+} // namespace Ikarus::Materials

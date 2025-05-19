@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 from dune.common.hashit import hashIt
@@ -42,7 +42,7 @@ def vtkWriter(
     includes += ["dune/vtk/datacollectors/lagrangedatacollector.hh"]
     includes += ["ikarus/io/vtkwriter.hh"]
     includes += ["ikarus/assembler/simpleassemblers.hh"]
-    includes += assembler._includes
+    includes += assembler.cppIncludes
 
     gridViewName = assembler.gridView.cppTypeName
     dataCollectorName: str = ""

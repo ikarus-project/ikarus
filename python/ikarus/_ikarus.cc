@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <config.h>
@@ -18,6 +18,7 @@
 #include <ikarus/finiteelements/ferequirements.hh>
 #include <ikarus/python/finiteelements/scalarwrapper.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/utils/broadcaster/broadcastermessages.hh>
 
 /**
  * \brief Registers the ScalarWrapper class template with pybind11, adding various operations and constructors.
@@ -99,7 +100,7 @@ PYBIND11_MODULE(_ikarus, m) {
   registerScalarWrapper<std::reference_wrapper<double>>(m, "ScalarRef",
                                                         "ScalarWrapper<std::reference_wrapper<double>>");
 
-  addMaterialsSubModule(m);
+  addBindingsToMaterials();
 
   addBindingsToUtils();
   addBindingsToIO();

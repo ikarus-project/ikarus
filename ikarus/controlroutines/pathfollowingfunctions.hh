@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -19,6 +19,7 @@
 #include <vector>
 
 #include <dune/common/exceptions.hh>
+#include <dune/common/float_cmp.hh>
 
 #include <Eigen/Core>
 
@@ -44,6 +45,18 @@ struct SubsidiaryArgs
   Eigen::VectorX<double> dfdDD; ///< The derivative of the subsidiary function with respect to DD.
   double dfdDlambda;            ///< The derivative of the subsidiary function with respect to Dlambda.
   int currentStep;              ///< The current step index in the control routine.
+
+  void setZero(const Concepts::EigenType auto& firstParameter) {
+    stepSize = 0.0;
+    DD.resizeLike(firstParameter);
+    DD.setZero();
+    Dlambda = 0.0;
+    f       = 0.0;
+    dfdDD.resizeLike(firstParameter);
+    dfdDD.setZero();
+    dfdDlambda  = 0.0;
+    currentStep = 0;
+  }
 };
 
 /**
@@ -74,13 +87,14 @@ struct ArcLength
    * \param args The subsidiary function arguments.
    */
   void operator()(SubsidiaryArgs& args) const {
-    if (psi) {
-      const auto root = sqrt(args.DD.squaredNorm() + psi.value() * psi.value() * args.Dlambda * args.Dlambda);
-      args.f          = root - args.stepSize;
-      args.dfdDD      = args.DD / root;
-      args.dfdDlambda = (psi.value() * psi.value() * args.Dlambda) / root;
+    const auto root = sqrt(args.DD.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
+    args.f          = root - args.stepSize;
+    if (not computedInitialPredictor) {
+      args.dfdDD.setZero();
+      args.dfdDlambda = 0.0;
     } else {
-      DUNE_THROW(Dune::InvalidStateException, "You have to call initialPrediction first. Otherwise psi is not defined");
+      args.dfdDD      = args.DD / root;
+      args.dfdDlambda = (psi * psi * args.Dlambda) / root;
     }
   }
 
@@ -90,15 +104,18 @@ struct ArcLength
    * This method initializes the prediction step for the standard arc-length method it computes \f$\psi\f$ and
    * computes initial \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$.
    *
-   * \tparam NLO Type of the nonlinear operator.
-   * \param nonLinearOperator The nonlinear operator.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
+   * \param req The solution.
    * \ingroup  controlroutines
    */
-  template <typename NLO>
-  void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
+  template <typename F>
+  requires(Ikarus::Concepts::LinearSolverCheck<Ikarus::LinearSolver, typename F::Traits::template Range<1>,
+                                               typename F::Domain::SolutionVectorType>)
+  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
     SolverTypeTag solverTag;
-    using JacobianType = std::remove_cvref_t<typename NLO::DerivativeType>;
+    using JacobianType = std::remove_cvref_t<typename F::Traits::template Range<1>>;
     static_assert((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value) or
                       (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix, JacobianType>::value),
                   "Linear solver not implemented for the chosen derivative type of the non-linear operator");
@@ -108,16 +125,9 @@ struct ArcLength
     else
       solverTag = SolverTypeTag::sd_SimplicialLDLT;
 
-    nonLinearOperator.lastParameter() = 1.0; // lambda =1.0
-    nonLinearOperator.template update<0>();
-    const auto& R = nonLinearOperator.value();
-    const auto& K = nonLinearOperator.derivative();
-
-    static constexpr bool isLinearSolver =
-        Ikarus::Concepts::LinearSolverCheck<decltype(LinearSolver(solverTag)), typename NLO::DerivativeType,
-                                            typename NLO::ValueType>;
-    static_assert(isLinearSolver,
-                  "Initial predictor step in the standard arc-length method doesn't have a linear solver");
+    req.parameter()  = 1.0;
+    decltype(auto) R = residual(req);
+    decltype(auto) K = derivative(residual)(req);
 
     auto linearSolver = LinearSolver(solverTag); // for the linear predictor step
     linearSolver.analyzePattern(K);
@@ -127,13 +137,14 @@ struct ArcLength
     const auto DD2 = args.DD.squaredNorm();
 
     psi    = sqrt(DD2);
-    auto s = sqrt(psi.value() * psi.value() + DD2);
+    auto s = sqrt(psi * psi + DD2);
 
     args.DD      = args.DD * args.stepSize / s;
     args.Dlambda = args.stepSize / s;
 
-    nonLinearOperator.firstParameter() = args.DD;
-    nonLinearOperator.lastParameter()  = args.Dlambda;
+    req.globalSolution()     = args.DD;
+    req.parameter()          = args.Dlambda;
+    computedInitialPredictor = true;
   }
 
   /**
@@ -141,21 +152,25 @@ struct ArcLength
    *
    * This method updates the prediction step for the standard arc-length method.
    *
-   * \tparam NLO Type of the nonlinear operator.
-   * \param nonLinearOperator The nonlinear operator.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
+   * \param req The solution.
    */
-  template <typename NLO>
-  void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
-    nonLinearOperator.firstParameter() += args.DD;
-    nonLinearOperator.lastParameter() += args.Dlambda;
+  template <typename F>
+  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+    if (not computedInitialPredictor)
+      DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
+    req.globalSolution() += args.DD;
+    req.parameter() += args.Dlambda;
   }
 
   /** \brief The name of the PathFollowing method. */
-  constexpr auto name() const { return std::string("Arc length"); }
+  constexpr std::string name() const { return "Arc length"; }
 
 private:
-  std::optional<double> psi;
+  double psi{0.0};
+  bool computedInitialPredictor{false};
 };
 
 /**
@@ -190,14 +205,16 @@ struct LoadControlSubsidiaryFunction
    *
    * This method initializes the prediction step for the load control method.
    *
-   * \tparam NLO Type of the nonlinear operator.
-   * \param nonLinearOperator The nonlinear operator.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
+   * \param req The solution.
    */
-  template <typename NLO>
-  void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
-    args.Dlambda                      = args.stepSize;
-    nonLinearOperator.lastParameter() = args.Dlambda;
+  template <typename F>
+  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+    args.Dlambda             = args.stepSize;
+    req.parameter()          = args.Dlambda;
+    computedInitialPredictor = true;
   }
 
   /**
@@ -205,17 +222,23 @@ struct LoadControlSubsidiaryFunction
    *
    * This method updates the prediction step for the load control method.
    *
-   * \tparam NLO Type of the nonlinear operator.
-   * \param nonLinearOperator The nonlinear operator.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
+   * \param req The solution.
    */
-  template <typename NLO>
-  void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
-    nonLinearOperator.lastParameter() += args.Dlambda;
+  template <typename F>
+  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+    if (not computedInitialPredictor)
+      DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
+    req.parameter() += args.Dlambda;
   }
 
   /** \brief The name of the PathFollowing method. */
-  constexpr auto name() const { return std::string("Load Control"); }
+  constexpr std::string name() const { return "Load Control"; }
+
+private:
+  bool computedInitialPredictor{false};
 };
 
 /**
@@ -260,14 +283,16 @@ struct DisplacementControl
    *
    * This method initializes the prediction step for the displacement control method.
    *
-   * \tparam NLO Type of the nonlinear operator.
-   * \param nonLinearOperator The nonlinear operator.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
+   * \param req The solution.
    */
-  template <typename NLO>
-  void initialPrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
+  template <typename F>
+  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
     args.DD(controlledIndices).array() = args.stepSize;
-    nonLinearOperator.firstParameter() = args.DD;
+    req.globalSolution()               = args.DD;
+    computedInitialPredictor           = true;
   }
 
   /**
@@ -275,19 +300,23 @@ struct DisplacementControl
    *
    * This method updates the prediction step for the displacement control method.
    *
-   * \tparam NLO Type of the nonlinear operator.
-   * \param nonLinearOperator The nonlinear operator.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
+   * \param req The solution.
    */
-  template <typename NLO>
-  void intermediatePrediction(NLO& nonLinearOperator, SubsidiaryArgs& args) {
-    nonLinearOperator.firstParameter() += args.DD;
+  template <typename F>
+  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+    if (not computedInitialPredictor)
+      DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
+    req.globalSolution() += args.DD;
   }
 
   /** \brief The name of the PathFollowing method. */
-  constexpr auto name() const { return std::string("Displacement Control"); }
+  constexpr std::string name() const { return "Displacement Control"; }
 
 private:
   std::vector<int> controlledIndices; /**< Vector containing the indices of the controlled degrees of freedom. */
+  bool computedInitialPredictor{false};
 };
 } // namespace Ikarus

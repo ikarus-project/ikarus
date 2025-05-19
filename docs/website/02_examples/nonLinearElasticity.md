@@ -85,7 +85,7 @@ This is then used to create functors to get the stiffness matrix, residual vecto
 A non-linear operator and the linear solver used by the `solverType` are defined as:
 
 ```cpp
-auto nonLinOp = Ikarus::NonLinearOperator(functions(energyFunction, residualFunction, KFunction), parameter(d, lambda));
+auto f = Ikarus::makeDifferentiableFunction(functions(energyFunction, residualFunction, KFunction), d);
 auto linSolver = Ikarus::LinearSolver(Ikarus::SolverTypeTag::sd_UmfPackLU);
 ```
 
@@ -93,10 +93,10 @@ An object for the Newton-Raphson method or the trust region method can then be d
 
 ```cpp
 #if solverType == 0
-  auto nr = Ikarus::makeNewtonRaphson(nonLinOp.subOperator<1, 2>(), std::move(linSolver));
+  auto nr = Ikarus::makeNewtonRaphson(derivative(f), std::move(linSolver));
 #endif
 #if solverType == 1
-  auto nr = Ikarus::makeTrustRegion(nonLinOp);
+  auto nr = Ikarus::makeTrustRegion(f);
   nr->setup({.verbosity = 1,
              .maxiter   = 30,
              .grad_tol  = 1e-8,
@@ -110,8 +110,8 @@ An object for the Newton-Raphson method or the trust region method can then be d
 All the available output messages are subscribed to be displayed by using the following commands:
 
 ```cpp
-auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-nr->subscribeAll(nonLinearSolverObserver);
+auto nonLinearSolverLogger = std::make_shared<NonLinearSolverLogger>();
+nr->subscribeAll(nonLinearSolverLogger);
 ```
 
 The [load control](../01_framework/controlRoutines.md#load-control) method is finally used as the path-following technique to solve this

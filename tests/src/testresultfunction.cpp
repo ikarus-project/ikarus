@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <config.h>
@@ -18,7 +18,7 @@
 #include <dune/vtk/types.hh>
 #include <dune/vtk/vtkreader.hh>
 
-#include "ikarus/finiteelements/feresulttypes.hh"
+#include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/io/resultfunction.hh>
 #include <ikarus/utils/init.hh>
@@ -123,7 +123,6 @@ auto testUnstructuredInstantiaionAndDeduction() {
       Ikarus::makeResultFunction<Ikarus::ResultTypes::linearStress>(sparseAssembler, Dune::VTK::Precision::float32);
   auto stressFunction64 =
       Ikarus::makeResultFunction<Ikarus::ResultTypes::linearStress>(sparseAssembler, Dune::VTK::Precision::float64);
-  auto stressVtkFunction = Ikarus::makeResultVtkFunction<Ikarus::ResultTypes::linearStress>(sparseAssembler);
 
   // Test
   // Dune::VTKWriter will always default to FLOAT32
@@ -145,14 +144,14 @@ auto testUnstructuredInstantiaionAndDeduction() {
   // Vtk::VtkWriter can be told to use a special Datatype
   Dune::Vtk::UnstructuredGridWriter<GridView, Dune::Vtk::DiscontinuousDataCollector<GridView>> vtkWriter2(
       gridView, Dune::Vtk::FormatTypes::ASCII, Dune::Vtk::DataTypes::FLOAT32);
-  vtkWriter2.addPointData(stressVtkFunction);
+  vtkWriter2.addPointData(stressFunction32);
   auto vtkfileName = vtkWriter2.write(fileName + "_Vtk_32");
 
   std::cout << "Testing now Vtk_32" << std::endl;
   t.subTest(testFile(vtkfileName, Dune::Vtk::DataTypes::FLOAT32, false));
 
   Dune::Vtk::UnstructuredGridWriter vtkWriter3(gridView, Dune::Vtk::FormatTypes::ASCII, Dune::Vtk::DataTypes::FLOAT64);
-  vtkWriter3.addPointData(stressVtkFunction);
+  vtkWriter3.addPointData(stressFunction64);
   auto vtkfileName3 = vtkWriter3.write(fileName + "_Vtk_64");
 
   std::cout << "Testing now Vtk_64" << std::endl;

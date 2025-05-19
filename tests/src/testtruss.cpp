@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <config.h>
@@ -18,15 +18,17 @@
 #include <ikarus/controlroutines/loadcontrol.hh>
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/truss.hh>
+#include <ikarus/solver/eigenvaluesolver/generalizedeigensolverfactory.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/observer/controlvtkwriter.hh>
-#include <ikarus/utils/observer/genericobserver.hh>
-#include <ikarus/utils/observer/nonlinearsolverlogger.hh>
+#include <ikarus/utils/listener/controllogger.hh>
+#include <ikarus/utils/listener/controlvtkwriter.hh>
+#include <ikarus/utils/listener/genericlistener.hh>
+#include <ikarus/utils/listener/nonlinearsolverlogger.hh>
 
 using namespace Ikarus;
 using Dune::TestSuite;
@@ -54,7 +56,7 @@ static auto vonMisesTrussTest() {
 
   /// Construct basis
   using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>()));
+  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved{}));
 
   /// Create finite elements
   constexpr double E    = 30000;
@@ -84,11 +86,12 @@ static auto vonMisesTrussTest() {
   Eigen::VectorXd d;
   d.setZero(basis.flat().size());
 
-  auto req = FEType::Requirement();
-  req.insertGlobalSolution(d).insertParameter(lambda);
+  auto req = FEType::Requirement(basis);
   denseFlatAssembler->bind(req, AffordanceCollections::elastoStatics, DBCOption::Full);
 
-  auto pointLoad = [&](const auto&, const auto&, auto, auto, Eigen::VectorXd& vec) -> void { vec[3] -= -lambda; };
+  auto pointLoad = [&](const auto&, const auto&, auto, auto, Eigen::VectorXd& vec) -> void {
+    vec[3] -= -req.parameter();
+  };
   denseFlatAssembler->bind(pointLoad);
 
   /// Test tangent stiffness matrix for element 0 for geometrically linear case
@@ -126,50 +129,57 @@ static auto vonMisesTrussTest() {
   /// Choose linear solver
   auto linSolver = LinearSolver(SolverTypeTag::d_LDLT);
 
-  NewtonRaphsonConfig<decltype(linSolver)> nrConfig{.linearSolver = linSolver};
-
+  NewtonRaphsonConfig nrConfig({}, linSolver);
   NonlinearSolverFactory nrFactory(nrConfig);
   auto nr = nrFactory.create(denseFlatAssembler);
 
   /// Create Observer to write information of the non-linear solver
-  auto nonLinearSolverObserver = std::make_shared<NonLinearSolverLogger>();
-  auto nonLinOp                = Ikarus::NonLinearOperatorFactory::op(denseFlatAssembler);
+  auto f = DifferentiableFunctionFactory::op(denseFlatAssembler);
 
-  t.check(utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkGradient(f, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
-      << "Check Hessian failed";
+  t.check(utils::checkHessian(f, req, {.draw = false, .writeSlopeStatementIfFailed = true})) << "Check Hessian failed";
 
   constexpr int loadSteps = 10;
 
   Eigen::Matrix3Xd lambdaAndDisp;
   lambdaAndDisp.setZero(Eigen::NoChange, loadSteps + 1);
-  /// Create Observer which executes when control routines messages
-  auto lvkObserver =
-      std::make_shared<GenericObserver<ControlMessages>>(ControlMessages::SOLUTION_CHANGED, [&](int step) {
-        lambdaAndDisp(0, step) = lambda; // load factor
-        lambdaAndDisp(1, step) = d[2];   // horizontal displacement at center node
-        lambdaAndDisp(2, step) = d[3];   // vertical displacement at center node
-      });
 
   /// Create Observer which writes vtk files when control routines messages
-  auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
-      basis.flat(), d, 2);
-  vtkWriter->setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2);
-  vtkWriter->setFileNamePrefix("vonMisesTruss");
+  auto vtkWriter = ControlSubsamplingVertexVTKWriter(basis.flat(), 2);
+  vtkWriter.setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2);
+  vtkWriter.setFileNamePrefix("vonMisesTruss");
 
   /// Create loadcontrol
-  auto lc = LoadControl(nr, loadSteps, {0, 0.5});
-  lc.nonlinearSolver().subscribeAll(nonLinearSolverObserver);
-  lc.subscribeAll({vtkWriter, lvkObserver});
+  auto lc = ControlRoutineFactory::create(LoadControlConfig{loadSteps, 0.0, 0.5}, nr, denseFlatAssembler);
+
+  auto nonLinearSolverLogger = NonLinearSolverLogger();
+  auto controlLogger         = ControlLogger();
+
+  nonLinearSolverLogger.subscribeTo(lc.nonLinearSolver());
+  controlLogger.subscribeTo(lc);
+  vtkWriter.subscribeTo(lc);
+
+  auto lvkObserver = GenericListener(lc, ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
+    const auto& d              = state.domain.globalSolution();
+    const auto& lambda         = state.domain.parameter();
+    int step                   = state.loadStep;
+    lambdaAndDisp(0, step + 1) = lambda; // load factor
+    lambdaAndDisp(1, step + 1) = d[2];   // horizontal displacement at center node
+    lambdaAndDisp(2, step + 1) = d[3];   // vertical displacement at center node
+  });
 
   /// Execute!
-  auto controlInfo = lc.run();
+  auto controlInfo = lc.run(req);
   t.check(controlInfo.success == true) << "Load control failed to converge";
 
   Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
   Eigen::VectorXd uVec      = lambdaAndDisp.row(1);
   Eigen::VectorXd vVec      = -lambdaAndDisp.row(2);
+
+  t.check(Dune::FloatCmp::ne(vVec.tail(1)[0], 0.0, tol))
+      << std::setprecision(16) << "Displacement value should not be zero. Actual:\t" << vVec.tail(1)[0];
+  checkScalars(t, lambdaVec.tail(1)[0], 0.5, " Incorrect last load factor", tol);
 
   // return the load factor as a function of the vertical displacement
   auto analyticalLoadDisplacementCurve = [&](auto& v) {
@@ -194,6 +204,9 @@ static auto vonMisesTrussTest() {
     checkScalars(t, NPK2, expectedPK2AxialForce, " Incorrect PK2 Axial force", tol);
   }
 
+  for (auto i : Dune::range(0, loadSteps))
+    fileExists(t, "vonMisesTruss" + std::to_string(i) + ".vtp");
+
   return t;
 }
 
@@ -205,7 +218,7 @@ static auto truss3dTest() {
 
   /// Construct basis
   using namespace Dune::Functions::BasisFactory;
-  auto basis      = Ikarus::makeBasis(gridView, power<3>(lagrange<1>()));
+  auto basis      = Ikarus::makeBasis(gridView, power<3>(lagrange<1>(), FlatInterleaved{}));
   using LocalView = std::remove_cvref_t<decltype(basis.flat().localView())>;
 
   /// Create finite elements
@@ -234,11 +247,12 @@ static auto truss3dTest() {
   auto denseFlatAssembler = makeDenseFlatAssembler(fes, dirichletValues);
 
   double lambda = 1.0;
-  Eigen::VectorXd d;
-  d.setZero(basis.flat().size());
+  Eigen::VectorXd dI;
+  dI.setZero(basis.flat().size());
 
   auto req = FEType::Requirement();
-  req.insertGlobalSolution(d).insertParameter(lambda);
+  req.insertGlobalSolution(dI).insertParameter(lambda);
+  auto& d = req.globalSolution();
   denseFlatAssembler->bind(req, AffordanceCollections::elastoStatics, DBCOption::Full);
   const auto& K = denseFlatAssembler->matrix();
   auto R        = denseFlatAssembler->vector();
@@ -250,8 +264,8 @@ static auto truss3dTest() {
   linSolver.solve(d, -R);
 
   /// Compute eigenvalues of the stiffness matrix
-  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> essaK;
-  essaK.compute(K);
+  auto essaK = makeIdentitySymEigenSolver<EigenValueSolverType::Eigen>(K);
+  essaK.compute();
   auto eigenValuesComputed = essaK.eigenvalues();
 
   Eigen::Vector2d axialForces = Eigen::Vector2d::Zero();
@@ -290,8 +304,8 @@ auto trussAutoDiffTest() {
   {
     auto grid     = createGrid<GridType>();
     auto gridView = grid->leafGridView();
-    t.subTest(checkFESByAutoDiff(gridView, power<worldDim>(lagrange<1>()), skills(truss(1000.0, 0.0956)),
-                                 AffordanceCollections::elastoStatics));
+    t.subTest(checkFESByAutoDiff(gridView, power<worldDim>(lagrange<1>(), FlatInterleaved{}),
+                                 skills(truss(1000.0, 0.0956)), AffordanceCollections::elastoStatics));
   }
   return t;
 }

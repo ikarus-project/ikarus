@@ -1,0 +1,58 @@
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
+# SPDX-License-Identifier: CC0-1.0
+
+name: Publish Python distributions to Test PyPI
+on:
+  push:
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    container:
+      image: ikarusproject/ikarus-dev:latest
+      options: --memory-swap="20g" --memory="20g" --cpus="2" --user root
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install twine and scikit-build
+        run: |
+          /dune/dune-common/build-cmake/run-in-dune-env pip install twine scikit-build
+          git config --global --add safe.directory /__w/ikarus/ikarus
+
+      - name: Bump dev version
+        run: /dune/dune-common/build-cmake/run-in-dune-env python .github/workflows/scripts/release.py dev
+
+      - name: Create source distribution
+        run: |
+          /dune/dune-common/build-cmake/run-in-dune-env python setup.py sdist
+
+      - name: Upload distribution artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-artifact
+          path: dist/*.tar.gz
+
+  publish:
+    name: Publish to Test PyPI
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist-artifact
+          path: dist
+
+      - name: Install Twine
+        run: pip install twine
+
+      - name: Publish to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.TESTPYPI_TOKEN }}
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: dist/

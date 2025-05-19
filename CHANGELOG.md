@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 SPDX-License-Identifier: LGPL-3.0-or-later
 -->
 
@@ -56,12 +56,49 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Add an About Ikarus page in the documentation ([#291](https://github.com/ikarus-project/ikarus/pull/291))
 - Add new class `Vtk::Writer`, which implements some convenience methods over the existing `dune-vtk` module ([#309](https://github.com/ikarus-project/ikarus/pull/309))
 - Add `VanishingStrain` material (useful for example for plane strain case), also refactor the constructor of `LinearElastic` to take any linear material law ([#317](https://github.com/ikarus-project/ikarus/pull/317))
-- Add new result evaluators and support for full stress evaluation for vanishing strain and stress in `LinearElastic` and `NonlinearElastic` ([#343](https://github.com/ikarus-project/ikarus/pull/343)). Further interface changes:
+- Add new result evaluators and support for full stress evaluation for the case of vanishing strain and stress in `LinearElastic`
+  and `NonlinearElastic` ([#343](https://github.com/ikarus-project/ikarus/pull/343)). Further interface changes:
     - vanishing stress and strain now have a public `underlying()` functionality.
     - the signature of the `operator()` of the result evaluator changed to also include the finite element and the evaluation position.
     - `UserFunction` are now passed directly to the `ResultFunction` and not as a template argument.
     - `Vtk::Writer` now also accepts a `UserFunction` in the `addResult()` function.
-- Add a `ModalAnalysis` class to facilitate modal analysis and implement linear mass matrices for all elements. This also includes wrappers for solving the generalized eigenvalue problem with sparse and dense matrices with Eigen and Spectra
+- Add hyperelastic and an experimental AutoDiff-based material models ([#333](https://github.com/ikarus-project/ikarus/pull/333)
+  and [#342](https://github.com/ikarus-project/ikarus/pull/342))
+    - The `Hyperelastic` class takes in its deviatoric and volumetric parts separately as arguments.
+        - This class serves as a general interface for hyperelastic material models.
+        - It also performs the necessary transformations from principal to Cartesian coordinate systems,
+          thereby enabling the deviatoric and volumetric parts to only implement the energy and its derivatives.
+    - The `Deviatoric` and `Volumetric` classes in turn accept a deviatoric and a volumetric function, respectively.
+        - They serve as an interface that processes the derivatives implemented by the respective functions and
+          forwards it to the `Hyperelastic` class.
+        - The different deviatoric functions implemented are Arruda-Boyce, Blatz-Ko, Gent, Invariant-based,
+          and Ogden models.
+        - The invariant-based model is a general model and can be used to create other material models,
+          for example, Mooney-Rivlin and Yeoh models.
+        - Eleven different volumetric functions are included.
+    - An AutoDiff-based material model is included mainly to test these hyperelastic material models. It can be found in the `Experimental` namespace.
+    - All materials are now in a separate namespace, `Ikarus::Materials`.
+- The solution vector and parameter are now stored internally within the FE requirements instead of being passed by reference.
+  This change ensures better encapsulation and simplifies the usage of finite elements. ([#356](https://github.com/ikarus-project/ikarus/pull/356))
+- Add wrapper classes for small strain and finite strain materials from the Muesli material library
+  ([#337](https://github.com/ikarus-project/ikarus/pull/337))
+- `Observers` and `Observables` are replaced with `Broadcasters` and `Listeners`. Existing loggers work almost the same.
+ A noteworthy difference is that, the Broadcaster (e.g. a nonlinear solver) has to be registered to a Listener (e.g. a logger) with `logger.subscribeTo(solver)` ([#349](https://github.com/ikarus-project/ikarus/pull/349))
+- Refactor EAS to handle NonLinearElastic ([#325](https://github.com/ikarus-project/ikarus/pull/325))
+    - This also includes a new interface method in the `Mixin` called `updateState` with the respective `impl()` function.
+    - For EAS, `updateStateImpl()` is used to update the internal variable `alpha_` in a nonlinear analysis.
+    - Missing functions like `getStress` and `materialTangentFunction` are added to `LinearElastic` and `NonLinearElastic`, respectively.
+    - `EnhancedAssumedStrains` class now takes a struct denoting the enhanced strain type as a template argument, which implements the
+      enhanced strain value, its first and second derivatives w.r.t the displacements and the internal variable `alpha_`.
+- Add Q1Hn and Q1HTn elements ([#363](https://github.com/ikarus-project/ikarus/pull/363))
+- Add wrappers for solving the generalized eigenvalue problem with sparse and dense matrices with Eigen and Spectra ([#368](https://github.com/ikarus-project/ikarus/pull/368)).
+- Add functionality to invert hyperelastic material laws. For Neo-Hooke and SVK law, analytical solutions are available.
+  For the general hyperelastic framework, a numerical approach is used ([#369](https://github.com/ikarus-project/ikarus/pull/369)).
+- Add `AssumedStress` class to extend linear and nonlinear solid elements. The implementation is similar to EAS elements, hence the
+  internal variables here and in EAS were renamed to `internalVariable` ([#371](https://github.com/ikarus-project/ikarus/pull/371)).
+- Add push-forward and pull-back operations for stress measures ([#372](https://github.com/ikarus-project/ikarus/pull/372)).
+- Fix and simplify broadcasters and listeners.
+  Broadcasters can now only emit messages with a single signature, i.e. `void(MessageType message, const State& state)` [#376](https://github.com/ikarus-project/ikarus/pull/376).
 
 ## Release v0.4 (Ganymede)
 

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -64,6 +64,19 @@ public:
   }
 
   /**
+   * \brief Subscribes the elements to listen to functions provided from the skills emitted by the given broadcaster
+   *
+   * \tparam MT the message type (for example NonlinerSolverMessages or ControlMessages)
+   * \tparam BC the type of the broadcaster
+   * \param bc the broadcaster (for example a nonlinearsolver or control routine)
+   * \return this-pointer
+   */
+  template <typename MT, typename BC>
+  auto subscribeTo(BC& bc) {
+    return realFE().template subscribeTo<MT>(bc);
+  }
+
+  /**
    * \brief Calculate the local system associated with the finite element.
    *
    * \param self The finite element based on AutoDiff itself.
@@ -97,6 +110,13 @@ public:
    * \return The reference to the base finite element.
    */
   const RealFE& realFE() const { return *this; }
+
+  /**
+   * \brief Get the reference to the base finite element.
+   *
+   * \return The reference to the base finite element.
+   */
+  RealFE& realFE() { return *this; }
 
   /**
    * \brief Constructor for the AutoDiffFE class.

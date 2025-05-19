@@ -1,8 +1,9 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #pragma once
 #include <concepts>
+#include <fstream>
 #include <iomanip>
 #include <source_location>
 #include <vector>
@@ -10,6 +11,9 @@
 #include <dune/common/float_cmp.hh>
 
 #include <Eigen/Core>
+#include <Eigen/Eigenvalues>
+
+#include <ikarus/finiteelements/mechanics/materials/tags.hh>
 
 namespace Eigen {
 template <typename Derived>
@@ -55,6 +59,24 @@ bool isApproxSame(const Derived& val, const OtherDerived& other, double prec, bo
     return isApproxSameImpl(val, other, prec);
 }
 
+template <typename TestSuiteType, typename MatrixType>
+void checkApproxMatrices(TestSuiteType& t, const MatrixType& mat1, const MatrixType& mat2,
+                         const std::string& messageIfFailed = "", double tol = 1e-10) {
+  t.check(isApproxSame(mat1, mat2, tol)) << messageIfFailed << " mat1 is\n"
+                                         << mat1 << "\n mat2 is\n"
+                                         << mat2 << "\nThe difference is\n"
+                                         << (mat1 - mat2);
+}
+
+template <typename TestSuiteType, typename VectorType>
+void checkApproxVectors(TestSuiteType& t, const VectorType& vec1, const VectorType& vec2,
+                        const std::string& messageIfFailed = "", double tol = 1e-10) {
+  t.check(isApproxSame(vec1, vec2, tol)) << messageIfFailed << " vec1 is\n"
+                                         << vec1.transpose() << "\n vec2 is\n"
+                                         << vec2.transpose() << "\nThe difference is\n"
+                                         << (vec1 - vec2).transpose();
+}
+
 template <typename TestSuiteType, typename ScalarType>
 requires std::is_integral_v<ScalarType>
 void checkScalars(TestSuiteType& t, const ScalarType val, const ScalarType expectedVal,
@@ -62,6 +84,15 @@ void checkScalars(TestSuiteType& t, const ScalarType val, const ScalarType expec
   if constexpr (std::is_integral_v<ScalarType>)
     t.check(val == expectedVal) << std::setprecision(16) << "Incorrect Scalar. Expected:\t" << expectedVal
                                 << " Actual:\t" << val << messageIfFailed;
+}
+
+template <typename TestSuiteType, int rows, int cols>
+requires(rows == cols)
+void checkSymmetricMatrix(TestSuiteType& t, const Eigen::Matrix<double, rows, cols>& mat, double tol,
+                          const std::string& matrixName = "") {
+  t.check(isApproxSame(mat, mat.transpose(), tol), "Matrix " + matrixName + " is not symmetric.\n")
+      << "Matrix " + matrixName + " is \n"
+      << mat;
 }
 
 template <typename TestSuiteType, typename ScalarType>
@@ -90,7 +121,43 @@ inline auto testLocation(std::source_location loc = std::source_location::curren
   return loc.function_name() + std::string("(L ") + std::to_string(loc.line()) + "): ";
 }
 
+template <Ikarus::StrainTags strainTag>
+double transformStrainAccordingToStrain(auto& e) {
+  double strainDerivativeFactor = 1;
+
+  if (strainTag == Ikarus::StrainTags::greenLagrangian or strainTag == Ikarus::StrainTags::linear) {
+    e = ((e.transpose() + e + 3 * Eigen::Matrix3d::Identity()) / 10).eval();
+    e /= e.array().maxCoeff();
+    auto C = (2 * e + Eigen::Matrix3d::Identity()).eval();
+    Eigen::EigenSolver<Eigen::Matrix3d> esC(C);
+    e                      = 0.5 * (C / esC.eigenvalues().real().maxCoeff() - Eigen::Matrix3d::Identity());
+    strainDerivativeFactor = 1;
+  } else if (strainTag == Ikarus::StrainTags::rightCauchyGreenTensor) {
+    e = (e.transpose() + e).eval();
+    Eigen::EigenSolver<Eigen::Matrix3d> esC(e);
+    e += (-esC.eigenvalues().real().minCoeff() + 1) * Eigen::Matrix3d::Identity();
+    esC.compute(e);
+    e /= esC.eigenvalues().real().maxCoeff();
+
+    assert(esC.eigenvalues().real().minCoeff() > 0 &&
+           " The smallest eigenvalue is negative this is unsuitable for the tests");
+
+    strainDerivativeFactor = 0.5;
+  } else if (strainTag == Ikarus::StrainTags::deformationGradient) {
+    e = (e + 3 * Eigen::Matrix3d::Identity()).eval(); // create positive definite matrix
+    e = e.sqrt();
+  }
+  return strainDerivativeFactor;
+}
+
 template <typename Derived>
 void replaceNaNWithZero(Eigen::MatrixBase<Derived>& val) {
   val = val.unaryExpr([](double x) { return std::isnan(x) ? 0.0 : x; });
+}
+
+// This does not check, if the file was created recently
+template <typename TestSuiteType>
+void fileExists(TestSuiteType& t, const std::string& filename, const std::string& messageIfFailed = "") {
+  std::ifstream file(filename);
+  t.check(file.good()) << "File with name " << filename << " should exist, but does not" << messageIfFailed;
 }

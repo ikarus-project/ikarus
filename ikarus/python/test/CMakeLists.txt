@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 dune_python_add_test(
@@ -58,7 +58,7 @@ dune_python_add_test(
 
 dune_python_add_test(
   NAME
-  vtkwritertest
+  pyvtkwritertest
   SCRIPT
   vtkwritertest.py
   WORKING_DIRECTORY

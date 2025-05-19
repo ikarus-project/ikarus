@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 #include <config.h>
@@ -28,12 +28,12 @@
 #include <ikarus/solver/nonlinearsolver/trustregion.hh>
 #include <ikarus/utils/algorithms.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/utils/differentiablefunction.hh>
+#include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
-#include <ikarus/utils/nonlinopfactory.hh>
-#include <ikarus/utils/observer/controlvtkwriter.hh>
-#include <ikarus/utils/observer/nonlinearsolverlogger.hh>
+#include <ikarus/utils/listener/controlvtkwriter.hh>
+#include <ikarus/utils/listener/nonlinearsolverlogger.hh>
 
 using Dune::TestSuite;
 
@@ -109,26 +109,18 @@ static auto NonLinearKLShellLoadControlTR() {
 
   auto sparseAssembler = makeSparseFlatAssembler(fes, dirichletValues);
 
-  Eigen::VectorXd d;
-  d.setZero(basis.flat().size());
-  double lambda = 0.0;
+  auto req = typename FEType::Requirement(basis);
 
-  auto req = FEType::Requirement();
-  req.insertGlobalSolution(d).insertParameter(lambda);
+  sparseAssembler->bind(Ikarus::AffordanceCollections::elastoStatics);
+  auto f = Ikarus::DifferentiableFunctionFactory::op(sparseAssembler, DBCOption::Full);
 
-  [[maybe_unused]] auto req2 = FEType::Requirement(d, lambda);
-
-  sparseAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics);
-  auto nonLinOp = Ikarus::NonLinearOperatorFactory::op(sparseAssembler);
-
-  t.check(utils::checkGradient(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
+  t.check(utils::checkGradient(f, req, {.draw = false, .writeSlopeStatementIfFailed = true}))
       << "Check gradient failed";
-  t.check(utils::checkHessian(nonLinOp, {.draw = false, .writeSlopeStatementIfFailed = true}))
-      << "Check Hessian failed";
+  t.check(utils::checkHessian(f, req, {.draw = false, .writeSlopeStatementIfFailed = true})) << "Check Hessian failed";
 
   const double gradTol = 1e-14;
 
-  auto tr = makeTrustRegion(nonLinOp);
+  auto tr = makeTrustRegion(f);
   tr->setup({.verbosity = 1,
              .maxIter   = 1000,
              .grad_tol  = gradTol,
@@ -137,18 +129,18 @@ static auto NonLinearKLShellLoadControlTR() {
              .rho_reg   = 1e8,
              .Delta0    = 1});
 
-  auto vtkWriter = std::make_shared<ControlSubsamplingVertexVTKWriter<std::remove_cvref_t<decltype(basis.flat())>>>(
-      basis.flat(), d, 2);
-  vtkWriter->setFileNamePrefix("TestKLShell");
-  vtkWriter->setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
+  auto lc = ControlRoutineFactory::create(LoadControlConfig{1, 0.0, 1.0}, tr, sparseAssembler);
 
-  auto lc = LoadControl(tr, 1, {0, 1});
-  lc.subscribeAll(vtkWriter);
-  const auto controlInfo = lc.run();
+  auto vtkWriter = ControlSubsamplingVertexVTKWriter(basis.flat(), 2);
+  vtkWriter.setFileNamePrefix("TestKLShell");
+  vtkWriter.setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 3);
+  vtkWriter.subscribeTo(lc);
+
+  const auto controlInfo = lc.run(req);
 
   t.check(controlInfo.success);
 
-  const auto maxDisp = std::ranges::max(d);
+  const auto maxDisp = std::ranges::max(req.globalSolution());
   std::cout << std::setprecision(16) << maxDisp << std::endl;
   t.check(Dune::FloatCmp::eq(0.2087577577946809, maxDisp, 1e-6))
       << std::setprecision(16) << "The maximum displacement is " << maxDisp << "but it should be " << 0.2087577577946809
@@ -220,7 +212,7 @@ auto singleElementTest() {
     auto klShell = Ikarus::kirchhoffLoveShell({.youngs_modulus = 1000, .nu = 0.0, .thickness = 0.1});
 
     t.subTest(checkFESByAutoDiff(
-        gridView, power<3>(nurbs()),
+        gridView, power<3>(nurbs(), FlatInterleaved{}),
         Ikarus::skills(klShell, Ikarus::volumeLoad<3>(vL), Ikarus::neumannBoundaryLoad(&neumannBoundary, nBL)),
         Ikarus::AffordanceCollections::elastoStatics));
   }

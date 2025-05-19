@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -9,15 +9,16 @@
 
 #pragma once
 
-#include "vanishinghelpers.hh"
+#include "materialhelpers.hh"
 
 #include <ikarus/finiteelements/mechanics/materials/interface.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/utils/concepts.hh>
-#include <ikarus/utils/nonlinearoperator.hh>
+#include <ikarus/utils/differentiablefunction.hh>
+#include <ikarus/utils/tensorutils.hh>
 
-namespace Ikarus {
+namespace Ikarus::Materials {
 
 /**
  * \brief VanishingStress material model that enforces stress components to be zero.
@@ -30,12 +31,16 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
 {
   using Underlying         = MI; ///< The underlying material type.
   using MaterialParameters = typename Underlying::MaterialParameters;
+  using StrainMatrix       = typename Underlying::StrainMatrix;
+  using StressMatrix       = typename Underlying::StressMatrix;
+  using MaterialTensor     = typename Underlying::MaterialTensor;
+  static constexpr int dim = Underlying::dim;
 
-  static constexpr auto fixedPairs        = stressIndexPair;                     ///< Array of fixed stress components.
-  static constexpr auto freeVoigtIndices  = createfreeVoigtIndices(fixedPairs);  ///< Free Voigt indices.
-  static constexpr auto fixedVoigtIndices = createFixedVoigtIndices(fixedPairs); ///< Fixed Voigt indices.
+  static constexpr auto fixedPairs        = stressIndexPair; ///< Array of fixed stress components.
+  static constexpr auto freeVoigtIndices  = Impl::createfreeVoigtIndices(fixedPairs);  ///< Free Voigt indices.
+  static constexpr auto fixedVoigtIndices = Impl::createFixedVoigtIndices(fixedPairs); ///< Fixed Voigt indices.
   static constexpr auto fixedDiagonalVoigtIndicesSize =
-      countDiagonalIndices(fixedPairs);                                ///< Number of fixed diagonal indices.
+      Impl::countDiagonalIndices(fixedPairs);                          ///< Number of fixed diagonal indices.
   static constexpr auto freeStrains = freeVoigtIndices.size();         ///< Number of free strains.
   using ScalarType                  = typename Underlying::ScalarType; ///< Scalar type.
   static constexpr bool isAutoDiff  = Concepts::AutodiffScalar<ScalarType>;
@@ -135,6 +140,22 @@ struct VanishingStress : public Material<VanishingStress<stressIndexPair, MI>>
    */
   auto& underlying() const { return matImpl_; }
 
+  template <typename Derived>
+  auto materialInversionImpl(const Eigen::MatrixBase<Derived>& Sraw) const {
+    static_assert(Concepts::EigenMatrix22<decltype(Sraw)>);
+    // Enlarge S
+    auto S                       = Eigen::Matrix<typename Derived::Scalar, 3, 3>::Zero().eval();
+    S.template block<2, 2>(0, 0) = Sraw;
+
+    auto [D, E] = matImpl_.template materialInversion<Underlying::strainTag, true>(S);
+
+    // Reduce D and E again
+    auto Dred = reduceMatrix(D, fixedVoigtIndices);
+    auto Ered = removeCol(E, fixedVoigtIndices);
+
+    return std::make_pair(Dred, Ered);
+  }
+
 private:
   /**
    * \brief Initializes unknown strains based on fixed indices.
@@ -159,7 +180,7 @@ private:
    * \brief Reduces stress components to satisfy the vanishing stress condition.
    * \tparam Derived The derived type of the input matrix.
    * \param Eraw The input strain matrix.
-   * \return std::pair<NonLinearOperator, decltype(auto)> The stress reduction result.
+   * \return std::pair<DifferentiableFunction, decltype(auto)> The stress reduction result.
    */
   template <typename Derived>
   auto reduceStress(const Eigen::MatrixBase<Derived>& Eraw) const {
@@ -173,20 +194,22 @@ private:
         fixedDiagonalVoigtIndices[ri++] = i;
     }
 
-    auto f = [&](auto&) {
+    auto f = [&](const auto&) {
       auto S = matImpl_.template stresses<Underlying::strainTag, true>(E);
       return S(fixedDiagonalVoigtIndices).eval();
     };
-    auto df = [&](auto&) {
+    auto df = [&](const auto&) {
       auto moduli = (matImpl_.template tangentModuli<Underlying::strainTag, true>(E)).eval();
       return (moduli(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices) / Underlying::derivativeFactor).eval();
     };
 
-    auto Er    = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
-    auto nonOp = Ikarus::NonLinearOperator(functions(f, df), parameter(Er));
+    auto Er = E(fixedDiagonalVoigtIndices, fixedDiagonalVoigtIndices).eval().template cast<ScalarType>();
+
+    Er.setZero();
+    auto diffFunction = Ikarus::makeDifferentiableFunction(functions(f, df), Er);
 
     auto linearSolver   = [](auto& r, auto& A) { return (A.inverse() * r).eval(); };
-    auto updateFunction = [&](auto& /* Ex33 */, auto& ecomps) {
+    auto updateFunction = [&](auto&, const auto& ecomps) {
       for (int ri = 0; auto i : fixedDiagonalVoigtIndices) {
         auto indexPair = fromVoigt(i);
         E(indexPair[0], indexPair[1]) += ecomps(ri++);
@@ -194,20 +217,15 @@ private:
     };
 
     int minIter = isAutoDiff ? 1 : 0;
-    // THE CTAD is broken for designated initializers in clang 16, when we drop support this can be simplified
-    NewtonRaphsonConfig<decltype(linearSolver), decltype(updateFunction)> nrs{
-        .parameters     = {.tol = tol_, .maxIter = 100, .minIter = minIter},
-        .linearSolver   = linearSolver,
-        .updateFunction = updateFunction
-    };
+    NewtonRaphsonConfig nrs({.tol = tol_, .maxIter = 100, .minIter = minIter}, linearSolver, updateFunction);
 
-    auto nr = createNonlinearSolver(std::move(nrs), nonOp);
-    if (!static_cast<bool>(nr->solve()))
+    auto nr = createNonlinearSolver(std::move(nrs), diffFunction);
+    if (!static_cast<bool>(nr->solve(Er)))
       DUNE_THROW(Dune::MathError, "The stress reduction of material " << nameImpl() << " was unsuccessful\n"
                                                                       << "The strains are\n"
                                                                       << E << "\n The stresses are\n"
                                                                       << f(Er));
-    return std::make_pair(nonOp, E);
+    return std::make_pair(diffFunction, E);
   }
 
   Underlying matImpl_; ///< The underlying material model.
@@ -222,7 +240,7 @@ private:
  * \param p_tol Tolerance for stress reduction.
  * \return VanishingStress The created VanishingStress material.
  */
-template <Impl::MatrixIndexPair... stressIndexPair, typename MaterialImpl>
+template <MatrixIndexPair... stressIndexPair, typename MaterialImpl>
 auto makeVanishingStress(MaterialImpl mat, typename MaterialImpl::ScalarType p_tol = 1e-12) {
   return VanishingStress<std::to_array({stressIndexPair...}), MaterialImpl>(mat, p_tol);
 }
@@ -236,8 +254,7 @@ auto makeVanishingStress(MaterialImpl mat, typename MaterialImpl::ScalarType p_t
  */
 template <typename MaterialImpl>
 auto planeStress(const MaterialImpl& mat, typename MaterialImpl::ScalarType tol = 1e-8) {
-  return makeVanishingStress<Impl::MatrixIndexPair{2, 1}, Impl::MatrixIndexPair{2, 0}, Impl::MatrixIndexPair{2, 2}>(
-      mat, tol);
+  return makeVanishingStress<MatrixIndexPair{2, 1}, MatrixIndexPair{2, 0}, MatrixIndexPair{2, 2}>(mat, tol);
 }
 
 /**
@@ -250,7 +267,7 @@ auto planeStress(const MaterialImpl& mat, typename MaterialImpl::ScalarType tol 
  */
 template <typename MaterialImpl>
 auto shellMaterial(const MaterialImpl& mat, typename MaterialImpl::ScalarType tol = 1e-8) {
-  return makeVanishingStress<Impl::MatrixIndexPair{2, 2}>(mat, tol);
+  return makeVanishingStress<MatrixIndexPair{2, 2}>(mat, tol);
 }
 
 /**
@@ -263,6 +280,6 @@ auto shellMaterial(const MaterialImpl& mat, typename MaterialImpl::ScalarType to
  */
 template <typename MaterialImpl>
 auto beamMaterial(const MaterialImpl& mat, typename MaterialImpl::ScalarType tol = 1e-8) {
-  return makeVanishingStress<Impl::MatrixIndexPair{1, 1}, Impl::MatrixIndexPair{2, 2}>(mat, tol);
+  return makeVanishingStress<MatrixIndexPair{1, 1}, MatrixIndexPair{2, 2}>(mat, tol);
 }
-} // namespace Ikarus
+} // namespace Ikarus::Materials

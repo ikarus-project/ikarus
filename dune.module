@@ -1,9 +1,9 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 Module: ikarus
-Version: 0.4.1
-Maintainer: mueller@ibb.uni-stuttgart.de
+Version: 0.4.2
+Maintainer: ikarus@ibb.uni-stuttgart.de
 Python-Requires: matplotlib scipy numpy<2.0.0 dune-common dune-grid dune-geometry  dune-istl dune-functions
 Depends: dune-common dune-grid dune-geometry dune-istl
 Suggests: dune-uggrid dune-iga dune-alugrid dune-foamgrid dune-vtk dune-typetree dune-localfefunctions dune-fufem

@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2011-2014 Copyright (C) Gael Guennebaud <gael.guennebaud@inria.fr>
 // SPDX-License-Identifier: MPL-2.0
 // Modifications:
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -51,7 +51,7 @@ struct TCGInfo
 namespace internal {
 
   /**
-   * @internal
+   * \internal
    * \brief Low-level truncated conjugate gradient algorithm.
    * \tparam MatrixType Type of the matrix A.
    * \tparam Rhs Type of the right-hand side vector b.
@@ -185,7 +185,7 @@ namespace internal {
 } // namespace internal
 
 /**
- * @class TruncatedConjugateGradient
+ * \class TruncatedConjugateGradient
  * \brief Iterative solver for solving linear systems using the truncated conjugate gradient method.
  * \tparam M Type of the matrix A.
  * \tparam upLo Type of the triangular part of the matrix (Lower or Upper or both).

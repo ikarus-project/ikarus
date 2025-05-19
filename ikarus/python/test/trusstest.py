@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 
@@ -60,10 +60,6 @@ def trussTest(worldDim):
 
     d2 = req.globalSolution()
 
-    # check that is really the same data address
-    assert ("{}".format(hex(d2.__array_interface__["data"][0]))) == (
-        "{}".format(hex(d.__array_interface__["data"][0]))
-    )
     assert len(d2) == len(d)
     assert (d2 == d).all()
 

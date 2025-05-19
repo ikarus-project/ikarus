@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -9,16 +9,18 @@
 #pragma once
 
 #include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/solver/nonlinearsolver/nonlinearsolverbase.hh>
+#include <ikarus/solver/nonlinearsolver/nonlinearsolverstate.hh>
 #include <ikarus/solver/nonlinearsolver/solverinfos.hh>
+#include <ikarus/utils/broadcaster/broadcaster.hh>
+#include <ikarus/utils/broadcaster/broadcastermessages.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
-#include <ikarus/utils/observer/observer.hh>
-#include <ikarus/utils/observer/observermessages.hh>
 
 namespace Ikarus {
 
-template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
 class NewtonRaphson;
 
 struct NRSettings
@@ -37,9 +39,9 @@ struct NewtonRaphsonConfig
 {
   using LinearSolver   = LS;
   using UpdateFunction = UF;
-  NRSettings parameters;
-  LS linearSolver;
-  UF updateFunction;
+  NRSettings parameters{};
+  LS linearSolver{};
+  UF updateFunction{};
 
   template <typename UF2>
   auto rebindUpdateFunction(UF2&& updateFunction) const {
@@ -48,40 +50,53 @@ struct NewtonRaphsonConfig
     return settings;
   }
 
-  template <typename NLO>
-  using Solver = NewtonRaphson<NLO, LS, UF>;
+  template <typename F>
+  using Solver = NewtonRaphson<F, LS, UF>;
 };
+
+// THE CTAD is broken for designated initializers in clang 16, when we drop support this can be simplified
+#ifndef DOXYGEN
+NewtonRaphsonConfig() -> NewtonRaphsonConfig<utils::SolverDefault, utils::UpdateDefault>;
+NewtonRaphsonConfig(NRSettings) -> NewtonRaphsonConfig<utils::SolverDefault, utils::UpdateDefault>;
+
+template <typename LS>
+NewtonRaphsonConfig(NRSettings, LS) -> NewtonRaphsonConfig<LS, utils::UpdateDefault>;
+
+template <typename LS, typename UF>
+NewtonRaphsonConfig(NRSettings, LS, UF) -> NewtonRaphsonConfig<LS, UF>;
+
+template <typename UF>
+NewtonRaphsonConfig(NRSettings, utils::SolverDefault, UF) -> NewtonRaphsonConfig<utils::SolverDefault, UF>;
+#endif
 
 /**
  * \brief Function to create a NewtonRaphson solver instance.
- * \tparam NLO Type of the nonlinear operator to solve.
+ * \tparam F Type of the differentiable function to solve.
  * \tparam NRConfig Type of the nonlinear solver config.
  * \param config Config for the solver.
- * \param nonLinearOperator Nonlinear operator to solve.
+ * \param f Function to solve.
  * \return Shared pointer to the NewtonRaphson solver instance.
  */
-template <typename NLO, typename NRConfig>
+template <typename F, typename NRConfig>
 requires traits::isSpecialization<NewtonRaphsonConfig, std::remove_cvref_t<NRConfig>>::value
-auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
+auto createNonlinearSolver(NRConfig&& config, F&& f) {
   using LS           = std::remove_cvref_t<NRConfig>::LinearSolver;
   using UF           = std::remove_cvref_t<NRConfig>::UpdateFunction;
-  auto solverFactory = []<class NLO2, class LS2, class UF2>(NLO2&& nlo2, LS2&& ls, UF2&& uf) {
-    return std::make_shared<
-        NewtonRaphson<std::remove_cvref_t<NLO2>, std::remove_cvref_t<LS2>, std::remove_cvref_t<UF2>>>(
-        nlo2, std::forward<LS2>(ls), std::forward<UF2>(uf));
+  auto solverFactory = []<class F2, class LS2, class UF2>(F2&& f2, LS2&& ls, UF2&& uf) {
+    return std::make_shared<NewtonRaphson<std::remove_cvref_t<F2>, std::remove_cvref_t<LS2>, std::remove_cvref_t<UF2>>>(
+        f2, std::forward<LS2>(ls), std::forward<UF2>(uf));
   };
 
-  if constexpr (std::remove_cvref_t<NLO>::numberOfFunctions == 3) {
-    auto solver =
-        solverFactory(nonLinearOperator.template subOperator<1, 2>(), std::forward<NRConfig>(config).linearSolver,
-                      std::forward<NRConfig>(config).updateFunction);
+  if constexpr (std::remove_cvref_t<F>::nDerivatives == 2) {
+    auto solver = solverFactory(derivative(f), std::forward<NRConfig>(config).linearSolver,
+                                std::forward<NRConfig>(config).updateFunction);
     solver->setup(config.parameters);
     return solver;
   } else {
-    static_assert(std::remove_cvref_t<NLO>::numberOfFunctions > 1,
-                  "The number of derivatives in the nonlinear operator have to be more than 1");
-    auto solver = solverFactory(nonLinearOperator, std::forward<NRConfig>(config).linearSolver,
-                                std::forward<NRConfig>(config).updateFunction);
+    static_assert(std::remove_cvref_t<F>::nDerivatives >= 1,
+                  "The number of derivatives in the differentiable function have to be more than 0");
+    auto solver =
+        solverFactory(f, std::forward<NRConfig>(config).linearSolver, std::forward<NRConfig>(config).updateFunction);
     ;
 
     solver->setup(std::forward<NRConfig>(config).parameters);
@@ -92,41 +107,40 @@ auto createNonlinearSolver(NRConfig&& config, NLO&& nonLinearOperator) {
 /**
  * \class NewtonRaphson
  * \brief Implementation of the Newton-Raphson method for solving nonlinear equations.
- * \tparam NLO Type of the nonlinear operator to solve.
+ * \tparam F Type of the differentiable function to solve.
  * \tparam LS Type of the linear solver used internally (default is SolverDefault).
  * \tparam UF Type of the update function (default is UpdateDefault).
  * \relates makeNewtonRaphson
  * \ingroup solvers
  */
-template <typename NLO, typename LS, typename UF>
-class NewtonRaphson : public IObservable<NonLinearSolverMessages>
+template <typename F, typename LS, typename UF>
+class NewtonRaphson : public NonlinearSolverBase<F>
 {
 public:
-  using Settings = NRSettings;
+  using Settings        = NRSettings;
+  using SignatureTraits = typename F::Traits;
+  using CorrectionType  = typename SignatureTraits::template Range<0>; ///< Type of the correction of x += deltaX.
+  using JacobianType    = typename SignatureTraits::template Range<1>;
   ///< Compile-time boolean indicating if the linear solver satisfies the non-linear solver concept
-  static constexpr bool isLinearSolver =
-      Ikarus::Concepts::LinearSolverCheck<LinearSolver, typename NLO::DerivativeType, typename NLO::ValueType>;
+  static constexpr bool isLinearSolver = Ikarus::Concepts::LinearSolverCheck<LS, JacobianType, CorrectionType>;
 
-  ///< Type representing the parameter vector of the nonlinear operator.
-  using ValueType = typename NLO::template ParameterValue<0>;
+  using Domain = typename SignatureTraits::Domain; ///< Type representing the parameter vector of the function.
 
-  using UpdateFunction    = UF;  ///< Type representing the update function.
-  using NonLinearOperator = NLO; ///< Type of the non-linear operator
+  using UpdateFunction         = UF; ///< Type representing the update function.
+  using DifferentiableFunction = F;  ///< Type of the non-linear operator
 
   /**
    * \brief Constructor for NewtonRaphson.
-   * \param nonLinearOperator Nonlinear operator to solve.
+   * \param residual residual to solve.
    * \param linearSolver Linear solver used internally (default is SolverDefault).
    * \param updateFunction Update function (default is UpdateDefault).
    */
   template <typename LS2 = LS, typename UF2 = UF>
-  explicit NewtonRaphson(const NonLinearOperator& nonLinearOperator, LS2&& linearSolver = {}, UF2&& updateFunction = {})
-      : nonLinearOperator_{nonLinearOperator},
+  explicit NewtonRaphson(const DifferentiableFunction& residual, LS2&& linearSolver = {}, UF2&& updateFunction = {})
+      : residualFunction_{residual},
+        jacobianFunction_{derivative(residualFunction_)},
         linearSolver_{std::forward<LS2>(linearSolver)},
-        updateFunction_{std::forward<UF2>(updateFunction)} {
-    if constexpr (std::is_same_v<typename NonLinearOperator::ValueType, Eigen::VectorXd>)
-      correction_.setZero(this->nonLinearOperator().value().size());
-  }
+        updateFunction_{std::forward<UF2>(updateFunction)} {}
 
   /**
    * \brief Set up the solver with the given settings.
@@ -139,76 +153,77 @@ public:
     settings_ = settings;
   }
 
-#ifndef DOXYGEN
-  struct NoPredictor
-  {
-  };
-#endif
   /**
    * \brief Solve the nonlinear system.
-   * \param dxPredictor Predictor for the solution increment (default is NoPredictor).
+   * \param x Where the solution should be stored.
    * \return Information about the solution process.
    */
-  template <typename SolutionType = NoPredictor>
-  requires std::is_same_v<SolutionType, NoPredictor> ||
-           std::is_convertible_v<SolutionType, std::remove_cvref_t<typename NonLinearOperator::ValueType>>
   [[nodiscard(
       "The solve method returns information of the solution process. You should store this information and check if "
-      "it was successful")]] Ikarus::NonLinearSolverInformation
-  solve(const SolutionType& dxPredictor = NoPredictor{}) {
-    this->notify(NonLinearSolverMessages::INIT);
-    Ikarus::NonLinearSolverInformation solverInformation;
+      "it was successful")]] NonLinearSolverInformation
+  solve(Domain& x) {
+    using enum NonLinearSolverMessages;
+
+    NonLinearSolverInformation solverInformation{};
+    auto state = typename NewtonRaphson::State(x, correction_, solverInformation);
+    this->notify(INIT, state);
     solverInformation.success = true;
-    auto& x                   = nonLinearOperator().firstParameter();
-    if constexpr (not std::is_same_v<SolutionType, NoPredictor>)
-      updateFunction_(x, dxPredictor);
-    nonLinearOperator().updateAll();
-    const auto& rx = nonLinearOperator().value();
-    const auto& Ax = nonLinearOperator().derivative();
-    auto rNorm     = norm(rx);
+
+    decltype(auto) rx              = residualFunction_(x);
+    decltype(auto) Ax              = jacobianFunction_(x);
+    auto rNorm                     = norm(rx);
+    solverInformation.residualNorm = static_cast<double>(rNorm);
+
     decltype(rNorm) dNorm;
     int iter{0};
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
+
     while ((rNorm > settings_.tol && iter < settings_.maxIter) or iter < settings_.minIter) {
-      this->notify(NonLinearSolverMessages::ITERATION_STARTED);
+      this->notify(ITERATION_STARTED, state);
       if constexpr (isLinearSolver) {
         linearSolver_.factorize(Ax);
         linearSolver_.solve(correction_, -rx);
         dNorm = correction_.norm();
-        updateFunction_(x, correction_);
       } else {
         correction_ = -linearSolver_(rx, Ax);
         dNorm       = norm(correction_);
-        updateFunction_(x, correction_);
       }
-      this->notify(NonLinearSolverMessages::CORRECTIONNORM_UPDATED, static_cast<double>(dNorm));
-      this->notify(NonLinearSolverMessages::SOLUTION_CHANGED);
-      nonLinearOperator().updateAll();
-      rNorm = norm(rx);
-      this->notify(NonLinearSolverMessages::RESIDUALNORM_UPDATED, static_cast<double>(rNorm));
-      this->notify(NonLinearSolverMessages::ITERATION_ENDED);
+      solverInformation.correctionNorm = static_cast<double>(dNorm);
+
+      this->notify(CORRECTION_UPDATED, state);
+      updateFunction_(x, correction_);
+      this->notify(CORRECTIONNORM_UPDATED, state);
+      this->notify(SOLUTION_CHANGED, state);
+
+      rx                             = residualFunction_(x);
+      Ax                             = jacobianFunction_(x);
+      rNorm                          = norm(rx);
+      solverInformation.residualNorm = static_cast<double>(rNorm);
+      this->notify(RESIDUALNORM_UPDATED, state);
+
       ++iter;
+      solverInformation.iterations = iter;
+      this->notify(ITERATION_ENDED, state);
     }
     if (iter == settings_.maxIter)
       solverInformation.success = false;
-    solverInformation.iterations     = iter;
-    solverInformation.residualNorm   = static_cast<double>(rNorm);
-    solverInformation.correctionNorm = static_cast<double>(dNorm);
+    solverInformation.iterations = iter;
     if (solverInformation.success)
-      this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, iter);
+      this->notify(FINISHED_SUCESSFULLY, state);
     return solverInformation;
   }
 
   /**
-   * \brief Access the nonlinear operator.
-   * \return Reference to the nonlinear operator.
+   * \brief Access the function.
+   * \return Reference to the function.
    */
-  auto& nonLinearOperator() { return nonLinearOperator_; }
+  auto& residual() { return residualFunction_; }
 
 private:
-  NonLinearOperator nonLinearOperator_;
-  typename NonLinearOperator::ValueType correction_;
+  DifferentiableFunction residualFunction_;
+  typename DifferentiableFunction::Derivative jacobianFunction_;
+  std::remove_cvref_t<CorrectionType> correction_;
   LS linearSolver_;
   UpdateFunction updateFunction_;
   Settings settings_;
@@ -216,22 +231,21 @@ private:
 
 /**
  * \brief Function to create a NewtonRaphson solver instance.
- * \tparam NLO Type of the nonlinear operator to solve.
+ * \tparam F Type of the function to solve.
  * \tparam LS Type of the linear solver used internally (default is SolverDefault).
  * \tparam UF Type of the update function (default is UpdateDefault).
- * \param nonLinearOperator Nonlinear operator to solve.
+ * \param f Function to solve.
  * \param linearSolver Linear solver used internally (default is SolverDefault).
  * \param updateFunction Update function (default is UpdateDefault).
  * \return Shared pointer to the NewtonRaphson solver instance.
  */
-template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
-auto makeNewtonRaphson(const NLO& nonLinearOperator, LS&& linearSolver = {}, UF&& updateFunction = {}) {
-  return std::make_shared<NewtonRaphson<NLO, LS, UF>>(nonLinearOperator, std::forward<LS>(linearSolver),
-                                                      std::move(updateFunction));
+template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+auto makeNewtonRaphson(const F& f, LS&& linearSolver = {}, UF&& updateFunction = {}) {
+  return std::make_shared<NewtonRaphson<F, LS, UF>>(f, std::forward<LS>(linearSolver), std::move(updateFunction));
 }
 
-template <typename NLO, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
-NewtonRaphson(const NLO& nonLinearOperator, LS&& linearSolver = {},
-              UF&& updateFunction = {}) -> NewtonRaphson<NLO, std::remove_cvref_t<LS>, std::remove_cvref_t<UF>>;
+template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+NewtonRaphson(const F& f, LS&& linearSolver = {},
+              UF&& updateFunction = {}) -> NewtonRaphson<F, std::remove_cvref_t<LS>, std::remove_cvref_t<UF>>;
 
 } // namespace Ikarus

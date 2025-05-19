@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -47,6 +47,19 @@ Eigen::Tensor<typename Derived::Scalar, rank> tensorView(const Eigen::EigenBase<
 auto dyadic(const auto& A_ij, const auto& B_kl) {
   Eigen::array<Eigen::IndexPair<long>, 0> empty_index_list = {};
   return A_ij.contract(B_kl, empty_index_list).eval();
+}
+
+/**
+ * \brief Computes the dyadic product of two first order Tensors (here: Eigen::Vector).
+ * \details The components of the result read  \f[ A_{ij} = a_{i}b_{j}. \f]
+ * \ingroup tensor
+ * \param a_i First tensor.
+ * \param b_j Second tensor.
+ * \return  Resulting tensor after the dyadic product
+ */
+template <typename ST, int size>
+auto dyadic(const Eigen::Vector<ST, size>& a, const Eigen::Vector<ST, size>& b) {
+  return (a * b.transpose()).eval();
 }
 
 /**
@@ -153,6 +166,7 @@ auto symTwoSlots(const Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim,
 /**
  * \brief Converts 2D indices to Voigt notation index.
  *  \ingroup tensor
+ * \tparam dim dimension (either 2d or 3d), defaults to 3
  * \param i Row index.
  * \param j Column index.
  * \return Eigen::Index Voigt notation index.
@@ -163,17 +177,28 @@ auto symTwoSlots(const Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim,
  *
  * If the input indices are not within the valid range (0, 1, 2), an assertion failure is triggered.
  */
+template <int dim = 3>
+requires(dim == 2 or dim == 3)
 constexpr Eigen::Index toVoigt(Eigen::Index i, Eigen::Index j) noexcept {
-  if (i == j) // _00 -> 0, _11 -> 1,  _22 -> 2
-    return i;
-  if ((i == 1 and j == 2) or (i == 2 and j == 1)) // _12 and _21 --> 3
-    return 3;
-  if ((i == 0 and j == 2) or (i == 2 and j == 0)) // _02 and _20 --> 4
-    return 4;
-  if ((i == 0 and j == 1) or (i == 1 and j == 0)) // _01 and _10 --> 5
-    return 5;
-  assert(i < 3 and j < 3 && "For Voigt notation the indices need to be 0,1 or 2.");
-  __builtin_unreachable();
+  if constexpr (dim == 2) {
+    if (i == j) // _00 -> 0, _11 -> 1
+      return i;
+    if ((i == 0 and j == 1) or (i == 1 and j == 0)) // _01 and _10 --> 2
+      return 2;
+    assert(i < 2 and j < 2 && "For Voigt notation the indices need to be 0 or 1.");
+    __builtin_unreachable();
+  } else {
+    if (i == j) // _00 -> 0, _11 -> 1,  _22 -> 2
+      return i;
+    if ((i == 1 and j == 2) or (i == 2 and j == 1)) // _12 and _21 --> 3
+      return 3;
+    if ((i == 0 and j == 2) or (i == 2 and j == 0)) // _02 and _20 --> 4
+      return 4;
+    if ((i == 0 and j == 1) or (i == 1 and j == 0)) // _01 and _10 --> 5
+      return 5;
+    assert(i < 3 and j < 3 && "For Voigt notation the indices need to be 0,1 or 2.");
+    __builtin_unreachable();
+  }
 }
 
 /**
@@ -227,7 +252,7 @@ auto toVoigt(const Eigen::Matrix<ST, size, size, Options, maxSize, maxSize>& E, 
   const ST possibleStrainFactor = isStrain ? 2.0 : 1.0;
 
   const size_t inputSize = isFixedSized ? size : E.rows();
-  auto EVoigt            = [&]() {
+  decltype(auto) EVoigt  = [&]() {
     if constexpr (isFixedSized) {
       Eigen::Vector<ST, (size * (size + 1)) / 2> EVoigt;
       EVoigt.template head<size>() = E.diagonal();
@@ -302,29 +327,44 @@ auto fromVoigt(const Eigen::Matrix<ST, size, 1, Options, maxSize, 1>& EVoigt, bo
 
 /**
  * \brief Converts a Voigt notation index to matrix indices.
- *  \ingroup tensor
+ * \ingroup tensor
+ * \tparam dim dimension (either 2d or 3d), defaults to 3
  * \param i Voigt notation index.
  * \return Matrix indices corresponding to the Voigt notation index.
- *  \details
+ * \details
  * This function converts a Voigt notation index to the corresponding matrix indices. The mapping is based on the
  * assumption that the Voigt notation indices 0, 1, and 2 represent the diagonal components `00`, `11`, and `22`,
  * respectively. The remaining Voigt notation indices (3, 4, and 5) correspond to the off-diagonal components
- * (`12` and `21`, `02` and `20`, `01` and `10`).
+ * (`12` and `21`, `02` and `20`, `01` and `10`). For 2D only `00`, `11` on the main diagonal exist and `12` and `21`
+ * for the off-diagonal.
  *
- * The function asserts that the input index is within the valid range for Voigt notation (0 to 5).
+ * The function asserts that the input index is within the valid range for Voigt notation (0 to 5) or (0 to 2) for 2d.
  */
+template <int dim = 3>
+requires(dim == 2 or dim == 3)
 constexpr std::array<size_t, 2> fromVoigt(size_t i) {
-  if (i < 3) // _00 -> 0, _11 -> 1,  _22 -> 2
-    return {i, i};
-  else if (i == 3)
-    return {1, 2};
-  else if (i == 4)
-    return {0, 2};
-  else if (i == 5)
-    return {0, 1};
-  else {
-    assert(i < 6 && "For Voigt notation the indices need to be 0 and 5.");
-    __builtin_unreachable();
+  if constexpr (dim == 3) {
+    if (i < 3) // _00 -> 0, _11 -> 1,  _22 -> 2
+      return {i, i};
+    else if (i == 3)
+      return {1, 2};
+    else if (i == 4)
+      return {0, 2};
+    else if (i == 5)
+      return {0, 1};
+    else {
+      assert(i < 6 && "For Voigt notation the indices need to be between 0 and 5.");
+      __builtin_unreachable();
+    }
+  } else {
+    if (i < 2) // _00 -> 0, _11 -> 1
+      return {i, i};
+    else if (i == 2)
+      return {0, 1};
+    else {
+      assert(i < 3 && "For Voigt notation the indices need to be between 0 and 2.");
+      __builtin_unreachable();
+    }
   }
 }
 
@@ -339,14 +379,15 @@ constexpr std::array<size_t, 2> fromVoigt(size_t i) {
  * `fromVoigt` function to map matrix indices to tensor indices. The resulting tensor is symmetric due to symmetry
  * considerations.
  */
-template <typename ScalarType>
-auto fromVoigt(const Eigen::Matrix<ScalarType, 6, 6>& CVoigt) {
-  Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<3, 3, 3, 3>> C;
+template <typename ScalarType, int size>
+auto fromVoigt(const Eigen::Matrix<ScalarType, size, size>& CVoigt) {
+  constexpr int dim = (-1 + ct_sqrt(1 + 8 * size)) / 2;
+  Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>> C;
   // size_t iR=0,jR=0;
-  for (size_t i = 0; i < 6; ++i) {
-    for (size_t j = 0; j < 6; ++j) {
-      auto firstIndices                                                       = fromVoigt(i);
-      auto secondIndices                                                      = fromVoigt(j);
+  for (size_t i = 0; i < size; ++i) {
+    for (size_t j = 0; j < size; ++j) {
+      auto firstIndices                                                       = fromVoigt<dim>(i);
+      auto secondIndices                                                      = fromVoigt<dim>(j);
       C(firstIndices[0], firstIndices[1], secondIndices[0], secondIndices[1]) = CVoigt(i, j);
     }
   }
@@ -361,29 +402,26 @@ auto fromVoigt(const Eigen::Matrix<ScalarType, 6, 6>& CVoigt) {
  *
  * \tparam Geometry The geometry type.
  * \param geometry Reference to the geometry object.
+ * \param pos The position where the transformation matrix is to be evaluated.
  * \return The transformation matrix for 2D elements.
  */
-template <typename Geometry>
-Eigen::Matrix3d calcTransformationMatrix2D(const Geometry& geometry) {
-  const auto& referenceElement = Dune::ReferenceElements<double, 2>::general(geometry.type());
-  const auto quadPos0          = referenceElement.position(0, 0);
+template <typename GEO>
+requires(GEO::mydimension == 2)
+Eigen::Matrix3d transformationMatrix(const GEO& geometry, const Dune::FieldVector<double, 2>& pos) {
+  const auto jacobian = toEigen(geometry.jacobianTransposed(pos)).eval();
 
-  const auto jacobianinvT0 = toEigen(geometry.jacobianInverseTransposed(quadPos0));
-  const auto detJ0         = geometry.integrationElement(quadPos0);
+  const auto J11 = jacobian(0, 0);
+  const auto J12 = jacobian(0, 1);
+  const auto J21 = jacobian(1, 0);
+  const auto J22 = jacobian(1, 1);
 
-  auto jaco = (jacobianinvT0).inverse().eval();
-  auto J11  = jaco(0, 0);
-  auto J12  = jaco(0, 1);
-  auto J21  = jaco(1, 0);
-  auto J22  = jaco(1, 1);
-
-  Eigen::Matrix3d T0{
+  Eigen::Matrix3d T{
       {      J11 * J11,       J12 * J12,             J11 * J12},
       {      J21 * J21,       J22 * J22,             J21 * J22},
       {2.0 * J11 * J21, 2.0 * J12 * J22, J21 * J12 + J11 * J22}
   };
 
-  return T0.inverse() * detJ0;
+  return T;
 }
 
 /**
@@ -394,39 +432,36 @@ Eigen::Matrix3d calcTransformationMatrix2D(const Geometry& geometry) {
  *
  * \tparam Geometry The geometry type.
  * \param geometry Reference to the geometry object.
+ * \param pos The position where the transformation matrix is to be evaluated.
  * \return The transformation matrix for 3D elements.
  */
-template <typename Geometry>
-Eigen::Matrix<double, 6, 6> calcTransformationMatrix3D(const Geometry& geometry) {
-  const auto& referenceElement = Dune::ReferenceElements<double, 3>::general(geometry.type());
-  const auto quadPos0          = referenceElement.position(0, 0);
+template <typename GEO>
+requires(GEO::mydimension == 3)
+Eigen::Matrix<double, 6, 6> transformationMatrix(const GEO& geometry, const Dune::FieldVector<double, 3>& pos) {
+  const auto jacobian = toEigen(geometry.jacobianTransposed(pos)).eval();
 
-  const auto jacobianinvT0 = toEigen(geometry.jacobianInverseTransposed(quadPos0));
-  const auto detJ0         = geometry.integrationElement(quadPos0);
-
-  auto jaco = (jacobianinvT0).inverse().eval();
-  auto J11  = jaco(0, 0);
-  auto J12  = jaco(0, 1);
-  auto J13  = jaco(0, 2);
-  auto J21  = jaco(1, 0);
-  auto J22  = jaco(1, 1);
-  auto J23  = jaco(1, 2);
-  auto J31  = jaco(2, 0);
-  auto J32  = jaco(2, 1);
-  auto J33  = jaco(2, 2);
+  const auto J11 = jacobian(0, 0);
+  const auto J12 = jacobian(0, 1);
+  const auto J13 = jacobian(0, 2);
+  const auto J21 = jacobian(1, 0);
+  const auto J22 = jacobian(1, 1);
+  const auto J23 = jacobian(1, 2);
+  const auto J31 = jacobian(2, 0);
+  const auto J32 = jacobian(2, 1);
+  const auto J33 = jacobian(2, 2);
 
   // clang-format off
-  Eigen::Matrix<double, 6, 6> T0  {
-    {J11 * J11,       J12 * J12,       J13 * J13,             J11 * J12,             J11 * J13,             J12 * J13},
-    {J21 * J21,       J22 * J22,       J23 * J23,             J21 * J22,             J21 * J23,             J22 * J23},
-    {J31 * J31,       J32 * J32,       J33 * J33,             J31 * J32,             J31 * J33,             J32 * J33},
-    {2.0 * J11 * J21, 2.0 * J12 * J22, 2.0 * J13 * J23, J11 * J22 + J21 * J12, J11 * J23 + J21 * J13, J12 * J23 + J22 * J13},
-    {2.0 * J11 * J31, 2.0 * J12 * J32, 2.0 * J13 * J33, J11 * J32 + J31 * J12, J11 * J33 + J31 * J13, J12 * J33 + J32 * J13},
-    {2.0 * J31 * J21, 2.0 * J32 * J22, 2.0 * J33 * J23, J31 * J22 + J21 * J32, J31 * J23 + J21 * J33, J32 * J23 + J22 * J33}
-  };
+    Eigen::Matrix<double, 6, 6> T  {
+      {J11 * J11,       J12 * J12,       J13 * J13,             J12 * J13,             J11 * J13,             J11 * J12},
+      {J21 * J21,       J22 * J22,       J23 * J23,             J22 * J23,             J21 * J23,             J21 * J22},
+      {J31 * J31,       J32 * J32,       J33 * J33,             J32 * J33,             J31 * J33,             J31 * J32},
+      {2.0 * J21 * J31, 2.0 * J22 * J32, 2.0 * J23 * J33, J22 * J33 + J32 * J23, J31 * J23 + J21 * J33, J21 * J32 + J31 * J22},
+      {2.0 * J11 * J31, 2.0 * J12 * J32, 2.0 * J13 * J33, J12 * J33 + J32 * J13, J11 * J33 + J31 * J13, J11 * J32 + J31 * J12},
+      {2.0 * J11 * J21, 2.0 * J12 * J22, 2.0 * J13 * J23, J12 * J23 + J22 * J13, J11 * J23 + J21 * J13, J11 * J22 + J12 * J21}
+    };
   // clang-format on
 
-  return T0.inverse() * detJ0;
+  return T;
 }
 
 } // namespace Ikarus

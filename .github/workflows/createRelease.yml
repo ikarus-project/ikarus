@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: CC0-1.0
 
 name: Create release
@@ -29,9 +29,9 @@ jobs:
       - name: Create tag and push tag
         run: |
           cd repo
-          python .github/workflows/scripts/release.py $NEWVERSION
-          git config --local user.email "mueller@ibb.uni-stuttgart.de"
-          git config --local user.name "AlexanderMueller"
+          python .github/workflows/scripts/release.py v$NEWVERSION
+          git config --local user.email "ikarus@ibb.uni-stuttgart.de"
+          git config --local user.name "IkarusBot"
           git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus.git
           git add .
           git commit -m "Create release v$NEWVERSION"
@@ -72,8 +72,8 @@ jobs:
           git fetch origin gh-pages --depth=1
           cp -R ../repo/build_docs/ .
           cp -R ../repo/ikarus/ .
-          git config --local user.email "mueller@ibb.uni-stuttgart.de"
-          git config --local user.name "AlexanderMueller"
+          git config --local user.email "ikarus@ibb.uni-stuttgart.de"
+          git config --local user.name "IkarusBot"
           cd build_docs/docs
           export MKDOCSOFFLINE=false
           mike deploy v$NEWVERSION  --config-file mkdocs.insiders.yml
@@ -95,7 +95,6 @@ jobs:
           cmake --build . --target site
           mv docs/site documentation-v$NEWVERSION
           apt-get update && apt-get install -y tar gzip zip unzip bzip2
-          #tar -czf docs-v$NEWVERSION.tar.gz ./documentation-v$NEWVERSION
           zip -9r  docs-v$NEWVERSION.zip    ./documentation-v$NEWVERSION
       - name: Install docker in Docker container
         run: |
@@ -122,7 +121,7 @@ jobs:
           docker tag ikarusproject/ikarus-dev-gcc:latest ikarusproject/ikarus-dev-gcc:v$NEWVERSION
 
           docker pull ikarusproject/ikarus-dev-clang:latest
-          docker tag ikarusproject/ikarus-dev-clang:latest ikarusproject/ikarus-dev-clang:v$NEWVERSION
+          docker tag ikarusproject/ikarus-dev-clang:latest ikarusproject/ikarus-dev-clang:$NEWVERSION
 
           docker pull ikarusproject/ikarus:latest
           docker tag ikarusproject/ikarus:latest ikarusproject/ikarus:v$NEWVERSION
@@ -133,21 +132,18 @@ jobs:
           docker pull ikarusproject/ikarus-clang:latest
           docker tag ikarusproject/ikarus-clang:latest ikarusproject/ikarus-clang:v$NEWVERSION
 
-          #docker save ikarusproject/ikarus-dev:v$NEWVERSION > ikarus-dev-docker-v$NEWVERSION.tar
           docker save ikarusproject/ikarus:v$NEWVERSION     > ikarus-docker-v$NEWVERSION.tar
-          #gzip -c9 ikarus-dev-docker-v$NEWVERSION.tar > ikarus-dev-docker-v$NEWVERSION.tar.gz
           gzip -c9 ikarus-docker-v$NEWVERSION.tar > ikarus-docker-v$NEWVERSION.tar.gz
 
       - name: Checkout ikarus-examples and create tag, push it, zip it
         run: |
           git clone https://github.com/ikarus-project/ikarus-examples.git
           cd ikarus-examples
-          git config --local user.email "mueller@ibb.uni-stuttgart.de"
-          git config --local user.name "AlexanderMueller"
+          git config --local user.email "ikarus@ibb.uni-stuttgart.de"
+          git config --local user.name "IkarusBot"
           git tag -a v$NEWVERSION -m "Create release v$NEWVERSION"
           cd ..
           mv ikarus-examples ikarus-examples-v$NEWVERSION
-          #tar -czf ikarus-examples-v$NEWVERSION.tar.gz ./ikarus-examples-v$NEWVERSION
           zip -9r  ikarus-examples-v$NEWVERSION.zip    ./ikarus-examples-v$NEWVERSION
 
       - name: Push and finalize
@@ -178,7 +174,3 @@ jobs:
           files: |
             ./repo/build_docs_offline/docs-v${{ github.event.inputs.releaseTag }}.zip
             ikarus-docker-v${{ github.event.inputs.releaseTag }}.tar.gz
-            #./repo/build_docs_offline/docs-v${{ github.event.inputs.releaseTag }}.tar.gz
-            #ikarus-dev-docker-v${{ github.event.inputs.releaseTag }}.tar.gz
-            #ikarus-examples-v${{ github.event.inputs.releaseTag }}.tar.gz
-            #ikarus-examples-v${{ github.event.inputs.releaseTag }}.zip

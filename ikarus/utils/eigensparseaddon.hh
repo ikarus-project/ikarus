@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -13,7 +13,7 @@
  * \param row The row index.
  * \param col The column index.
  * \return The linear index.
- * @note The function assumes that `IsRowMajor`, `rows()`, `cols()`, `m_outerIndex`, `m_innerNonZeros`,
+ * \note The function assumes that `IsRowMajor`, `rows()`, `cols()`, `m_outerIndex`, `m_innerNonZeros`,
  * and `m_data` are accessible within the scope.
  */
 inline Index getLinearIndex(Index row, Index col) const {

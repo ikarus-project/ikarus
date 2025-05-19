@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -137,7 +137,7 @@ public:
   template <template <typename, int, int> class RT, typename UserFunction = Ikarus::Impl::DefaultUserFunction>
   requires(Concepts::ResultType<RT>)
   void addResult(DataTag dataTag = DataTag::asPointData, UserFunction&& userFunction = {}) {
-    auto resFunction = makeResultVtkFunction<RT>(assembler_, std::forward<UserFunction>(userFunction));
+    auto resFunction = makeResultFunction<RT>(assembler_, std::forward<UserFunction>(userFunction));
     addResultFunction(std::move(resFunction), dataTag);
   }
 
@@ -167,16 +167,17 @@ public:
    \param dataTag The data tag.
    */
   template <typename Basis, typename R>
-  void addInterpolation(R&& vals, const Basis& basis, const std::string& name, DataTag dataTag = DataTag::asPointData) {
-    using Container = Impl::ResultContainer_t<Basis>;
+  void addInterpolation(R&& vals, Basis&& basis, const std::string& name, DataTag dataTag = DataTag::asPointData) {
+    using Container = Impl::ResultContainer_t<std::remove_cvref_t<Basis>>;
 
-    auto gridFunction = Dune::Functions::makeDiscreteGlobalBasisFunction<Container>(basis, std::forward<R>(vals));
-    auto fieldInfo    = Dune::Vtk::FieldInfo(name, Impl::sizeOfContainer<Container>);
+    auto gridFunction =
+        Dune::Functions::makeDiscreteGlobalBasisFunction<Container>(std::forward<Basis>(basis), std::forward<R>(vals));
+    auto fieldInfo = Dune::Vtk::FieldInfo(name, Impl::sizeOfContainer<Container>);
 
     if (dataTag == DataTag::asCellData or dataTag == DataTag::asCellAndPointData)
-      Base::addCellData(std::move(gridFunction), fieldInfo);
+      Base::addCellData(gridFunction, fieldInfo);
     if (dataTag == DataTag::asPointData or dataTag == DataTag::asCellAndPointData)
-      Base::addPointData(std::move(gridFunction), fieldInfo);
+      Base::addPointData(gridFunction, fieldInfo);
   }
 
 private:

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -105,6 +105,21 @@ auto referenceElementSubEntityPositions(FE& fe, int codim) {
 template <typename FE>
 auto referenceElementVertexPositions(FE& fe) {
   return referenceElementSubEntityPositions(fe, FE::Traits::mydim);
+}
+
+/**
+ * \brief if T is a pointer type, return the dereferenced value, otherwise return the value itself.
+ *
+ * \tparam T
+ * \param t
+ * \return decltype(auto)
+ */
+template <typename T>
+decltype(auto) maybeDeref(T& t) {
+  if constexpr (Concepts::PointerOrSmartPointer<T>)
+    return *t;
+  else
+    return t;
 }
 
 } // namespace Ikarus::utils

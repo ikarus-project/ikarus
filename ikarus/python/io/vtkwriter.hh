@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+// SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
@@ -55,7 +55,7 @@ void registerVtkWriter(pybind11::handle scope, pybind11::class_<Writer, options.
   using Assembler     = typename Writer::Assembler;
   using FE            = typename Writer::FEType;
   using GridView      = typename Writer::GridView;
-  using VirtualizedGF = Dune::Vtk::Function<GridView>;
+  using VirtualizedGF = Dune::Vtk::GridFunction<GridView>;
 
   cls.def(pybind11::init(
               [](std::shared_ptr<Assembler> assembler, Dune::Vtk::FormatTypes format, Dune::Vtk::DataTypes datatype,

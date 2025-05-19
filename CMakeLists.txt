@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers mueller@ibb.uni-stuttgart.de
+# SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 # SPDX-License-Identifier: LGPL-3.0-or-later
 
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
@@ -11,7 +11,7 @@ option(DUNE_PYTHON_ALLOW_GET_PIP "Allow dune-common to install pip into venv" ON
 
 project(
   ikarus
-  VERSION 0.4.1
+  VERSION 0.4.2
   LANGUAGES C CXX
 )
 
