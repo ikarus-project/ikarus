@@ -130,7 +130,7 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
     }
   });
 
-  // Inhomogenious Boundary Conditions
+  // Inhomogeneous Boundary Conditions
   auto inhomogeneousDisplacement = []<typename T>(const auto& globalCoord, const T& lambda) {
     Eigen::Vector<T, 3> localInhomogeneous;
     if (std::abs(globalCoord[0] + 0.5) < 1e-8) {

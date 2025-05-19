@@ -71,7 +71,7 @@ struct NonlinearSolverFactory
         } else
           setting.updateFunction(x, b);
       }
-      // updates due to inhomogenious bcs
+      // updates due to inhomogeneous bcs
       if constexpr (requires { x.parameter(); }) {
         auto& dv              = assembler->dirichletValues();
         CorrectionType newInc = CorrectionType::Zero(dv.size());

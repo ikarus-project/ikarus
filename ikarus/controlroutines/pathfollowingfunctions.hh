@@ -114,7 +114,7 @@ struct ArcLength
     // auto&& residual  = nonlinearSolver.residual();
     auto req_old   = req;
     double dlambda = 1; // using just lambda=1 from lectures does not work if the depenndent variable is a non-linear
-                        // function of the inhomogeneous bcs. Thats why we need the actual tangent at the current
+                        // function of the inhomogeneous bcs. That's why we need the actual tangent at the current
                         // solution to get the correct prediction
     req.parameter() += dlambda;
 

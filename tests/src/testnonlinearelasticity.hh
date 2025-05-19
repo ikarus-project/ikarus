@@ -80,7 +80,7 @@ auto NonLinearElasticityLoadControlNRandTR(const Material& mat) {
       dirichletFlags[localView.index(localIndex)] = true;
   });
 
-  // Inhomogenious Boundary Conditions
+  // Inhomogeneous Boundary Conditions
   auto inhomogeneousDisplacement = []<typename T>(const auto& globalCoord, const T& lambda) {
     Eigen::Vector<T, 2> localInhomogeneous;
     if (std::abs(globalCoord[1]) < 1e-8) {

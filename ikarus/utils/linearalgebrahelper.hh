@@ -261,7 +261,7 @@ auto norm(const Eigen::MatrixBase<Derived>& v) {
 }
 
 /**
- * \brief Adding free floatingPointNorm function to Eigen types this is an indirection sicne otherwise norm fails of the
+ * \brief Adding free floatingPointNorm function to Eigen types this is an indirection since otherwise norm fails of the
  * value is zero for autodiff types \ingroup utils \tparam Derived Type of the input Eigen matrix. \param v Input Eigen
  * matrix. \return real of the matrix.
  */
