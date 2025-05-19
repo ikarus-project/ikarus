@@ -89,8 +89,7 @@ struct ArcLength
   void operator()(SubsidiaryArgs& args) const {
     const auto root = sqrt(args.DD.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
     args.f          = root - args.stepSize;
-    if (Dune::FloatCmp::eq(root, 0.0, std::numeric_limits<double>::epsilon())) {
-      args.dfdDD.resizeLike(args.DD);
+    if (not computedInitialPredictor) {
       args.dfdDD.setZero();
       args.dfdDlambda = 0.0;
     } else {
