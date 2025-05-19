@@ -110,6 +110,17 @@ static auto simple2DOperatorLoadControlTestPF(DifferentiableFunction& f, typenam
   auto lc                    = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
   auto nonLinearSolverLogger = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
   auto pathFollowingLogger   = Ikarus::ControlLogger().subscribeTo(lc);
+  
+  /// Create GenericListener which executes when control routines messages to check displacements at every step
+  Eigen::Matrix2Xd dispMat;
+  dispMat.setZero(Eigen::NoChange, loadSteps + 1);
+  auto genericListenerFunctor = [&](const auto& state) {
+    const auto& d        = state.domain.globalSolution();
+    int step             = state.loadStep;
+    dispMat(0, step + 1) = d[0];
+    dispMat(1, step + 1) = d[1];
+  };
+  auto dispObserver = Ikarus::GenericListener(lc, Ikarus::ControlMessages::SOLUTION_CHANGED, genericListenerFunctor);
 
   const auto controlInfo              = lc.run(req);
   std::vector<int> expectedIterations = {0, 2, 3, 3, 3, 3};
@@ -119,17 +130,6 @@ static auto simple2DOperatorLoadControlTestPF(DifferentiableFunction& f, typenam
       0.0908533884835060, 0.0, 0.0691806374841585, 0.1389097864303651, 0.2097895325120464, 0.2825443193976919,
       0.3581294588381901;
   double expectedLambda = 0.5;
-
-  /// Create GenericListener which executes when control routines messages to check displacements at every step
-  Eigen::Matrix2Xd dispMat;
-  dispMat.setZero(Eigen::NoChange, loadSteps + 1);
-
-  auto dispObserver = Ikarus::GenericListener(lc, Ikarus::ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
-    const auto& d        = state.domain.globalSolution();
-    int step             = state.loadStep;
-    dispMat(0, step + 1) = d[0];
-    dispMat(1, step + 1) = d[1];
-  });
 
   TestSuite t("Load Control with Subsidiary function");
   t.check(controlInfo.success, "No convergence");
