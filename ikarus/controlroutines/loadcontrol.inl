@@ -9,8 +9,6 @@
 
 #pragma once
 
-#include <type_traits>
-
 #include <ikarus/controlroutines/common.hh>
 #include <ikarus/controlroutines/loadcontrol.hh>
 #include <ikarus/utils/defaultfunctions.hh>

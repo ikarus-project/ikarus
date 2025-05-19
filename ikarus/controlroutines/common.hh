@@ -12,6 +12,17 @@
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
+
+/**
+ * \brief A helper function that returns a linear solver suitable for symmetric, positive-definite sparse or dense
+ * matrices, based on the nonlinear solver.
+ *
+ * \tparam NLS Type of the nonlinear solver.
+ *
+ * \param nls The nonlinear solver.
+ *
+ * \return A LinearSolver.
+ */
 template <typename NLS>
 auto createSPDLinearSolverFromNonLinearSolver(const NLS& nls) {
   using JacobianType = std::remove_cvref_t<typename NLS::JacobianType>;
