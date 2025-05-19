@@ -5,4 +5,3 @@
 add_subdirectory(eigenvaluesolver)
 add_subdirectory(linearsolver)
 add_subdirectory(nonlinearsolver)
-add_subdirectory(eigenvaluesolver)

@@ -366,7 +366,7 @@ protected:
     if constexpr (FE::isMixed()) {
       return;
     }
-  
+
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto eps       = strainFunction(par, dx);

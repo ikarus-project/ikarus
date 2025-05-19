@@ -9,14 +9,15 @@
 #pragma once
 
 #include <optional>
-#include <Spectra/MatOp/SparseCholesky.h>
-#include <Spectra/MatOp/SparseGenMatProd.h>
-#include <Spectra/SymEigsSolver.h>
-#include <Spectra/SymGEigsSolver.h>
 #include <utility>
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
+
+#include <Spectra/MatOp/SparseCholesky.h>
+#include <Spectra/MatOp/SparseGenMatProd.h>
+#include <Spectra/SymEigsSolver.h>
+#include <Spectra/SymGEigsSolver.h>
 
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/makeenum.hh>
