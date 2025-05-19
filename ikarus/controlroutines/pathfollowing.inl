@@ -22,7 +22,10 @@ namespace Ikarus {
 
 template <typename NLS, typename PF, typename ASS>
 requires(Impl::checkPathFollowingTemplates<NLS, PF, ASS>())
-ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
+[[nodiscard(
+    "The run method returns information of the control routine. You should store this information and check if "
+    "it was successful")]] ControlInformation
+PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   using enum ControlMessages;
   auto& residual = nonLinearSolver_->residual();
 
@@ -32,26 +35,24 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   auto state = typename PathFollowing::State(req, info, subsidiaryArgs_);
 
   this->notify(CONTROL_STARTED, state);
-
-  // For Clang, loadStep value gets corrupted only after CONTROL_STARTED and hence it is re-written here
-#if defined(__clang__)
-  state.loadStep = 0;
-#endif
-
   subsidiaryArgs_.stepSize = stepSize_;
 
-  /// Initializing solver
+  // Initial step to check if the undeformed (or initial) state is in equilibrium
+  state.loadStep = -1;
   this->notify(STEP_STARTED, state);
-
-  pathFollowingType_.initialPrediction(req, residual, subsidiaryArgs_);
   auto solverInfo = nonLinearSolver_->solve(req, pathFollowingType_, subsidiaryArgs_);
-  info.solverInfos.push_back(solverInfo);
-  info.totalIterations += solverInfo.iterations;
+  updateAndNotifyControlInfo(info, solverInfo, state);
   if (not solverInfo.success)
     return info;
 
-  this->notify(SOLUTION_CHANGED, state);
-  this->notify(STEP_ENDED, state);
+  state.loadStep = 0;
+  state.stepSize = stepSize_;
+  this->notify(STEP_STARTED, state);
+  pathFollowingType_.initialPrediction(req, residual, subsidiaryArgs_);
+  solverInfo = nonLinearSolver_->solve(req, pathFollowingType_, subsidiaryArgs_);
+  updateAndNotifyControlInfo(info, solverInfo, state);
+  if (not solverInfo.success)
+    return info;
 
   /// Calculate predictor for a particular step
   for (int ls = 1; ls < steps_; ++ls) {
@@ -65,14 +66,9 @@ ControlInformation PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
     this->notify(STEP_STARTED, state);
 
     solverInfo = nonLinearSolver_->solve(req, pathFollowingType_, subsidiaryArgs_);
-
-    info.solverInfos.push_back(solverInfo);
-    info.totalIterations += solverInfo.iterations;
+    updateAndNotifyControlInfo(info, solverInfo, state);
     if (not solverInfo.success)
       return info;
-
-    this->notify(SOLUTION_CHANGED, state);
-    this->notify(STEP_ENDED, state);
   }
 
   this->notify(CONTROL_ENDED, state);

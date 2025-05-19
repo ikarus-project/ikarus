@@ -55,7 +55,7 @@ static auto simple2DOperatorArcLengthTest(DifferentiableFunction& f, typename Di
   auto pathFollowingLogger   = Ikarus::ControlLogger().subscribeTo(alc);
 
   const auto controlInfo              = alc.run(req);
-  std::vector<int> expectedIterations = {1, 3, 3, 3, 3};
+  std::vector<int> expectedIterations = {0, 1, 3, 3, 3, 3};
   Eigen::Vector2d expectedDisplacement;
   expectedDisplacement << 0.0883524725970593, 0.3486891582376427;
   double expectedLambda = 0.4877655288280236;
@@ -63,9 +63,9 @@ static auto simple2DOperatorArcLengthTest(DifferentiableFunction& f, typename Di
   TestSuite t("Arc Length with Subsidiary function");
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
-    checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + pft.name());
-  checkScalars(t, req.parameter(), expectedLambda, " --> " + pft.name());
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+    checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + alc.name());
+  checkScalars(t, req.parameter(), expectedLambda, " --> " + alc.name());
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
   return t;
 }
 
@@ -83,7 +83,7 @@ static auto simple2DOperatorArcLengthTestAsDefault(DifferentiableFunction& f,
   auto pathFollowingLogger   = Ikarus::ControlLogger().subscribeTo(alc);
 
   const auto controlInfo              = alc.run(req);
-  std::vector<int> expectedIterations = {1, 3, 3, 3, 3};
+  std::vector<int> expectedIterations = {0, 1, 3, 3, 3, 3};
   Eigen::Vector2d expectedDisplacement;
   expectedDisplacement << 0.0883524725970593, 0.3486891582376427;
   double expectedLambda = 0.4877655288280236;
@@ -93,7 +93,7 @@ static auto simple2DOperatorArcLengthTestAsDefault(DifferentiableFunction& f,
   for (auto i = 0; i < 2; ++i)
     checkScalars(t, req.globalSolution()[i], expectedDisplacement[i]);
   checkScalars(t, req.parameter(), expectedLambda);
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
   return t;
 }
 
@@ -111,18 +111,36 @@ static auto simple2DOperatorLoadControlTestPF(DifferentiableFunction& f, typenam
   auto nonLinearSolverLogger = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
   auto pathFollowingLogger   = Ikarus::ControlLogger().subscribeTo(lc);
 
+  /// Create GenericListener which executes when control routines messages to check displacements at every step
+  Eigen::Matrix2Xd dispMat;
+  dispMat.setZero(Eigen::NoChange, loadSteps + 1);
+  auto genericListenerFunctor = [&](const auto& state) {
+    const auto& d        = state.domain.globalSolution();
+    int step             = state.loadStep;
+    dispMat(0, step + 1) = d[0];
+    dispMat(1, step + 1) = d[1];
+  };
+  auto dispObserver = Ikarus::GenericListener(lc, Ikarus::ControlMessages::SOLUTION_CHANGED, genericListenerFunctor);
+
   const auto controlInfo              = lc.run(req);
-  std::vector<int> expectedIterations = {2, 3, 3, 3, 3};
-  Eigen::Vector2d expectedDisplacement;
-  expectedDisplacement << 0.0908533884835060, 0.3581294588381901;
+  std::vector<int> expectedIterations = {0, 2, 3, 3, 3, 3};
+  Eigen::Matrix2Xd expectedDisplacement;
+  expectedDisplacement.setZero(Eigen::NoChange, loadSteps + 1);
+  expectedDisplacement << 0.0, 0.01715872957844366, 0.0345464428730192, 0.0524126112865617, 0.0710534689402604,
+      0.0908533884835060, 0.0, 0.0691806374841585, 0.1389097864303651, 0.2097895325120464, 0.2825443193976919,
+      0.3581294588381901;
   double expectedLambda = 0.5;
 
   TestSuite t("Load Control with Subsidiary function");
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
-    checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + pft.name());
-  checkScalars(t, req.parameter(), expectedLambda, " --> " + pft.name());
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+    for (auto j = 0; j < loadSteps + 1; ++j)
+      checkScalars(t, dispMat(i, j), expectedDisplacement(i, j), " --> " + lc.name());
+  checkScalars(t, req.parameter(), expectedLambda, " --> " + lc.name());
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
+  t.checkThrow<Dune::InvalidStateException>(
+      [&]() { auto lc1 = Ikarus::PathFollowing(nr, 0, stepSize, pft); },
+      "An object of PathFollowing should not have been constructed with steps = 0.");
   return t;
 }
 
@@ -166,7 +184,10 @@ static auto simple2DOperatorLoadControlTestLC(DifferentiableFunction& f, typenam
     for (auto j = 0; j < loadSteps; ++j)
       checkScalars(t, dispMat(i, j), expectedDisplacement(i, j), " --> " + lc.name());
   checkScalars(t, req.parameter(), expectedLambda, " --> " + lc.name());
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
+  t.checkThrow<Dune::InvalidStateException>(
+      [&]() { auto lc1 = Ikarus::LoadControl(nr, 0, {0, 1}); },
+      "An object of LoadControl should not have been constructed with loadSteps = 0.");
   return t;
 }
 
@@ -211,7 +232,7 @@ static auto simple2DOperatorLoadControlTestLCWithDifferentListenerOrder(Differen
     for (auto j = 0; j < loadSteps; ++j)
       checkScalars(t, dispMat(i, j), expectedDisplacement(i, j), " --> " + lc.name());
   checkScalars(t, req.parameter(), expectedLambda, " --> " + lc.name());
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
   return t;
 }
 
@@ -233,7 +254,7 @@ static auto simple2DOperatorDisplacementControlTest(DifferentiableFunction& f,
   auto pathFollowingLogger   = Ikarus::ControlLogger().subscribeTo(dc);
 
   const auto controlInfo              = dc.run(req);
-  std::vector<int> expectedIterations = {3, 3, 3, 3, 3};
+  std::vector<int> expectedIterations = {0, 3, 3, 3, 3, 3};
   Eigen::Vector2d expectedDisplacement;
   expectedDisplacement << 0.5, 1.4781013410920430;
   double expectedLambda = 0.5045466678049050;
@@ -241,9 +262,9 @@ static auto simple2DOperatorDisplacementControlTest(DifferentiableFunction& f,
   TestSuite t("Displacement Control with Subsidiary function");
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
-    checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + pft.name());
-  checkScalars(t, req.parameter(), expectedLambda, " --> " + pft.name());
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+    checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + dc.name());
+  checkScalars(t, req.parameter(), expectedLambda, " --> " + dc.name());
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
   return t;
 }
 
@@ -263,8 +284,8 @@ int main(int argc, char** argv) {
 
   auto f = Ikarus::makeDifferentiableFunction(Ikarus::functions(fvLambda, dfvLambda), req);
 
-  double stepSize = 0.1;
-  int loadSteps   = 5;
+  constexpr double stepSize = 0.1;
+  constexpr int loadSteps   = 5;
 
   t.subTest(simple2DOperatorArcLengthTest(f, req, stepSize, loadSteps));
   t.subTest(simple2DOperatorArcLengthTestAsDefault(f, req, stepSize, loadSteps));

@@ -244,12 +244,12 @@ int main(int argc, char** argv) {
 
   /// expected iterations for each step for a path following type with and without step sizing
   const std::vector<std::vector<int>> expectedIterationsALC = {
-      {9, 9, 6, 5, 4, 4},
-      {9, 8, 6, 5, 5, 5}
+      {0, 9, 9, 6, 5, 4, 4},
+      {0, 9, 8, 6, 5, 5, 5}
   };
   const std::vector<std::vector<int>> expectedIterationsLC = {
-      {10, 4, 4, 3, 3, 3},
-      {10, 6, 5, 4, 4, 4}
+      {0, 10, 4, 4, 3, 3, 3},
+      {0, 10, 6, 5, 4, 4, 4}
   };
 
   /// expected results(max(displacement) and lambda) for a path following type with and without step sizing
