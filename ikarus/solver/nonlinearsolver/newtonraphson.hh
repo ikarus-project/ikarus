@@ -197,7 +197,7 @@ public:
       this->notify(SOLUTION_CHANGED, state);
       rx                             = residualFunction_(x);
       Ax                             = jacobianFunction_(x);
-      rNorm                          = norm(rx);
+      rNorm                          = floatingPointNorm(rx);
       solverInformation.residualNorm = static_cast<double>(rNorm);
       this->notify(RESIDUALNORM_UPDATED, state);
       ++iter;

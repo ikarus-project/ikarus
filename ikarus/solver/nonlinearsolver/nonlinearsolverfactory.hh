@@ -62,10 +62,10 @@ struct NonlinearSolverFactory
     auto updateF = [assembler, setting = settings]<typename D, typename C>(D& x, const C& b) {
       if constexpr (not std::is_same_v<C, utils::ZeroIncrementTag>) {
         // the right-hand side is reduced
-        if (assembler->dBCOption() == DBCOption::Reduced and assembler.reducedSize() == b.size()) {
+        if (assembler->dBCOption() == DBCOption::Reduced and assembler->reducedSize() == b.size()) {
           setting.updateFunction(x, assembler->createFullVector(b));
-        } else if (assembler.reducedSize() == x.size() and
-                   assembler.size() == b.size()) // the right-hand side is full but x is reduced
+        } else if (assembler->reducedSize() == x.size() and
+                   assembler->size() == b.size()) // the right-hand side is full but x is reduced
         {
           setting.updateFunction(x, assembler->createReducedVector(b));
         } else

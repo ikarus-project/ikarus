@@ -93,7 +93,7 @@ static auto simple2DOperatorArcLengthTestWithLambdaDependence(DifferentiableFunc
   auto nrSettings              = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig({}, linSolver, updateFunction);
   auto nr                      = Ikarus::createNonlinearSolver(nrSettings, f);
   auto alc                     = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
-  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(nr);
+  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
   auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(alc);
 
   const auto controlInfo              = alc.run(req);

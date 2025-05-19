@@ -13,7 +13,6 @@
 #pragma once
 
 #include <cmath>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -206,8 +205,9 @@ struct LoadControlSubsidiaryFunction
     // reqPredictor.parameter() += args.stepSize;
     req.parameter() += args.stepSize;
     req += predictorForNewLoadLevel(nonlinearSolver, req_old, req);
-    args.DD      = req.globalSolution();
-    args.Dlambda = args.stepSize;
+    args.DD                  = req.globalSolution();
+    args.Dlambda             = args.stepSize;
+    computedInitialPredictor = true;
     // req.parameter() += args.Dlambda;
   }
 

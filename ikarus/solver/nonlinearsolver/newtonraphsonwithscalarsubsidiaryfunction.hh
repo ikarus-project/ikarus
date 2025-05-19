@@ -103,7 +103,6 @@ auto createNonlinearSolver(NRConfig&& config, F&& f) {
                   "The number of derivatives in the differentiable function have to be more than 0");
     auto solver =
         solverFactory(f, std::forward<NRConfig>(config).linearSolver, std::forward<NRConfig>(config).updateFunction);
-    ;
 
     solver->setup(std::forward<NRConfig>(config).parameters);
     return solver;

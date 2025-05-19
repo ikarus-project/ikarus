@@ -330,6 +330,18 @@ public:
   }
 
   /**
+   * \brief A helper function to get the size of the solution vector.
+   *
+   * \return Size of the solution vector.
+   */
+  std::size_t size() {
+    if constexpr (Concepts::EigenVector<SolutionVectorType>)
+      return globalSolution().size();
+    else
+      return 0;
+  }
+
+  /**
    * \brief Get the parameter value.
    *
    * \return Reference to the parameter value.

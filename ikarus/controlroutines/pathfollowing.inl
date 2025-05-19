@@ -48,7 +48,7 @@ PathFollowing<NLS, PF, ASS>::run(typename NLS::Domain& req) {
   state.loadStep = 0;
   state.stepSize = stepSize_;
   this->notify(STEP_STARTED, state);
-  pathFollowingType_.initialPrediction(req, *nonlinearSolver_, subsidiaryArgs_);
+  pathFollowingType_.initialPrediction(req, *nonLinearSolver_, subsidiaryArgs_);
   solverInfo = nonLinearSolver_->solve(req, pathFollowingType_, subsidiaryArgs_);
   updateAndNotifyControlInfo(info, solverInfo, state);
   if (not solverInfo.success)
