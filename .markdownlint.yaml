@@ -29,5 +29,8 @@ MD052: false
 # Material theme tabbed content feature use indented and simple use fenced; can't support both
 MD046: false
 
+# MD059/descriptive-link-text - Link text should be descriptive
+MD059: false
+
 MD007:
   indent: 4
