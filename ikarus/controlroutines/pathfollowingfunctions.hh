@@ -19,6 +19,7 @@
 #include <vector>
 
 #include <dune/common/exceptions.hh>
+#include <dune/common/float_cmp.hh>
 
 #include <Eigen/Core>
 
@@ -86,13 +87,14 @@ struct ArcLength
    * \param args The subsidiary function arguments.
    */
   void operator()(SubsidiaryArgs& args) const {
-    if (psi) {
-      const auto root = sqrt(args.DD.squaredNorm() + psi.value() * psi.value() * args.Dlambda * args.Dlambda);
-      args.f          = root - args.stepSize;
-      args.dfdDD      = args.DD / root;
-      args.dfdDlambda = (psi.value() * psi.value() * args.Dlambda) / root;
+    const auto root = sqrt(args.DD.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
+    args.f          = root - args.stepSize;
+    if (not computedInitialPredictor) {
+      args.dfdDD.setZero();
+      args.dfdDlambda = 0.0;
     } else {
-      DUNE_THROW(Dune::InvalidStateException, "You have to call initialPrediction first. Otherwise psi is not defined");
+      args.dfdDD      = args.DD / root;
+      args.dfdDlambda = (psi * psi * args.Dlambda) / root;
     }
   }
 
@@ -135,13 +137,14 @@ struct ArcLength
     const auto DD2 = args.DD.squaredNorm();
 
     psi    = sqrt(DD2);
-    auto s = sqrt(psi.value() * psi.value() + DD2);
+    auto s = sqrt(psi * psi + DD2);
 
     args.DD      = args.DD * args.stepSize / s;
     args.Dlambda = args.stepSize / s;
 
-    req.globalSolution() = args.DD;
-    req.parameter()      = args.Dlambda;
+    req.globalSolution()     = args.DD;
+    req.parameter()          = args.Dlambda;
+    computedInitialPredictor = true;
   }
 
   /**
@@ -156,6 +159,8 @@ struct ArcLength
    */
   template <typename F>
   void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+    if (not computedInitialPredictor)
+      DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     req.globalSolution() += args.DD;
     req.parameter() += args.Dlambda;
   }
@@ -164,7 +169,8 @@ struct ArcLength
   constexpr std::string name() const { return "Arc length"; }
 
 private:
-  std::optional<double> psi;
+  double psi{0.0};
+  bool computedInitialPredictor{false};
 };
 
 /**
@@ -206,8 +212,9 @@ struct LoadControlSubsidiaryFunction
    */
   template <typename F>
   void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
-    args.Dlambda    = args.stepSize;
-    req.parameter() = args.Dlambda;
+    args.Dlambda             = args.stepSize;
+    req.parameter()          = args.Dlambda;
+    computedInitialPredictor = true;
   }
 
   /**
@@ -222,11 +229,16 @@ struct LoadControlSubsidiaryFunction
    */
   template <typename F>
   void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+    if (not computedInitialPredictor)
+      DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     req.parameter() += args.Dlambda;
   }
 
   /** \brief The name of the PathFollowing method. */
   constexpr std::string name() const { return "Load Control"; }
+
+private:
+  bool computedInitialPredictor{false};
 };
 
 /**
@@ -280,6 +292,7 @@ struct DisplacementControl
   void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
     args.DD(controlledIndices).array() = args.stepSize;
     req.globalSolution()               = args.DD;
+    computedInitialPredictor           = true;
   }
 
   /**
@@ -294,6 +307,8 @@ struct DisplacementControl
    */
   template <typename F>
   void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+    if (not computedInitialPredictor)
+      DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     req.globalSolution() += args.DD;
   }
 
@@ -302,5 +317,6 @@ struct DisplacementControl
 
 private:
   std::vector<int> controlledIndices; /**< Vector containing the indices of the controlled degrees of freedom. */
+  bool computedInitialPredictor{false};
 };
 } // namespace Ikarus

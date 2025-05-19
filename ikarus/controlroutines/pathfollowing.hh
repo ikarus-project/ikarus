@@ -36,7 +36,7 @@ struct PathFollowingState
   const ControlInformation& information;
   const SubsidiaryArgs& subsidiaryArgs;
 
-  int loadStep{};
+  int loadStep{-1};
   double stepSize{};
 };
 
@@ -189,7 +189,10 @@ public:
         steps_{steps},
         stepSize_{stepSize},
         pathFollowingType_{pathFollowingType},
-        adaptiveStepSizing_{adaptiveStepSizing} {}
+        adaptiveStepSizing_{adaptiveStepSizing} {
+    if (steps_ <= 0)
+      DUNE_THROW(Dune::InvalidStateException, "Number of steps should be greater than zero.");
+  }
 
   /**
    * \brief Executes the PathFollowing routine.
@@ -211,6 +214,14 @@ private:
   PF pathFollowingType_;
   ASS adaptiveStepSizing_;
   SubsidiaryArgs subsidiaryArgs_;
+
+  void updateAndNotifyControlInfo(ControlInformation& info, const NonLinearSolverInformation& solverInfo,
+                                  const typename PathFollowing::State& state) {
+    info.solverInfos.push_back(solverInfo);
+    info.totalIterations += solverInfo.iterations;
+    this->notify(ControlMessages::SOLUTION_CHANGED, state);
+    this->notify(ControlMessages::STEP_ENDED, state);
+  }
 };
 
 } // namespace Ikarus
