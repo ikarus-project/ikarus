@@ -169,9 +169,9 @@ public:
     this->notify(INIT, state);
     solverInformation.success = true;
 
-    decltype(auto) rx = residualFunction_(x);
-    decltype(auto) Ax = jacobianFunction_(x);
-    auto rNorm        = floatingPointNorm(rx);
+    decltype(auto) rx              = residualFunction_(x);
+    decltype(auto) Ax              = jacobianFunction_(x);
+    auto rNorm                     = floatingPointNorm(rx);
     solverInformation.residualNorm = static_cast<double>(rNorm);
 
     decltype(rNorm) dNorm;
@@ -195,9 +195,9 @@ public:
       updateFunction_(x, correction_);
       this->notify(CORRECTIONNORM_UPDATED, state);
       this->notify(SOLUTION_CHANGED, state);
-      rx    = residualFunction_(x);
-      Ax    = jacobianFunction_(x);
-      rNorm = norm(rx);
+      rx                             = residualFunction_(x);
+      Ax                             = jacobianFunction_(x);
+      rNorm                          = norm(rx);
       solverInformation.residualNorm = static_cast<double>(rNorm);
       this->notify(RESIDUALNORM_UPDATED, state);
       ++iter;

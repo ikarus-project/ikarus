@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <ikarus/assembler/simpleassemblers.hh>
+
 namespace Ikarus {
 
 template <typename B, typename FEC>

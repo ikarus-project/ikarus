@@ -86,10 +86,10 @@ public:
    * \brief Creates the reduzed-sized vector of size reducedSize and inserts the values of a full vector at the
    * "free" degrees of freedom
    *
-   * \param reducedVector Reference to the reduced vector.
+   * \param fullVector Reference to the full vector.
    * \return Eigen::VectorXd The full-sized vector.
    */
-  Eigen::VectorXd createReducedVector(Eigen::Ref<const Eigen::VectorXd> reducedVector);
+  Eigen::VectorXd createReducedVector(Eigen::Ref<const Eigen::VectorXd> fullVector);
 
   /**
    * \brief Returns the container of finite elements.

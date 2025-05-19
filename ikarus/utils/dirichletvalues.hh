@@ -28,7 +28,6 @@
 
 #include <ikarus/utils/concepts.hh>
 
-
 namespace Dune {
 template <class K, int N>
 class FieldVector;
