@@ -74,7 +74,10 @@ public:
         loadSteps_{loadSteps},
         parameterBegin_{tbeginEnd[0]},
         parameterEnd_{tbeginEnd[1]},
-        stepSize_{(parameterEnd_ - parameterBegin_) / loadSteps_} {}
+        stepSize_{(parameterEnd_ - parameterBegin_) / loadSteps_} {
+    if (loadSteps_ <= 0)
+      DUNE_THROW(Dune::InvalidStateException, "Number of load steps should be greater than zero.");
+  }
 
   /**
    * \brief Executes the LoadControl routine.
@@ -92,6 +95,14 @@ private:
   double parameterBegin_;
   double parameterEnd_;
   double stepSize_;
+
+  void updateAndNotifyControlInfo(ControlInformation& info, const NonLinearSolverInformation& solverInfo,
+                                  const typename LoadControl::State& state) {
+    info.solverInfos.push_back(solverInfo);
+    info.totalIterations += solverInfo.iterations;
+    this->notify(ControlMessages::SOLUTION_CHANGED, state);
+    this->notify(ControlMessages::STEP_ENDED, state);
+  }
 };
 
 } // namespace Ikarus

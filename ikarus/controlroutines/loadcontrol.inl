@@ -13,7 +13,10 @@
 
 namespace Ikarus {
 template <typename NLS>
-ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
+[[nodiscard(
+    "The run method returns information of the control routine. You should store this information and check if "
+    "it was successful")]] ControlInformation
+LoadControl<NLS>::run(typename NLS::Domain& x) {
   using enum ControlMessages;
   decltype(auto) nonOp = nonLinearSolver_->residual();
 
@@ -23,16 +26,12 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
 
   auto& loadParameter = x.parameter();
 
-  loadParameter = 0.0;
+  // Initial step to check if the undeformed (or initial) state is in equilibrium
   this->notify(ControlMessages::STEP_STARTED, state);
   auto solverInfo = nonLinearSolver_->solve(x);
-  info.solverInfos.push_back(solverInfo);
-  info.totalIterations += solverInfo.iterations;
+  updateAndNotifyControlInfo(info, solverInfo, state);
   if (not solverInfo.success)
     return info;
-
-  this->notify(SOLUTION_CHANGED, state);
-  this->notify(STEP_ENDED, state);
 
   state.stepSize = stepSize_;
 
@@ -41,13 +40,9 @@ ControlInformation LoadControl<NLS>::run(typename NLS::Domain& x) {
     this->notify(STEP_STARTED, state);
     loadParameter += stepSize_;
     solverInfo = nonLinearSolver_->solve(x);
-    info.solverInfos.push_back(solverInfo);
-    info.totalIterations += solverInfo.iterations;
+    updateAndNotifyControlInfo(info, solverInfo, state);
     if (not solverInfo.success)
       return info;
-
-    this->notify(SOLUTION_CHANGED, state);
-    this->notify(STEP_ENDED, state);
   }
   this->notify(CONTROL_ENDED, state);
   info.success = true;
