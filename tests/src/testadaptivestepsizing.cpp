@@ -130,20 +130,6 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
     }
   });
 
-  // Inhomogeneous Boundary Conditions
-  auto inhomogeneousDisplacement = []<typename T>(const auto& globalCoord, const T& lambda) {
-    Eigen::Vector<T, 3> localInhomogeneous;
-    if (std::abs(globalCoord[0] + 0.5) < 1e-8) {
-      localInhomogeneous[0] = 0;
-      localInhomogeneous[1] = globalCoord[0] * lambda / 1000;
-      localInhomogeneous[2] = globalCoord[0] * lambda / 1000;
-    } else
-      localInhomogeneous.setZero();
-    return localInhomogeneous;
-  };
-
-  dirichletValues.storeInhomogeneousBoundaryCondition(inhomogeneousDisplacement);
-
   auto sparseAssembler = makeSparseFlatAssembler(fes, dirichletValues);
 
   auto req     = typename FEType::Requirement(basis);
