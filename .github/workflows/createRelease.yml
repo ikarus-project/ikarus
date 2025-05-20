@@ -111,7 +111,10 @@ jobs:
           tee /etc/apt/sources.list.d/docker.list > /dev/null
           apt-get update
           apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
+      - name: Free up disk space before Docker image saving
+        run: |
+          docker system prune -af
+          df -h  # Optional: shows how much space was freed
       - name: Download, tag, push and save docker images for new release
         run: |
           docker pull ikarusproject/ikarus-dev:latest
