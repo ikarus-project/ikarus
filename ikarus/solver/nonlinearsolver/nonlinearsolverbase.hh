@@ -25,4 +25,9 @@ struct NonlinearSolverBase : Broadcaster<NonLinearSolverMessages, NonlinearSolve
   using State = NonlinearSolverStateType<F>;
 };
 
+struct InteralForceIDBCUpdateDefault
+{
+  constexpr auto operator()() const {}
+};
+
 } // namespace Ikarus

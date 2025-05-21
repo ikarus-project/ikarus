@@ -20,7 +20,8 @@
 
 namespace Ikarus {
 
-template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
+          typename IF = InteralForceIDBCUpdateDefault>
 class NewtonRaphson;
 
 struct NRSettings
@@ -34,19 +35,33 @@ struct NRSettings
  * \struct NewtonRaphsonConfig
  * \brief Config for the Newton-Raphson solver.
  */
-template <typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
+template <typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
+          typename IF = InteralForceIDBCUpdateDefault>
 struct NewtonRaphsonConfig
 {
   using LinearSolver   = LS;
   using UpdateFunction = UF;
+  using IDBCFunction   = IF;
   NRSettings parameters{};
   LS linearSolver{};
   UF updateFunction{};
+  IF internalForceDueToIDBCFunction{};
 
   template <typename UF2>
   auto rebindUpdateFunction(UF2&& updateFunction) const {
-    NewtonRaphsonConfig<LS, UF2> settings{
-        .parameters = parameters, .linearSolver = linearSolver, .updateFunction = std::forward<UF2>(updateFunction)};
+    NewtonRaphsonConfig<LS, UF2> settings{.parameters                     = parameters,
+                                          .linearSolver                   = linearSolver,
+                                          .updateFunction                 = std::forward<UF2>(updateFunction),
+                                          .internalForceDueToIDBCFunction = internalForceDueToIDBCFunction};
+    return settings;
+  }
+
+  template <typename IF2>
+  auto rebindInternalForceDueToIDBCFunction(IF2&& internalForceFunction) const {
+    NewtonRaphsonConfig<LS, IF2> settings{.parameters                     = parameters,
+                                          .linearSolver                   = linearSolver,
+                                          .updateFunction                 = updateFunction,
+                                          .internalForceDueToIDBCFunction = std::forward<IF2>(internalForceFunction)};
     return settings;
   }
 
@@ -65,6 +80,9 @@ NewtonRaphsonConfig(NRSettings, LS) -> NewtonRaphsonConfig<LS, utils::UpdateDefa
 template <typename LS, typename UF>
 NewtonRaphsonConfig(NRSettings, LS, UF) -> NewtonRaphsonConfig<LS, UF>;
 
+template <typename LS, typename UF, typename IF>
+NewtonRaphsonConfig(NRSettings, LS, UF, IF) -> NewtonRaphsonConfig<LS, UF, IF>;
+
 template <typename UF>
 NewtonRaphsonConfig(NRSettings, utils::SolverDefault, UF) -> NewtonRaphsonConfig<utils::SolverDefault, UF>;
 #endif
@@ -82,21 +100,25 @@ requires traits::isSpecialization<NewtonRaphsonConfig, std::remove_cvref_t<NRCon
 auto createNonlinearSolver(NRConfig&& config, F&& f) {
   using LS           = std::remove_cvref_t<NRConfig>::LinearSolver;
   using UF           = std::remove_cvref_t<NRConfig>::UpdateFunction;
-  auto solverFactory = []<class F2, class LS2, class UF2>(F2&& f2, LS2&& ls, UF2&& uf) {
-    return std::make_shared<NewtonRaphson<std::remove_cvref_t<F2>, std::remove_cvref_t<LS2>, std::remove_cvref_t<UF2>>>(
-        f2, std::forward<LS2>(ls), std::forward<UF2>(uf));
+  using IF           = std::remove_cvref_t<NRConfig>::IDBCFunction;
+  auto solverFactory = []<class F2, class LS2, class UF2, class IF2>(F2&& f2, LS2&& ls, UF2&& uf, IF2&& if_) {
+    return std::make_shared<NewtonRaphson<std::remove_cvref_t<F2>, std::remove_cvref_t<LS2>, std::remove_cvref_t<UF2>,
+                                          std::remove_cvref_t<IF2>>>(f2, std::forward<LS2>(ls), std::forward<UF2>(uf),
+                                                                     std::forward<IF2>(if_));
   };
 
   if constexpr (std::remove_cvref_t<F>::nDerivatives == 2) {
     auto solver = solverFactory(derivative(f), std::forward<NRConfig>(config).linearSolver,
-                                std::forward<NRConfig>(config).updateFunction);
+                                std::forward<NRConfig>(config).updateFunction,
+                                std::forward<NRConfig>(config).internalForceDueToIDBCFunction);
     solver->setup(config.parameters);
     return solver;
   } else {
     static_assert(std::remove_cvref_t<F>::nDerivatives >= 1,
                   "The number of derivatives in the differentiable function have to be more than 0");
     auto solver =
-        solverFactory(f, std::forward<NRConfig>(config).linearSolver, std::forward<NRConfig>(config).updateFunction);
+        solverFactory(f, std::forward<NRConfig>(config).linearSolver, std::forward<NRConfig>(config).updateFunction,
+                      std::forward<NRConfig>(config).internalForceDueToIDBCFunction);
     solver->setup(std::forward<NRConfig>(config).parameters);
     return solver;
   }
@@ -111,7 +133,7 @@ auto createNonlinearSolver(NRConfig&& config, F&& f) {
  * \relates makeNewtonRaphson
  * \ingroup solvers
  */
-template <typename F, typename LS, typename UF>
+template <typename F, typename LS, typename UF, typename IF>
 class NewtonRaphson : public NonlinearSolverBase<F>
 {
 public:
@@ -126,6 +148,7 @@ public:
 
   using UpdateFunction         = UF; ///< Type representing the update function.
   using DifferentiableFunction = F;  ///< Type of the non-linear operator
+  using IDBCFunction           = IF;
 
   /**
    * \brief Constructor for NewtonRaphson.
@@ -133,12 +156,14 @@ public:
    * \param linearSolver Linear solver used internally (default is SolverDefault).
    * \param updateFunction Update function (default is UpdateDefault).
    */
-  template <typename LS2 = LS, typename UF2 = UF>
-  explicit NewtonRaphson(const DifferentiableFunction& residual, LS2&& linearSolver = {}, UF2&& updateFunction = {})
+  template <typename LS2 = LS, typename UF2 = UF, typename IF2 = IF>
+  explicit NewtonRaphson(const DifferentiableFunction& residual, LS2&& linearSolver = {}, UF2&& updateFunction = {},
+                         IF2&& internalForceFunction = {})
       : residualFunction_{residual},
         jacobianFunction_{derivative(residualFunction_)},
         linearSolver_{std::forward<LS2>(linearSolver)},
-        updateFunction_{std::forward<UF2>(updateFunction)} {}
+        updateFunction_{std::forward<UF2>(updateFunction)},
+        internalForceFunction_{std::forward<IF2>(internalForceFunction)} {}
 
   /**
    * \brief Set up the solver with the given settings.
@@ -176,6 +201,9 @@ public:
     int iter{0};
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
+
+    if constexpr (not std::same_as<IDBCFunction, InteralForceIDBCUpdateDefault>)
+      rx -= internalForceFunction_(); // only for zeroth iteration
 
     while ((rNorm > settings_.tol && iter < settings_.maxIter) or iter < settings_.minIter) {
       this->notify(ITERATION_STARTED, state);
@@ -238,6 +266,7 @@ private:
   std::remove_cvref_t<CorrectionType> correction_;
   LS linearSolver_;
   UpdateFunction updateFunction_;
+  IDBCFunction internalForceFunction_;
   Settings settings_;
 };
 

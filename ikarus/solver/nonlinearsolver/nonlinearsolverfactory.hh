@@ -76,12 +76,29 @@ struct NonlinearSolverFactory
         auto& dv              = assembler->dirichletValues();
         CorrectionType newInc = CorrectionType::Zero(dv.size());
         dv.evaluateInhomogeneousBoundaryCondition(newInc, x.parameter());
-        dv.setZeroAtFixedDofs(x.globalSolution());
         setting.updateFunction(x, newInc);
+        dv.setZeroAtFixedDofs(x.globalSolution());
       }
     };
-    auto settingsNew = settings.rebindUpdateFunction(std::move(updateF));
-    return createNonlinearSolver(std::move(settingsNew), std::move(f));
+
+    auto iForceFunction = [assembler]() -> void {
+      auto& loadFactor      = assembler->requirement().parameter();
+      auto& x               = assembler->requirement().globalSolution();
+      const auto K          = assembler->matrix(assembler->requirement(), assembler->dirichletValues(), DBCOption::Raw);
+      auto& dv              = assembler->dirichletValues();
+      CorrectionType newInc = CorrectionType::Zero(dv.size());
+      dv.evaluateInhomogeneousBoundaryCondition(newInc, loadFactor);
+      dv.setZeroAtFixedDofs(x);
+      const auto F_dirichlet_full = (K * dv * loadFactor).eval();
+      if (assembler->dbcOption() == DBCOption::Full)
+        return F_dirichlet_full;
+      else
+        return assembler->createReducedVector(F_dirichlet_full);
+    };
+
+    auto settingsNew    = settings.rebindUpdateFunction(std::move(updateF));
+    auto settingsNewNew = settingsNew.rebindInternalForceDueToIDBCFunction(std::move(iForceFunction));
+    return createNonlinearSolver(std::move(settingsNewNew), std::move(f));
   }
 };
 }; // namespace Ikarus

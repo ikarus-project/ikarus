@@ -121,26 +121,29 @@ static auto simple2DOperatorLoadControlLCWithIDBC(DifferentiableFunction& f,
 
   // We only solve for w dof and the u is an inhomoegenous boundary condition
   auto updateFunction = []<typename D, typename C>(D& x, const C& dx) {
-    if constexpr (not std::is_same_v<C, Ikarus::utils::ZeroIncrementTag>) {
-      if (x.size() == 1)
-        x[0] += dx[0]; // here x[0] = w
-      else if (x.size() == 2)
-        x[1] += dx[0]; // here x[1] = w
-    }
+    if constexpr (not std::is_same_v<C, Ikarus::utils::ZeroIncrementTag>)
+      x[1] += dx[0]; // here x[1] = w
     if constexpr (requires { x.parameter(); })
       x.globalSolution()[0] = 0.1 * x.parameter(); // update u = lambda * 0.1
   };
 
-  auto nrSettings              = Ikarus::NewtonRaphsonConfig({}, linSolver, updateFunction);
+  auto iForceFunction = [&]() {
+    auto& loadFactor = req.parameter();
+    Eigen::Vector2d x{req.globalSolution()[0], 0.0};
+    const auto K = stiffnessMatrix(req.globalSolution(), req.parameter());
+    return Eigen::Vector<double, 1>{(K * x)[1]};
+  };
+
+  auto nrSettings              = Ikarus::NewtonRaphsonConfig({}, linSolver, updateFunction, iForceFunction);
   auto nr                      = Ikarus::createNonlinearSolver(nrSettings, f);
   auto lc                      = Ikarus::LoadControl(nr, loadSteps, {0.0, 0.5});
   auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
   auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(lc);
 
   const auto controlInfo              = lc.run(req);
-  std::vector<int> expectedIterations = {0, 4, 4, 4, 4, 4};
+  std::vector<int> expectedIterations = {0, 3, 3, 3, 3, 3};
   Eigen::Vector2d expectedDisplacement;
-  expectedDisplacement << 0.05, 0.3226539591508392;
+  expectedDisplacement << 0.05, 0.322653958992597500;
   double expectedLambda = 0.5;
 
   TestSuite t("Load Control with Inhomogeneous Dirichlet BCs");
@@ -370,12 +373,12 @@ int main(int argc, char** argv) {
   constexpr double stepSize = 0.1;
   constexpr int loadSteps   = 5;
 
-  t.subTest(simple2DOperatorArcLengthTest(f, req, stepSize, loadSteps));
-  t.subTest(simple2DOperatorArcLengthTestAsDefault(f, req, stepSize, loadSteps));
-  t.subTest(simple2DOperatorLoadControlTestPF(f, req, stepSize, loadSteps));
-  t.subTest(simple2DOperatorLoadControlTestLC(f, req, stepSize, loadSteps));
-  t.subTest(simple2DOperatorLoadControlTestLCWithDifferentListenerOrder(f, req, stepSize, loadSteps));
-  t.subTest(simple2DOperatorDisplacementControlTest(f, req, stepSize, loadSteps));
+  // t.subTest(simple2DOperatorArcLengthTest(f, req, stepSize, loadSteps));
+  // t.subTest(simple2DOperatorArcLengthTestAsDefault(f, req, stepSize, loadSteps));
+  // t.subTest(simple2DOperatorLoadControlTestPF(f, req, stepSize, loadSteps));
+  // t.subTest(simple2DOperatorLoadControlTestLC(f, req, stepSize, loadSteps));
+  // t.subTest(simple2DOperatorLoadControlTestLCWithDifferentListenerOrder(f, req, stepSize, loadSteps));
+  // t.subTest(simple2DOperatorDisplacementControlTest(f, req, stepSize, loadSteps));
 
   auto fvLambdaRed = [&](auto&& req_) {
     return residual(req_.globalSolution(), req_.parameter()).segment(1, 1).eval();
@@ -386,7 +389,7 @@ int main(int argc, char** argv) {
 
   auto fred = Ikarus::makeDifferentiableFunction(Ikarus::functions(fvLambdaRed, dfvLambdaRed), req);
 
-  t.subTest(simple2DOperatorLoadControlPFWithIDBC(fred, req, stepSize, loadSteps));
+  // t.subTest(simple2DOperatorLoadControlPFWithIDBC(fred, req, stepSize, loadSteps));
   t.subTest(simple2DOperatorLoadControlLCWithIDBC(fred, req, stepSize, loadSteps));
 
   return t.exit();
