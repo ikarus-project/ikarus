@@ -58,10 +58,10 @@ struct NewtonRaphsonConfig
 
   template <typename IDBCF2>
   auto rebindIDBCForceFunction(IDBCF2&& internalForceFunction) const {
-    NewtonRaphsonConfig<LS, IDBCF2> settings{.parameters        = parameters,
-                                             .linearSolver      = linearSolver,
-                                             .updateFunction    = updateFunction,
-                                             .idbcForceFunction = std::forward<IDBCF2>(internalForceFunction)};
+    NewtonRaphsonConfig<LS, UF, IDBCF2> settings{.parameters        = parameters,
+                                                 .linearSolver      = linearSolver,
+                                                 .updateFunction    = updateFunction,
+                                                 .idbcForceFunction = std::forward<IDBCF2>(internalForceFunction)};
     return settings;
   }
 
@@ -100,11 +100,11 @@ requires traits::isSpecialization<NewtonRaphsonConfig, std::remove_cvref_t<NRCon
 auto createNonlinearSolver(NRConfig&& config, F&& f) {
   using LS           = std::remove_cvref_t<NRConfig>::LinearSolver;
   using UF           = std::remove_cvref_t<NRConfig>::UpdateFunction;
-  using IF           = std::remove_cvref_t<NRConfig>::IDBCForceFunction;
-  auto solverFactory = []<class F2, class LS2, class UF2, class IF2>(F2&& f2, LS2&& ls, UF2&& uf, IF2&& if_) {
+  using IDBCF        = std::remove_cvref_t<NRConfig>::IDBCForceFunction;
+  auto solverFactory = []<class F2, class LS2, class UF2, class IDBCF2>(F2&& f2, LS2&& ls, UF2&& uf, IDBCF2&& if_) {
     return std::make_shared<NewtonRaphson<std::remove_cvref_t<F2>, std::remove_cvref_t<LS2>, std::remove_cvref_t<UF2>,
-                                          std::remove_cvref_t<IF2>>>(f2, std::forward<LS2>(ls), std::forward<UF2>(uf),
-                                                                     std::forward<IF2>(if_));
+                                          std::remove_cvref_t<IDBCF2>>>(
+        f2, std::forward<LS2>(ls), std::forward<UF2>(uf), std::forward<IDBCF2>(if_));
   };
 
   if constexpr (std::remove_cvref_t<F>::nDerivatives == 2) {

@@ -17,6 +17,51 @@
 
 namespace Ikarus {
 
+namespace Impl {
+  template <typename CT, typename A>
+  auto idbcForceFunctor(const A& assembler) {
+    return [&]() {
+      auto& loadFactor = assembler->requirement().parameter();
+      auto& x          = assembler->requirement().globalSolution();
+      const auto& K    = assembler->matrix(assembler->requirement(), assembler->dirichletValues(), DBCOption::Raw);
+      auto& dv         = assembler->dirichletValues();
+      CT newInc        = CT::Zero(dv.size());
+      dv.evaluateInhomogeneousBoundaryCondition(newInc, loadFactor);
+      dv.setZeroAtFixedDofs(x);
+      const auto F_dirichlet_full = (K * dv).eval();
+      if (assembler->dbcOption() == DBCOption::Full)
+        return F_dirichlet_full;
+      else
+        return assembler->createReducedVector(F_dirichlet_full);
+    };
+  }
+
+  template <typename CT, typename A, typename S>
+  auto updateFunctionImpl(const A& assembler, const S& setting) {
+    return [&]<typename D, typename C>(D& x, const C& b) {
+      if constexpr (not std::is_same_v<C, utils::ZeroIncrementTag>) {
+        // the right-hand side is reduced
+        if (assembler->dBCOption() == DBCOption::Reduced and assembler->reducedSize() == b.size()) {
+          setting.updateFunction(x, assembler->createFullVector(b));
+        } else if (assembler->reducedSize() == x.size() and
+                   assembler->size() == b.size()) // the right-hand side is full but x is reduced
+        {
+          setting.updateFunction(x, assembler->createReducedVector(b));
+        } else
+          setting.updateFunction(x, b);
+      }
+      // updates due to inhomogeneous bcs
+      if constexpr (requires { x.parameter(); }) {
+        auto& dv  = assembler->dirichletValues();
+        CT newInc = CT::Zero(dv.size());
+        dv.evaluateInhomogeneousBoundaryCondition(newInc, x.parameter());
+        setting.updateFunction(x, newInc);
+        dv.setZeroAtFixedDofs(x.globalSolution());
+      }
+    };
+  }
+} // namespace Impl
+
 /**
  * \brief A factory class for creating nonlinear solvers.
  *
@@ -59,45 +104,10 @@ struct NonlinearSolverFactory
     using CorrectionType = std::remove_cvref_t<typename fTraits::template Range<1>>;
     using Domain         = typename fTraits::Domain;
 
-    auto updateF = [assembler, setting = settings]<typename D, typename C>(D& x, const C& b) {
-      if constexpr (not std::is_same_v<C, utils::ZeroIncrementTag>) {
-        // the right-hand side is reduced
-        if (assembler->dBCOption() == DBCOption::Reduced and assembler->reducedSize() == b.size()) {
-          setting.updateFunction(x, assembler->createFullVector(b));
-        } else if (assembler->reducedSize() == x.size() and
-                   assembler->size() == b.size()) // the right-hand side is full but x is reduced
-        {
-          setting.updateFunction(x, assembler->createReducedVector(b));
-        } else
-          setting.updateFunction(x, b);
-      }
-      // updates due to inhomogeneous bcs
-      if constexpr (requires { x.parameter(); }) {
-        auto& dv              = assembler->dirichletValues();
-        CorrectionType newInc = CorrectionType::Zero(dv.size());
-        dv.evaluateInhomogeneousBoundaryCondition(newInc, x.parameter());
-        setting.updateFunction(x, newInc);
-        dv.setZeroAtFixedDofs(x.globalSolution());
-      }
-    };
-
-    auto idbcForceFunction = [assembler]() -> void {
-      auto& loadFactor      = assembler->requirement().parameter();
-      auto& x               = assembler->requirement().globalSolution();
-      const auto K          = assembler->matrix(assembler->requirement(), assembler->dirichletValues(), DBCOption::Raw);
-      auto& dv              = assembler->dirichletValues();
-      CorrectionType newInc = CorrectionType::Zero(dv.size());
-      dv.evaluateInhomogeneousBoundaryCondition(newInc, loadFactor);
-      dv.setZeroAtFixedDofs(x);
-      const auto F_dirichlet_full = (K * dv).eval();
-      if (assembler->dbcOption() == DBCOption::Full)
-        return F_dirichlet_full;
-      else
-        return assembler->createReducedVector(F_dirichlet_full);
-    };
-
-    auto settingsNew    = settings.rebindUpdateFunction(std::move(updateF));
-    auto settingsNewNew = settingsNew.rebindIDBCForceFunction(std::move(idbcForceFunction));
+    auto updateF           = updateFunctionImpl<CorrectionType>(assembler, settings);
+    auto idbcForceFunction = Impl::idbcForceFunctor<CorrectionType>(assembler);
+    auto settingsNew       = settings.rebindUpdateFunction(std::move(updateF));
+    auto settingsNewNew    = settingsNew.rebindIDBCForceFunction(std::move(idbcForceFunction));
     return createNonlinearSolver(std::move(settingsNewNew), std::move(f));
   }
 };
