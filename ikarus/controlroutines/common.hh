@@ -51,7 +51,6 @@ requires(requires(typename NLS::Domain x) {
   auto&& R = residual(x_new);
   auto&& K = derivative(residual)(x_new);
 
-  // x_old.syncParameterAndGlobalSolution(nls.updateFunction());
   auto uf = nls.updateFunction();
   x_new.syncParameterAndGlobalSolution(uf);
   Eigen::VectorXd delta(R.size());
@@ -67,7 +66,6 @@ requires(requires(typename NLS::Domain x) {
   linearSolver.factorize(K);
   Eigen::VectorXd dPredictor;
   linearSolver.solve(dPredictor, -R);
-
   return dPredictor;
 }
 template <typename NLS>

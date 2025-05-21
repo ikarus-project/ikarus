@@ -184,15 +184,19 @@ public:
       if constexpr (isLinearSolver) {
         linearSolver_.factorize(Ax);
         linearSolver_.solve(correction_, -rx);
-        dNorm = correction_.norm();
       } else {
         correction_ = -linearSolver_(rx, Ax);
-        dNorm       = floatingPointNorm(correction_);
       }
+      dNorm                            = floatingPointNorm(correction_);
       solverInformation.correctionNorm = static_cast<double>(dNorm);
 
       this->notify(CORRECTION_UPDATED, state);
-      updateFunction_(x, correction_);
+      
+      if constexpr (requires { x.parameter(); })
+        updateFunction_(x.globalSolution(), correction_);
+      else
+        updateFunction_(x, correction_);
+
       this->notify(CORRECTIONNORM_UPDATED, state);
       this->notify(SOLUTION_CHANGED, state);
       rx                             = residualFunction_(x);

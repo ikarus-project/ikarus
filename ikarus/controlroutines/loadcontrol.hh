@@ -87,15 +87,11 @@ public:
   ControlInformation run(typename NLS::Domain& x);
 
   /**
-   * \brief Performs the initial prediction.
+   * \brief Performs the prediction for every load increment.
    *
-   *
-   * \param residual The residual function.
-   * \param args The subsidiary function arguments.
-   * \param req The solution.
-   * \ingroup  controlroutines
+   * \param x The solution.
    */
-  void initialPrediction(typename NLS::Domain& x) const;
+  void predictor(typename NLS::Domain& x) const;
 
   /* \brief returns the nonlinear solver */
   NLS& nonLinearSolver() { return *nonLinearSolver_; }

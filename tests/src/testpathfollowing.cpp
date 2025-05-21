@@ -87,26 +87,26 @@ static auto simple2DOperatorLoadControlPFWithIDBC(DifferentiableFunction& f,
         x[1] += dx[0]; // here x[1] = w
     }
     if constexpr (requires { x.parameter(); })
-      x.globalSolution()[0] = std::sin(x.parameter()); // update u = sin(lambda)
+      x.globalSolution()[0] = 0.1 * x.parameter(); // update u = lambda * 0.1
   };
 
   auto nrSettings              = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig({}, linSolver, updateFunction);
   auto nr                      = Ikarus::createNonlinearSolver(nrSettings, f);
-  auto alc                     = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
+  auto lc                      = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
   auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
-  auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(alc);
+  auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(lc);
 
-  const auto controlInfo              = alc.run(req);
-  std::vector<int> expectedIterations = {1, 3, 3, 3, 3};
+  const auto controlInfo              = lc.run(req);
+  std::vector<int> expectedIterations = {0, 4, 4, 4, 4, 4};
   Eigen::Vector2d expectedDisplacement;
-  expectedDisplacement << 0.0883524725970593, 0.3486891582376427;
-  double expectedLambda = 0.4877655288280236;
+  expectedDisplacement << 0.05, 0.3226539591508392;
+  double expectedLambda = 0.5;
 
   TestSuite t("Load Control with Subsidiary function with Inhomogeneous Dirichlet BCs");
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
-    checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + alc.name());
-  checkScalars(t, req.parameter(), expectedLambda, " --> " + alc.name());
+    checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + lc.name());
+  checkScalars(t, req.parameter(), expectedLambda, " --> " + lc.name());
   checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
   return t;
 }
@@ -128,20 +128,20 @@ static auto simple2DOperatorLoadControlLCWithIDBC(DifferentiableFunction& f,
         x[1] += dx[0]; // here x[1] = w
     }
     if constexpr (requires { x.parameter(); })
-      x.globalSolution()[0] = std::sin(x.parameter()); // update u = sin(lambda)
+      x.globalSolution()[0] = 0.1 * x.parameter(); // update u = lambda * 0.1
   };
 
   auto nrSettings              = Ikarus::NewtonRaphsonConfig({}, linSolver, updateFunction);
   auto nr                      = Ikarus::createNonlinearSolver(nrSettings, f);
-    auto lc                    = Ikarus::LoadControl(nr, loadSteps, {0.0, 0.5});
+  auto lc                      = Ikarus::LoadControl(nr, loadSteps, {0.0, 0.5});
   auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
   auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(lc);
 
   const auto controlInfo              = lc.run(req);
-  std::vector<int> expectedIterations = {1, 3, 3, 3, 3};
+  std::vector<int> expectedIterations = {0, 4, 4, 4, 4, 4};
   Eigen::Vector2d expectedDisplacement;
-  expectedDisplacement << 0.0883524725970593, 0.3486891582376427;
-  double expectedLambda = 0.4877655288280236;
+  expectedDisplacement << 0.05, 0.3226539591508392;
+  double expectedLambda = 0.5;
 
   TestSuite t("Load Control with Inhomogeneous Dirichlet BCs");
   t.check(controlInfo.success, "No convergence");

@@ -26,8 +26,6 @@ LoadControl<NLS>::run(typename NLS::Domain& x) {
   auto state = typename LoadControl::State(x, info);
   this->notify(CONTROL_STARTED, state);
 
-  auto& loadParameter = x.parameter();
-
   // Initial step to check if the undeformed (or initial) state is in equilibrium
   this->notify(ControlMessages::STEP_STARTED, state);
   auto solverInfo = nonLinearSolver_->solve(x);
@@ -37,12 +35,10 @@ LoadControl<NLS>::run(typename NLS::Domain& x) {
 
   state.stepSize = stepSize_;
 
-  this->initialPrediction(x);
-
   for (int ls = 0; ls < loadSteps_; ++ls) {
     state.loadStep = ls;
     this->notify(STEP_STARTED, state);
-    loadParameter += stepSize_;
+    this->predictor(x);
     solverInfo = nonLinearSolver_->solve(x);
     updateAndNotifyControlInfo(info, solverInfo, state);
     if (not solverInfo.success)
@@ -54,9 +50,12 @@ LoadControl<NLS>::run(typename NLS::Domain& x) {
 }
 
 template <typename NLS>
-void LoadControl<NLS>::initialPrediction(typename NLS::Domain& x) const {
+void LoadControl<NLS>::predictor(typename NLS::Domain& x) const {
   auto y = x;
+  x.parameter() += stepSize_;
   y.parameter() += stepSize_;
-  x += predictorForNewLoadLevel(*nonLinearSolver_, x, y);
+  y.syncParameterAndGlobalSolution(nonLinearSolver_->updateFunction());
+  const auto delta = y.globalSolution() - x.globalSolution();
+  x += delta;
 }
 } // namespace Ikarus
