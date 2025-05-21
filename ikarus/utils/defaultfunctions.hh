@@ -36,6 +36,10 @@ struct ZeroIncrementTag
 {
 } inline constexpr zeroIncrementTag;
 
+struct ZeroIterationTag
+{
+};
+
 /**
  * \struct UpdateDefault
  * \ingroup utils

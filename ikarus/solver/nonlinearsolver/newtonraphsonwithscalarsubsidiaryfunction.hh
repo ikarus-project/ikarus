@@ -22,7 +22,7 @@
 namespace Ikarus {
 
 template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
-          typename IDBCF = IDBCForceUpdateDefault>
+          typename IDBCF = utils::ZeroIterationTag>
 class NewtonRaphsonWithSubsidiaryFunction;
 
 struct NewtonRaphsonWithSubsidiaryFunctionSettings
@@ -36,7 +36,7 @@ struct NewtonRaphsonWithSubsidiaryFunctionSettings
  * \brief Settings for the Newton-Raphson solver with subsidiary function.
  */
 template <typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
-          typename IDBCF = IDBCForceUpdateDefault>
+          typename IDBCF = utils::ZeroIterationTag>
 struct NewtonRaphsonWithSubsidiaryFunctionConfig
 {
   using LinearSolver      = LS;

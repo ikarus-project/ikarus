@@ -21,7 +21,7 @@
 namespace Ikarus {
 
 template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
-          typename IDBCF = IDBCForceUpdateDefault>
+          typename IDBCF = utils::ZeroIterationTag>
 class NewtonRaphson;
 
 struct NRSettings
@@ -36,7 +36,7 @@ struct NRSettings
  * \brief Config for the Newton-Raphson solver.
  */
 template <typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
-          typename IDBCF = IDBCForceUpdateDefault>
+          typename IDBCF = utils::ZeroIterationTag>
 struct NewtonRaphsonConfig
 {
   using LinearSolver      = LS;
@@ -202,8 +202,8 @@ public:
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
 
-    if constexpr (not std::same_as<IDBCForceFunction, IDBCForceUpdateDefault>)
-      rx -= idbcForceFunction_(); // only for zeroth iteration
+    if constexpr (not std::same_as<IDBCForceFunction, utils::ZeroIterationTag>)
+      rx -= idbcForceFunction_();
 
     while ((rNorm > settings_.tol && iter < settings_.maxIter) or iter < settings_.minIter) {
       this->notify(ITERATION_STARTED, state);
