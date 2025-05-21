@@ -127,14 +127,14 @@ static auto simple2DOperatorLoadControlLCWithIDBC(DifferentiableFunction& f,
       x.globalSolution()[0] = 0.1 * x.parameter(); // update u = lambda * 0.1
   };
 
-  auto iForceFunction = [&]() {
+  auto idbcForceFunction = [&]() {
     auto& loadFactor = req.parameter();
     Eigen::Vector2d x{req.globalSolution()[0], 0.0};
     const auto K = stiffnessMatrix(req.globalSolution(), req.parameter());
     return Eigen::Vector<double, 1>{(K * x)[1]};
   };
 
-  auto nrSettings              = Ikarus::NewtonRaphsonConfig({}, linSolver, updateFunction, iForceFunction);
+  auto nrSettings              = Ikarus::NewtonRaphsonConfig({}, linSolver, updateFunction, idbcForceFunction);
   auto nr                      = Ikarus::createNonlinearSolver(nrSettings, f);
   auto lc                      = Ikarus::LoadControl(nr, loadSteps, {0.0, 0.5});
   auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
@@ -376,8 +376,8 @@ int main(int argc, char** argv) {
   // t.subTest(simple2DOperatorArcLengthTest(f, req, stepSize, loadSteps));
   // t.subTest(simple2DOperatorArcLengthTestAsDefault(f, req, stepSize, loadSteps));
   // t.subTest(simple2DOperatorLoadControlTestPF(f, req, stepSize, loadSteps));
-  // t.subTest(simple2DOperatorLoadControlTestLC(f, req, stepSize, loadSteps));
-  // t.subTest(simple2DOperatorLoadControlTestLCWithDifferentListenerOrder(f, req, stepSize, loadSteps));
+  t.subTest(simple2DOperatorLoadControlTestLC(f, req, stepSize, loadSteps));
+  t.subTest(simple2DOperatorLoadControlTestLCWithDifferentListenerOrder(f, req, stepSize, loadSteps));
   // t.subTest(simple2DOperatorDisplacementControlTest(f, req, stepSize, loadSteps));
 
   auto fvLambdaRed = [&](auto&& req_) {

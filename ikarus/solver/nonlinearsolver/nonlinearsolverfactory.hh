@@ -81,7 +81,7 @@ struct NonlinearSolverFactory
       }
     };
 
-    auto iForceFunction = [assembler]() -> void {
+    auto idbcForceFunction = [assembler]() -> void {
       auto& loadFactor      = assembler->requirement().parameter();
       auto& x               = assembler->requirement().globalSolution();
       const auto K          = assembler->matrix(assembler->requirement(), assembler->dirichletValues(), DBCOption::Raw);
@@ -89,7 +89,7 @@ struct NonlinearSolverFactory
       CorrectionType newInc = CorrectionType::Zero(dv.size());
       dv.evaluateInhomogeneousBoundaryCondition(newInc, loadFactor);
       dv.setZeroAtFixedDofs(x);
-      const auto F_dirichlet_full = (K * dv * loadFactor).eval();
+      const auto F_dirichlet_full = (K * dv).eval();
       if (assembler->dbcOption() == DBCOption::Full)
         return F_dirichlet_full;
       else
@@ -97,7 +97,7 @@ struct NonlinearSolverFactory
     };
 
     auto settingsNew    = settings.rebindUpdateFunction(std::move(updateF));
-    auto settingsNewNew = settingsNew.rebindInternalForceDueToIDBCFunction(std::move(iForceFunction));
+    auto settingsNewNew = settingsNew.rebindIDBCForceFunction(std::move(idbcForceFunction));
     return createNonlinearSolver(std::move(settingsNewNew), std::move(f));
   }
 };

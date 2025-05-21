@@ -25,7 +25,7 @@ struct NonlinearSolverBase : Broadcaster<NonLinearSolverMessages, NonlinearSolve
   using State = NonlinearSolverStateType<F>;
 };
 
-struct InteralForceIDBCUpdateDefault
+struct IDBCForceUpdateDefault
 {
   constexpr auto operator()() const {}
 };
