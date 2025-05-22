@@ -120,13 +120,17 @@ struct ArcLength
    */
   template <typename NLS>
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
-    auto& residual    = nonlinearSolver.residual();
-    double dlambda    = 1.0;
-    auto idbcDelta    = idbcIncrement(req, nonlinearSolver, dlambda);
-    const auto Dhat0  = idbcDelta / dlambda;
-    decltype(auto) R  = residual(req) + nonlinearSolver.idbcForceFunction_();
-    decltype(auto) K  = derivative(residual)(req);
-    auto linearSolver = createSPDLinearSolverFromNonLinearSolver(nonlinearSolver);
+    auto& residual               = nonlinearSolver.residual();
+    double dlambda               = 1.0;
+    auto idbcDelta               = idbcIncrement(req, nonlinearSolver, dlambda);
+    const auto Dhat0             = idbcDelta / dlambda;
+    const auto idbcForceFunction = nonlinearSolver.idbcForceFunction();
+    decltype(auto) R             = residual(req);
+    decltype(auto) K             = derivative(residual)(req);
+    auto linearSolver            = createSPDLinearSolverFromNonLinearSolver(nonlinearSolver);
+
+    if constexpr (not std::same_as<std::remove_cvref_t<decltype(idbcForceFunction)>, utils::IDBCForceDefault>)
+      R += idbcForceFunction();
 
     linearSolver.analyzePattern(K);
     linearSolver.factorize(K);

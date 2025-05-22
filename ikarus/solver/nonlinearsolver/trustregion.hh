@@ -449,6 +449,12 @@ public:
    */
   const UpdateFunction& updateFunction() const { return updateFunction_; }
 
+  /**
+   * \brief Access the force function calculating internal forces due to inhomogeneous Dirichlet BCs.
+   * \return Reference to the function.
+   */
+  const IDBCForceFunction& idbcForceFunction() const { return idbcForceFunction_; }
+
 private:
   template <class T>
   constexpr auto make_optional_reference(T& value) {

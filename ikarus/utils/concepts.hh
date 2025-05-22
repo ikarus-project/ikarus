@@ -188,14 +188,14 @@ namespace Concepts {
    * \concept PathFollowingStrategy
    * \brief Concept defining the requirements for a path-following strategy.
    * \tparam PF Type representing the path-following strategy.
-   * \tparam F Type representing the non-linear operator.
+   * \tparam NLS Type representing the nonlinear solver.
    * \tparam SA Type representing the subsidiary arguments.
    */
-  template <typename PF, typename F, typename SA>
-  concept PathFollowingStrategy = requires(PF pft, F nop, SA args, typename F::Domain req) {
-    { pft(args) } -> std::same_as<void>;
-    { pft.initialPrediction(req, nop, args) } -> std::same_as<void>;
-    { pft.intermediatePrediction(req, nop, args) } -> std::same_as<void>;
+  template <typename PF, typename NLS, typename SA>
+  concept PathFollowingStrategy = requires(PF pft, NLS nls, SA args, typename NLS::Domain req) {
+    { pft(req, nls, args) } -> std::same_as<void>;
+    { pft.initialPrediction(req, nls, args) } -> std::same_as<void>;
+    { pft.intermediatePrediction(req, nls, args) } -> std::same_as<void>;
   };
 
   /**
