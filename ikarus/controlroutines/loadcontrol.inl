@@ -51,11 +51,8 @@ LoadControl<NLS>::run(typename NLS::Domain& x) {
 
 template <typename NLS>
 void LoadControl<NLS>::predictor(typename NLS::Domain& x) const {
-  auto y = x;
+  const auto delta = idbcIncrement(x, *nonLinearSolver_, stepSize_);
   x.parameter() += stepSize_;
-  y.parameter() += stepSize_;
-  y.syncParameterAndGlobalSolution(nonLinearSolver_->updateFunction());
-  const auto delta = y.globalSolution() - x.globalSolution();
   x += delta;
 }
 } // namespace Ikarus

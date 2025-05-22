@@ -30,14 +30,14 @@ namespace Impl {
       dv.setZeroAtFixedDofs(x);
       const auto F_dirichlet_full = (K * dv).eval();
       if (assembler->dbcOption() == DBCOption::Full)
-        return F_dirichlet_full;
+        return assembler->dirichletValues().setZeroAtFixedDofs(F_dirichlet_full);
       else
         return assembler->createReducedVector(F_dirichlet_full);
     };
   }
 
   template <typename CT, typename A, typename S>
-  auto updateFunctionImpl(const A& assembler, const S& setting) {
+  auto updateFunctor(const A& assembler, const S& setting) {
     return [&]<typename D, typename C>(D& x, const C& b) {
       if constexpr (not std::is_same_v<C, utils::ZeroIncrementTag>) {
         // the right-hand side is reduced
@@ -104,10 +104,10 @@ struct NonlinearSolverFactory
     using CorrectionType = std::remove_cvref_t<typename fTraits::template Range<1>>;
     using Domain         = typename fTraits::Domain;
 
-    auto updateF           = updateFunctionImpl<CorrectionType>(assembler, settings);
-    auto idbcForceFunction = Impl::idbcForceFunctor<CorrectionType>(assembler);
-    auto settingsNew       = settings.rebindUpdateFunction(std::move(updateF));
-    auto settingsNewNew    = settingsNew.rebindIDBCForceFunction(std::move(idbcForceFunction));
+    auto updateF        = Impl::updateFunctor<CorrectionType>(assembler, settings);
+    auto idbcForceF     = Impl::idbcForceFunctor<CorrectionType>(assembler);
+    auto settingsNew    = settings.rebindUpdateFunction(std::move(updateF));
+    auto settingsNewNew = settingsNew.rebindIDBCForceFunction(std::move(idbcForceF));
     return createNonlinearSolver(std::move(settingsNewNew), std::move(f));
   }
 };

@@ -99,10 +99,10 @@ static auto simple2DOperatorLoadControlPFWithIDBC(DifferentiableFunction& f,
   const auto controlInfo              = lc.run(req);
   std::vector<int> expectedIterations = {0, 4, 4, 4, 4, 4};
   Eigen::Vector2d expectedDisplacement;
-  expectedDisplacement << 0.05, 0.3226539591508392;
+  expectedDisplacement << 0.05, 0.322653958995705500;
   double expectedLambda = 0.5;
 
-  TestSuite t("Load Control with Subsidiary function with Inhomogeneous Dirichlet BCs");
+  TestSuite t("Load Control with Subsidiary function and Inhomogeneous Dirichlet BCs");
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
     checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + lc.name());

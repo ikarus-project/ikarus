@@ -84,15 +84,19 @@ struct ArcLength
    *
    * \param args The subsidiary function arguments.
    */
-  void operator()(SubsidiaryArgs& args) const {
-    const auto root = sqrt(args.DD.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
+  template <typename NLS>
+  void operator()(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) const {
+    const auto idbcDelta = idbcIncrement(req, nonlinearSolver, args.Dlambda);
+    const auto root = sqrt(args.DD.squaredNorm() + idbcDelta.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
     args.f          = root - args.stepSize;
     if (not computedInitialPredictor) {
       args.dfdDD.setZero();
       args.dfdDlambda = 0.0;
     } else {
-      args.dfdDD      = args.DD / root;
-      args.dfdDlambda = (psi * psi * args.Dlambda) / root;
+      args.dfdDD       = args.DD / root;
+      const auto Dhat0 = idbcDelta.dot(idbcDelta) /
+                         (args.Dlambda * args.Dlambda); // extracting Dhat0, assuming IDBC: Dhat = lambda * Dhat0
+      args.dfdDlambda = ((Dhat0 + psi * psi) * args.Dlambda) / root;
     }
   }
 
@@ -110,29 +114,38 @@ struct ArcLength
    */
   template <typename NLS>
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
-    // auto&& residual  = nonlinearSolver.residual();
-    auto req_old   = req;
-    double dlambda = 1; // using just lambda=1 from lectures does not work if the depenndent variable is a non-linear
-                        // function of the inhomogeneous bcs. That's why we need the actual tangent at the current
-                        // solution to get the correct prediction
-    req.parameter() += dlambda;
+    auto& residual    = nonlinearSolver.residual();
+    double dlambda    = 1.0;
+    req.parameter()   = dlambda;
+    auto idbcDelta    = idbcIncrement(req, nonlinearSolver, dlambda);
+    const auto Dhat0  = idbcDelta / dlambda;
+    decltype(auto) R  = residual(req) + nonlinearSolver.idbcForceFunction_();
+    decltype(auto) K  = derivative(residual)(req);
+    auto linearSolver = createSPDLinearSolverFromNonLinearSolver(nonlinearSolver);
 
-    // reqPredictor.parameter() += dlambda;
+    linearSolver.analyzePattern(K);
+    linearSolver.factorize(K);
+    linearSolver.solve(args.DD, -R);
 
-    auto predictor = (predictorForNewLoadLevel(nonlinearSolver, req_old, req) / dlambda).eval();
-    // req += predictor / dlambda;
+    const auto DD2    = args.DD.squaredNorm();
+    const auto Dhat02 = Dhat0.squaredNorm();
 
-    auto DD2 = predictor.squaredNorm();
+    psi    = sqrt(DD2 + Dhat02);
+    auto s = sqrt(DD2 + Dhat02 + psi * psi * dlambda * dlambda);
 
-    psi    = sqrt(DD2);
-    auto s = sqrt(psi * psi + DD2);
-
-    args.DD      = predictor * args.stepSize / s;
+    args.DD      = args.DD * args.stepSize / s;
     args.Dlambda = args.stepSize / s;
 
-    nonlinearSolver.updateFunction()(req.globalSolution(), args.DD);
-    req.parameter() = req_old.parameter();
-    req.parameter() += args.Dlambda;
+    idbcDelta *= args.Dlambda / dlambda;
+
+    req.globalSolution() = args.DD;
+    req.parameter()      = args.Dlambda;
+
+    // modify the globalSolution() considering inhomogeneous Dirichlet BCs
+    for (int i = 0; i < idbcDelta.size(); ++i)
+      if (Dune::FloatCmp::ne(idbcDelta[i], 0.0))
+        req.globalSolution()[i] = idbcDelta[i];
+
     computedInitialPredictor = true;
   }
 
@@ -152,6 +165,12 @@ struct ArcLength
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     nonlinearSolver.updateFunction()(req.globalSolution(), args.DD);
     req.parameter() += args.Dlambda;
+    const auto idbcDelta = idbcIncrement(req, nonlinearSolver, args.Dlambda);
+
+    // modify the globalSolution() considering inhomogeneous Dirichlet BCs
+    for (int i = 0; i < idbcDelta.size(); ++i)
+      if (Dune::FloatCmp::ne(idbcDelta[i], 0.0))
+        req.globalSolution()[i] = idbcDelta[i];
   }
 
   /** \brief The name of the PathFollowing method. */
