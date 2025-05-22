@@ -333,10 +333,10 @@ int main(int argc, char** argv) {
 
   // t.subTest(simple2DOperatorArcLengthTest(f, req, stepSize, loadSteps));
   // t.subTest(simple2DOperatorArcLengthTestAsDefault(f, req, stepSize, loadSteps));
-  // t.subTest(simple2DOperatorLoadControlTestPF(f, req, stepSize, loadSteps));
+  t.subTest(simple2DOperatorLoadControlTestPF(f, req, stepSize, loadSteps));
   t.subTest(simple2DOperatorLoadControlTestLC(f, req, stepSize, loadSteps));
   t.subTest(simple2DOperatorLoadControlTestLCWithDifferentListenerOrder(f, req, stepSize, loadSteps));
-  // t.subTest(simple2DOperatorDisplacementControlTest(f, req, stepSize, loadSteps));
+  t.subTest(simple2DOperatorDisplacementControlTest(f, req, stepSize, loadSteps));
 
   auto fvLambdaRed = [&](auto&& req_) {
     return residual(req_.globalSolution(), req_.parameter()).segment(1, 1).eval();

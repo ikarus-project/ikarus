@@ -7,9 +7,6 @@
  */
 
 #pragma once
-#include "concepts.hh"
-#include "traits.hh"
-
 #include <iosfwd>
 #include <random>
 #include <ranges>
@@ -21,6 +18,8 @@
 #include <Eigen/Core>
 
 #include <autodiff/forward/dual/dual.hpp>
+
+#include <ikarus/utils/concepts.hh>
 
 namespace Ikarus {
 

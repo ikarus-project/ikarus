@@ -21,8 +21,8 @@
 
 #include <autodiff/forward/dual/dual.hpp>
 
-#include "ikarus/assembler/dirichletbcenforcement.hh"
-#include "ikarus/finiteelements/mechanics/materials/tags.hh"
+#include <ikarus/assembler/dirichletbcenforcement.hh>
+#include <ikarus/finiteelements/mechanics/materials/tags.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Eigen {
