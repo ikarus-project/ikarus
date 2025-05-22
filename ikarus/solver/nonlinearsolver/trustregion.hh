@@ -61,27 +61,39 @@ struct TRSettings
  * \brief Configuration settings for the TrustRegion solver.
  */
 
-template <PreConditioner preConditioner = PreConditioner::IncompleteCholesky, typename UF = utils::UpdateDefault>
+template <PreConditioner preConditioner = PreConditioner::IncompleteCholesky, typename UF = utils::UpdateDefault,
+          typename IDBCF = utils::IDBCForceDefault>
 struct TrustRegionConfig
 {
   static_assert(std::copy_constructible<UF>,
                 " The update function should be copy constructable. If it is a lambda wrap it in a std::function");
 
-  using UpdateFunction = UF;
+  using UpdateFunction    = UF;
+  using IDBCForceFunction = IDBCF;
 
   TRSettings parameters;
   static constexpr PreConditioner preConditionerType = preConditioner;
   UF updateFunction;
+  IDBCF idbcForceFunction{};
   template <typename UF2>
   auto rebindUpdateFunction(UF2&& updateFunction) const {
-    TrustRegionConfig<preConditioner, UF2> settings{.parameters     = parameters,
-                                                    .updateFunction = std::forward<UF2>(updateFunction)};
+    TrustRegionConfig<preConditioner, UF2> settings{.parameters        = parameters,
+                                                    .updateFunction    = std::forward<UF2>(updateFunction),
+                                                    .idbcForceFunction = idbcForceFunction};
+    return settings;
+  }
+  template <typename IDBC2>
+  auto rebindIDBCForceFunction(IDBC2&& internalForceFunction) const {
+    TrustRegionConfig<preConditioner, UF, IDBC2> settings{
+        .parameters        = parameters,
+        .updateFunction    = updateFunction,
+        .idbcForceFunction = std::forward<IDBC2>(internalForceFunction)};
     return settings;
   }
 };
 
 template <typename F, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
-          typename UF = utils::UpdateDefault>
+          typename UF = utils::UpdateDefault, typename IDBCF = utils::IDBCForceDefault>
 class TrustRegion;
 
 /**
@@ -97,9 +109,11 @@ requires traits::isSpecializationNonTypeAndTypes<TrustRegionConfig, std::remove_
 auto createNonlinearSolver(TRConfig&& config, F&& f) {
   static constexpr PreConditioner preConditioner = std::remove_cvref_t<TRConfig>::preConditionerType;
   using UF                                       = std::remove_cvref_t<TRConfig>::UpdateFunction;
+  using IDBCF                                    = std::remove_cvref_t<TRConfig>::IDBCForceFunction;
   static_assert(std::remove_cvref_t<F>::nDerivatives == 2,
                 "The number of derivatives in the DifferentiableFunction have to be exactly 2.");
-  auto solver = std::make_shared<TrustRegion<F, preConditioner, UF>>(f, std::forward<TRConfig>(config).updateFunction);
+  auto solver = std::make_shared<TrustRegion<F, preConditioner, UF, IDBCF>>(
+      f, std::forward<TRConfig>(config).updateFunction, std::forward<TRConfig>(config).idbcForceFunction);
 
   solver->setup(config.parameters);
   return solver;
@@ -166,10 +180,8 @@ struct Stats
 * \tparam preConditioner Type of preconditioner to use (default is IncompleteCholesky).
 * \tparam UF Type of the update function
 */
-template <typename F, PreConditioner preConditioner, typename UF>
+template <typename F, PreConditioner preConditioner, typename UF, typename IDBCF>
 class TrustRegion : public NonlinearSolverBase<F>
-// template <typename NLO, PreConditioner preConditioner, typename UF>
-// class TrustRegion : public NonlinearSolverBase<NLO>
 {
 public:
   using Settings = TRSettings; ///< Type of the settings for the TrustRegion solver
@@ -179,6 +191,7 @@ public:
   using CorrectionType         = typename FTraits::template Range<1>; ///< Type of the correction of x += deltaX.
   using UpdateFunction         = UF;                                  ///< Type of the update function.
   using DifferentiableFunction = F;                                   ///< Type of function to minimize
+  using IDBCForceFunction      = IDBCF;
 
   using EnergyType   = typename FTraits::template Range<0>; ///< Type of the scalar cost
   using GradientType = typename FTraits::template Range<1>; ///< Type of the gradient vector
@@ -189,10 +202,11 @@ public:
    * \param f Function to solve.
    * \param updateFunction Update function
    */
-  template <typename UF2 = UF>
-  explicit TrustRegion(const F& f, UF2&& updateFunction = {})
+  template <typename UF2 = UF, typename IDBCF2 = IDBCF>
+  explicit TrustRegion(const F& f, UF2&& updateFunction = {}, IDBCF2&& internalForceFunction = {})
       : energyFunction_{f},
-        updateFunction_{std::forward<UF2>(updateFunction)} {}
+        updateFunction_{std::forward<UF2>(updateFunction)},
+        idbcForceFunction_{std::forward<IDBCF2>(internalForceFunction)} {}
 
   /**
    * \brief Sets up the TrustRegion solver with the provided settings and checks feasibility.
@@ -227,6 +241,9 @@ public:
     decltype(auto) e = energyF(x);
     decltype(auto) g = gradientF(x);
     decltype(auto) h = hessianF(x);
+
+    if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>)
+      g += idbcForceFunction_();
 
     eta_.resizeLike(g);
     Heta_.resizeLike(g);
@@ -527,6 +544,7 @@ private:
   F energyFunction_;
 
   UpdateFunction updateFunction_;
+  IDBCForceFunction idbcForceFunction_;
   std::remove_cvref_t<CorrectionType> eta_;
   std::remove_cvref_t<CorrectionType> Heta_;
   Settings settings_;
