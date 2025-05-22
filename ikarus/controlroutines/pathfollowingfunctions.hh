@@ -27,6 +27,12 @@
 #include <ikarus/utils/defaultfunctions.hh>
 
 namespace Ikarus {
+
+namespace Impl {
+  template <typename NLS>
+  concept HasValidIDBCForceFunction = not std::same_as<typename NLS::IDBCForceFunction, utils::ZeroIterationTag>;
+} // namespace Impl
+
 /**
  * \struct SubsidiaryArgs
  * \brief Structure containing arguments for subsidiary functions.
@@ -203,14 +209,11 @@ struct LoadControlSubsidiaryFunction
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
+  requires(not Impl::HasValidIDBCForceFunction<NLS>)
   void operator()(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) const {
-    const auto idbcDelta = idbcIncrement(req, nonlinearSolver, args.Dlambda);
-    const auto root      = sqrt(idbcDelta.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
-    args.f               = root - args.stepSize;
+    args.f = args.Dlambda - args.stepSize;
     args.dfdDD.setZero();
-    const auto Dhat0 = idbcDelta.dot(idbcDelta) /
-                       (args.Dlambda * args.Dlambda); // extracting Dhat0, assuming IDBC: Dhat = lambda * Dhat0
-    args.dfdDlambda = ((Dhat0 + psi * psi) * args.Dlambda) / root;
+    args.dfdDlambda = 1.0;
   }
 
   /**
@@ -218,31 +221,16 @@ struct LoadControlSubsidiaryFunction
    *
    * This method initializes the prediction step for the load control method.
    *
-   * \tparam NLS Type of the nonlinear solver.
-   * \param nonlinearSolver The nonlinear solver.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
   template <typename NLS>
+  requires(not Impl::HasValidIDBCForceFunction<NLS>)
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
-    double dlambda    = 1.0;
-    req.parameter()   = dlambda;
-    auto idbcDelta    = idbcIncrement(req, nonlinearSolver, dlambda);
-    const auto Dhat0  = idbcDelta / dlambda;
-    const auto Dhat02 = Dhat0.squaredNorm();
-    psi               = Dune::FloatCmp::ne(Dhat02, 0.0) ? sqrt(Dhat02) : 1.0;
-    auto s            = sqrt(Dhat02 + psi * psi * dlambda * dlambda);
-
-    args.Dlambda = args.stepSize / s;
-
-    idbcDelta *= args.Dlambda / dlambda;
-    req.parameter() = args.Dlambda;
-
-    // modify the globalSolution() considering inhomogeneous Dirichlet BCs
-    for (int i = 0; i < idbcDelta.size(); ++i)
-      if (Dune::FloatCmp::ne(idbcDelta[i], 0.0))
-        req.globalSolution()[i] = idbcDelta[i];
-
+    args.Dlambda             = args.stepSize;
+    req.parameter()          = args.Dlambda;
     computedInitialPredictor = true;
   }
 
@@ -251,30 +239,23 @@ struct LoadControlSubsidiaryFunction
    *
    * This method updates the prediction step for the load control method.
    *
-   * \tparam NLS Type of the nonlinear solver.
-   * \param nonlinearSolver The nonlinear solver.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
   template <typename NLS>
+  requires(not Impl::HasValidIDBCForceFunction<NLS>)
   void intermediatePrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     if (not computedInitialPredictor)
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     req.parameter() += args.Dlambda;
-
-    const auto idbcDelta = idbcIncrement(req, nonlinearSolver, args.Dlambda);
-
-    // modify the globalSolution() considering inhomogeneous Dirichlet BCs
-    for (int i = 0; i < idbcDelta.size(); ++i)
-      if (Dune::FloatCmp::ne(idbcDelta[i], 0.0))
-        req.globalSolution()[i] = idbcDelta[i];
   }
 
   /** \brief The name of the PathFollowing method. */
   constexpr std::string name() const { return "Load Control"; }
 
 private:
-  double psi{0.0};
   bool computedInitialPredictor{false};
 };
 
@@ -307,7 +288,9 @@ struct DisplacementControl
    *
    * \param args The subsidiary function arguments.
    */
-  void operator()(SubsidiaryArgs& args) const {
+  template <typename NLS>
+  requires(not Impl::HasValidIDBCForceFunction<NLS>)
+  void operator()(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) const {
     const auto controlledDOFsNorm = args.DD(controlledIndices).norm();
     args.f                        = controlledDOFsNorm - args.stepSize;
     args.dfdDlambda               = 0.0;
@@ -319,14 +302,14 @@ struct DisplacementControl
    * \brief Performs initial prediction for the displacement control method.
    *
    * This method initializes the prediction step for the displacement control method.
-    This does not work with inhomogeneous boundary conditions!
    *
-   * \tparam NLS Type of the nonlinear solver.
-   * \param nonlinearSolver The nonlinear solver.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
   template <typename NLS>
+  requires(not Impl::HasValidIDBCForceFunction<NLS>)
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     args.DD(controlledIndices).array() = args.stepSize;
     req.globalSolution()               = args.DD;
@@ -338,12 +321,13 @@ struct DisplacementControl
    *
    * This method updates the prediction step for the displacement control method.
    *
-   * \tparam NLS Type of the nonlinear solver.
-   * \param nonlinearSolver The nonlinear solver.
+   * \tparam F Type of the residual function.
+   * \param residual The residual function.
    * \param args The subsidiary function arguments.
    * \param req The solution.
    */
   template <typename NLS>
+  requires(not Impl::HasValidIDBCForceFunction<NLS>)
   void intermediatePrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     if (not computedInitialPredictor)
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
