@@ -71,20 +71,25 @@ struct NewtonRaphsonConfig
 
 // THE CTAD is broken for designated initializers in clang 16, when we drop support this can be simplified
 #ifndef DOXYGEN
-NewtonRaphsonConfig() -> NewtonRaphsonConfig<utils::SolverDefault, utils::UpdateDefault>;
-NewtonRaphsonConfig(NRSettings) -> NewtonRaphsonConfig<utils::SolverDefault, utils::UpdateDefault>;
+NewtonRaphsonConfig() -> NewtonRaphsonConfig<utils::SolverDefault, utils::UpdateDefault, utils::IDBCForceDefault>;
+NewtonRaphsonConfig(NRSettings)
+    -> NewtonRaphsonConfig<utils::SolverDefault, utils::UpdateDefault, utils::IDBCForceDefault>;
 
 template <typename LS>
-NewtonRaphsonConfig(NRSettings, LS) -> NewtonRaphsonConfig<LS, utils::UpdateDefault>;
+NewtonRaphsonConfig(NRSettings, LS) -> NewtonRaphsonConfig<LS, utils::UpdateDefault, utils::IDBCForceDefault>;
+
+template <typename UF>
+NewtonRaphsonConfig(NRSettings, utils::SolverDefault, UF) -> NewtonRaphsonConfig<utils::SolverDefault, UF, utils::IDBCForceDefault>;
+
+template <typename IDBCF>
+NewtonRaphsonConfig(NRSettings, utils::SolverDefault, utils::UpdateDefault,
+                    IDBCF) -> NewtonRaphsonConfig<utils::SolverDefault, utils::UpdateDefault, IDBCF>;
 
 template <typename LS, typename UF>
-NewtonRaphsonConfig(NRSettings, LS, UF) -> NewtonRaphsonConfig<LS, UF>;
+NewtonRaphsonConfig(NRSettings, LS, UF) -> NewtonRaphsonConfig<LS, UF, utils::IDBCForceDefault>;
 
 template <typename LS, typename UF, typename IDBCF>
 NewtonRaphsonConfig(NRSettings, LS, UF, IDBCF) -> NewtonRaphsonConfig<LS, UF, IDBCF>;
-
-template <typename UF>
-NewtonRaphsonConfig(NRSettings, utils::SolverDefault, UF) -> NewtonRaphsonConfig<utils::SolverDefault, UF>;
 #endif
 
 /**

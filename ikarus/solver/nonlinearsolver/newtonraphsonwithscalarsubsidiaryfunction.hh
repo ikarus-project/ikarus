@@ -73,26 +73,31 @@ struct NewtonRaphsonWithSubsidiaryFunctionConfig
 // THE CTAD is broken for designated initializers in clang 16, when we drop support this can be simplified
 #ifndef DOXYGEN
 NewtonRaphsonWithSubsidiaryFunctionConfig()
-    -> NewtonRaphsonWithSubsidiaryFunctionConfig<utils::SolverDefault, utils::UpdateDefault>;
+    -> NewtonRaphsonWithSubsidiaryFunctionConfig<utils::SolverDefault, utils::UpdateDefault, utils::IDBCForceDefault>;
 
 NewtonRaphsonWithSubsidiaryFunctionConfig(NewtonRaphsonWithSubsidiaryFunctionSettings)
-    -> NewtonRaphsonWithSubsidiaryFunctionConfig<utils::SolverDefault, utils::UpdateDefault>;
+    -> NewtonRaphsonWithSubsidiaryFunctionConfig<utils::SolverDefault, utils::UpdateDefault, utils::IDBCForceDefault>;
 
 template <typename LS>
-NewtonRaphsonWithSubsidiaryFunctionConfig(NewtonRaphsonWithSubsidiaryFunctionSettings,
-                                          LS) -> NewtonRaphsonWithSubsidiaryFunctionConfig<LS, utils::UpdateDefault>;
+NewtonRaphsonWithSubsidiaryFunctionConfig(NewtonRaphsonWithSubsidiaryFunctionSettings, LS)
+    -> NewtonRaphsonWithSubsidiaryFunctionConfig<LS, utils::UpdateDefault, utils::IDBCForceDefault>;
+
+template <typename UF>
+NewtonRaphsonWithSubsidiaryFunctionConfig(NewtonRaphsonWithSubsidiaryFunctionSettings, utils::SolverDefault, UF)
+    -> NewtonRaphsonWithSubsidiaryFunctionConfig<utils::SolverDefault, UF, utils::IDBCForceDefault>;
+
+template <typename IDBCF>
+NewtonRaphsonWithSubsidiaryFunctionConfig(NewtonRaphsonWithSubsidiaryFunctionSettings, utils::SolverDefault,
+                                          utils::UpdateDefault, IDBCF)
+    -> NewtonRaphsonWithSubsidiaryFunctionConfig<utils::SolverDefault, utils::UpdateDefault, IDBCF>;
 
 template <typename LS, typename UF>
-NewtonRaphsonWithSubsidiaryFunctionConfig(NewtonRaphsonWithSubsidiaryFunctionSettings, LS,
-                                          UF) -> NewtonRaphsonWithSubsidiaryFunctionConfig<LS, UF>;
+NewtonRaphsonWithSubsidiaryFunctionConfig(NewtonRaphsonWithSubsidiaryFunctionSettings, LS, UF)
+    -> NewtonRaphsonWithSubsidiaryFunctionConfig<LS, UF, utils::IDBCForceDefault>;
 
 template <typename LS, typename UF, typename IDBCF>
 NewtonRaphsonWithSubsidiaryFunctionConfig(NewtonRaphsonWithSubsidiaryFunctionSettings, LS, UF,
                                           IDBCF) -> NewtonRaphsonWithSubsidiaryFunctionConfig<LS, UF, IDBCF>;
-
-template <typename UF>
-NewtonRaphsonWithSubsidiaryFunctionConfig(NewtonRaphsonWithSubsidiaryFunctionSettings, utils::SolverDefault,
-                                          UF) -> NewtonRaphsonWithSubsidiaryFunctionConfig<utils::SolverDefault, UF>;
 #endif
 /**
  * \brief Function to create a NewtonRaphson with subsidiary function solver instance.
@@ -231,7 +236,7 @@ public:
 
     subsidiaryArgs.dfdDD.resizeLike(Fext0);
 
-    subsidiaryFunction(subsidiaryArgs);
+    subsidiaryFunction(req, *this, subsidiaryArgs);
     auto rNorm                     = sqrt(rx.dot(rx));
     solverInformation.residualNorm = static_cast<double>(rNorm);
     decltype(rNorm) dNorm;
@@ -257,7 +262,7 @@ public:
         sol2d = linearSolver_(residual2d, Ax);
       }
 
-      subsidiaryFunction(subsidiaryArgs);
+      subsidiaryFunction(req, *this, subsidiaryArgs);
 
       const double deltalambda = (-subsidiaryArgs.f - subsidiaryArgs.dfdDD.dot(sol2d.col(0))) /
                                  (subsidiaryArgs.dfdDD.dot(sol2d.col(1)) + subsidiaryArgs.dfdDlambda);
