@@ -100,17 +100,18 @@ struct ArcLength
       args.dfdDlambda = 0.0;
     } else {
       args.dfdDD       = args.DD / root;
-      const auto Dhat0 = idbcDelta.dot(idbcDelta) /
-                         (args.Dlambda * args.Dlambda); // extracting Dhat0, assuming IDBC: Dhat = lambda * Dhat0
-      args.dfdDlambda = ((Dhat0 + psi * psi) * args.Dlambda) / root;
+      const auto Dhat0 = idbcDelta / args.Dlambda; // extracting Dhat0, assuming IDBC: Dhat = lambda * Dhat0
+      args.dfdDlambda  = ((Dhat0.dot(Dhat0) + psi * psi) * args.Dlambda) / root;
     }
   }
 
   /**
    * \brief Performs the initial prediction for the standard arc-length method.
    *
-   * This method initializes the prediction step for the standard arc-length method it computes \f$\psi\f$ and
+   * \details This method initializes the prediction step for the standard arc-length method it computes \f$\psi\f$ and
    * computes initial \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$.
+   * Based on Eq. 4.13 of \cite rothAlgorithmenZurNichtlinearen2020d, the scaling factor psi is modified for better
+   * convergence characteristics.
    *
    * \tparam NLS Type of the nonlinear solver.
    * \param nonlinearSolver The nonlinear solver.
@@ -154,6 +155,9 @@ struct ArcLength
     for (int i = 0; i < idbcDelta.size(); ++i)
       if (Dune::FloatCmp::ne(idbcDelta[i], 0.0))
         req.globalSolution()[i] = idbcDelta[i];
+
+    // rescaling of psi
+    psi = sqrt((idbcDelta.squaredNorm() + args.DD.squaredNorm()) / (args.Dlambda * args.Dlambda));
 
     computedInitialPredictor = true;
   }

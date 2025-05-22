@@ -217,6 +217,7 @@ public:
     /// Determine Fext0
     /// It is assumed that Fext = Fext0 * lambda such that dRdlambda = Fext0
     /// Generalization for Fext0 = Fext0(lambda) is not implemented
+    /// Forces due to inhomogeneous Dirichlet BCs is treated separately
 
     auto lambdaDummy = lambda;
     auto DDummy      = x;
