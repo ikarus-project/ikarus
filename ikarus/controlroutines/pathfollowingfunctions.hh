@@ -202,10 +202,15 @@ struct LoadControlSubsidiaryFunction
    *
    * \param args The subsidiary function arguments.
    */
-  void operator()(SubsidiaryArgs& args) const {
-    args.f = args.Dlambda - args.stepSize;
+  template <typename NLS>
+  void operator()(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) const {
+    const auto idbcDelta = idbcIncrement(req, nonlinearSolver, args.Dlambda);
+    const auto root      = sqrt(idbcDelta.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
+    args.f               = root - args.stepSize;
     args.dfdDD.setZero();
-    args.dfdDlambda = 1.0;
+    const auto Dhat0 = idbcDelta.dot(idbcDelta) /
+                       (args.Dlambda * args.Dlambda); // extracting Dhat0, assuming IDBC: Dhat = lambda * Dhat0
+    args.dfdDlambda = ((Dhat0 + psi * psi) * args.Dlambda) / root;
   }
 
   /**
@@ -220,14 +225,25 @@ struct LoadControlSubsidiaryFunction
    */
   template <typename NLS>
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
-    auto req_old = req;
-    // reqPredictor.parameter() += args.stepSize;
-    req.parameter() += args.stepSize;
-    req += predictorForNewLoadLevel(nonlinearSolver, req_old, req);
-    args.DD                  = req.globalSolution();
-    args.Dlambda             = args.stepSize;
+    double dlambda    = 1.0;
+    req.parameter()   = dlambda;
+    auto idbcDelta    = idbcIncrement(req, nonlinearSolver, dlambda);
+    const auto Dhat0  = idbcDelta / dlambda;
+    const auto Dhat02 = Dhat0.squaredNorm();
+    psi               = Dune::FloatCmp::ne(Dhat02, 0.0) ? sqrt(Dhat02) : 1.0;
+    auto s            = sqrt(Dhat02 + psi * psi * dlambda * dlambda);
+
+    args.Dlambda = args.stepSize / s;
+
+    idbcDelta *= args.Dlambda / dlambda;
+    req.parameter() = args.Dlambda;
+
+    // modify the globalSolution() considering inhomogeneous Dirichlet BCs
+    for (int i = 0; i < idbcDelta.size(); ++i)
+      if (Dune::FloatCmp::ne(idbcDelta[i], 0.0))
+        req.globalSolution()[i] = idbcDelta[i];
+
     computedInitialPredictor = true;
-    // req.parameter() += args.Dlambda;
   }
 
   /**
@@ -245,12 +261,20 @@ struct LoadControlSubsidiaryFunction
     if (not computedInitialPredictor)
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     req.parameter() += args.Dlambda;
+
+    const auto idbcDelta = idbcIncrement(req, nonlinearSolver, args.Dlambda);
+
+    // modify the globalSolution() considering inhomogeneous Dirichlet BCs
+    for (int i = 0; i < idbcDelta.size(); ++i)
+      if (Dune::FloatCmp::ne(idbcDelta[i], 0.0))
+        req.globalSolution()[i] = idbcDelta[i];
   }
 
   /** \brief The name of the PathFollowing method. */
   constexpr std::string name() const { return "Load Control"; }
 
 private:
+  double psi{0.0};
   bool computedInitialPredictor{false};
 };
 
