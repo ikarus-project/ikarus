@@ -123,6 +123,7 @@ struct ArcLength
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     auto& residual               = nonlinearSolver.residual();
     double dlambda               = 1.0;
+    req.parameter()              = dlambda;
     auto idbcDelta               = idbcIncrement(req, nonlinearSolver, dlambda);
     const auto Dhat0             = idbcDelta / dlambda;
     const auto idbcForceFunction = nonlinearSolver.idbcForceFunction();
