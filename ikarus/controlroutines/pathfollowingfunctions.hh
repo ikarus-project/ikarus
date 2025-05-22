@@ -30,7 +30,7 @@ namespace Ikarus {
 
 namespace Impl {
   template <typename NLS>
-  concept HasValidIDBCForceFunction = not std::same_as<typename NLS::IDBCForceFunction, utils::ZeroIterationTag>;
+  concept HasValidIDBCForceFunction = not std::same_as<typename NLS::IDBCForceFunction, utils::IDBCForceDefault>;
 } // namespace Impl
 
 /**

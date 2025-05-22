@@ -36,7 +36,7 @@ struct ZeroIncrementTag
 {
 } inline constexpr zeroIncrementTag;
 
-struct ZeroIterationTag
+struct IDBCForceDefault
 {
 };
 
