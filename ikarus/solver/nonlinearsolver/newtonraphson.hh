@@ -79,7 +79,8 @@ template <typename LS>
 NewtonRaphsonConfig(NRSettings, LS) -> NewtonRaphsonConfig<LS, utils::UpdateDefault, utils::IDBCForceDefault>;
 
 template <typename UF>
-NewtonRaphsonConfig(NRSettings, utils::SolverDefault, UF) -> NewtonRaphsonConfig<utils::SolverDefault, UF, utils::IDBCForceDefault>;
+NewtonRaphsonConfig(NRSettings, utils::SolverDefault,
+                    UF) -> NewtonRaphsonConfig<utils::SolverDefault, UF, utils::IDBCForceDefault>;
 
 template <typename IDBCF>
 NewtonRaphsonConfig(NRSettings, utils::SolverDefault, utils::UpdateDefault,
@@ -285,13 +286,16 @@ private:
  * \param updateFunction Update function (default is UpdateDefault).
  * \return Shared pointer to the NewtonRaphson solver instance.
  */
-template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
-auto makeNewtonRaphson(const F& f, LS&& linearSolver = {}, UF&& updateFunction = {}) {
-  return std::make_shared<NewtonRaphson<F, LS, UF>>(f, std::forward<LS>(linearSolver), std::move(updateFunction));
+template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
+          typename IDBCF = utils::IDBCForceDefault>
+auto makeNewtonRaphson(const F& f, LS&& linearSolver = {}, UF&& updateFunction = {}, IDBCF&& idbcForceFunction = {}) {
+  return std::make_shared<NewtonRaphson<F, LS, UF, IDBCF>>(f, std::forward<LS>(linearSolver), std::move(updateFunction),
+                                                           std::move(idbcForceFunction));
 }
 
-template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
-NewtonRaphson(const F& f, LS&& linearSolver = {},
-              UF&& updateFunction = {}) -> NewtonRaphson<F, std::remove_cvref_t<LS>, std::remove_cvref_t<UF>>;
+template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
+          typename IDBCF = utils::IDBCForceDefault>
+NewtonRaphson(const F& f, LS&& linearSolver = {}, UF&& updateFunction = {}, IDBCF&& idbcForceFunction = {})
+    -> NewtonRaphson<F, std::remove_cvref_t<LS>, std::remove_cvref_t<UF>, std::remove_cvref_t<IDBCF>>;
 
 } // namespace Ikarus

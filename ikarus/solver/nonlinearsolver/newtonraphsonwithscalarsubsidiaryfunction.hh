@@ -339,14 +339,19 @@ private:
  * \param updateFunction Update function (default is UpdateDefault).
  * \return Shared pointer to the NewtonRaphson solver instance.
  */
-template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
-auto makeNewtonRaphsonWithSubsidiaryFunction(const F& f, LS&& linearSolver = {}, UF&& updateFunction = {}) {
-  return std::make_shared<NewtonRaphsonWithSubsidiaryFunction<F, LS, UF>>(f, std::forward<LS>(linearSolver),
-                                                                          std::move(updateFunction));
+template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
+          typename IDBCF = utils::IDBCForceDefault>
+auto makeNewtonRaphsonWithSubsidiaryFunction(const F& f, LS&& linearSolver = {}, UF&& updateFunction = {},
+                                             IDBCF&& idbcForceFunction = {}) {
+  return std::make_shared<NewtonRaphsonWithSubsidiaryFunction<F, LS, UF, IDBCF>>(
+      f, std::forward<LS>(linearSolver), std::move(updateFunction), std::move(idbcForceFunction));
 }
 
-template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault>
-NewtonRaphsonWithSubsidiaryFunction(const F& f, LS&& linearSolver = {}, UF&& updateFunction = {})
-    -> NewtonRaphsonWithSubsidiaryFunction<F, std::remove_cvref_t<LS>, std::remove_cvref_t<UF>>;
+template <typename F, typename LS = utils::SolverDefault, typename UF = utils::UpdateDefault,
+          typename IDBCF = utils::IDBCForceDefault>
+NewtonRaphsonWithSubsidiaryFunction(const F& f, LS&& linearSolver = {}, UF&& updateFunction = {},
+                                    IDBCF&& idbcForceFunction = {})
+    -> NewtonRaphsonWithSubsidiaryFunction<F, std::remove_cvref_t<LS>, std::remove_cvref_t<UF>,
+                                           std::remove_cvref_t<IDBCF>>;
 
 } // namespace Ikarus

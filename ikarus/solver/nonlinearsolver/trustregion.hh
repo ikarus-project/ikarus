@@ -578,13 +578,14 @@ private:
  * \return Shared pointer to the TrustRegion solver instance.
  */
 template <typename F, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
-          typename UF = utils::UpdateDefault>
-auto makeTrustRegion(const F& f, UF&& updateFunction = {}) {
-  return std::make_shared<TrustRegion<F, preConditioner, UF>>(f, updateFunction);
+          typename UF = utils::UpdateDefault, typename IDBCF = utils::IDBCForceDefault>
+auto makeTrustRegion(const F& f, UF&& updateFunction = {}, IDBCF&& idbcForceFunction = {}) {
+  return std::make_shared<TrustRegion<F, preConditioner, UF, IDBCF>>(f, updateFunction, idbcForceFunction);
 }
 
 template <typename F, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
-          typename UF2 = utils::UpdateDefault>
-TrustRegion(const F& f, UF2&& updateFunction = {}) -> TrustRegion<F, preConditioner, std::remove_cvref_t<UF2>>;
+          typename UF2 = utils::UpdateDefault, typename IDBCF2 = utils::IDBCForceDefault>
+TrustRegion(const F& f, UF2&& updateFunction = {}, IDBCF2&& idbcForceFunction = {})
+    -> TrustRegion<F, preConditioner, std::remove_cvref_t<UF2>, std::remove_cvref_t<IDBCF2>>;
 
 } // namespace Ikarus
