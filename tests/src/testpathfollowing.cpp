@@ -143,7 +143,7 @@ static auto simple2DOperatorLoadControlLCWithIDBC(DifferentiableFunction& f,
   const auto controlInfo              = lc.run(req);
   std::vector<int> expectedIterations = {0, 3, 3, 3, 3, 3};
   Eigen::Vector2d expectedDisplacement;
-  expectedDisplacement << 0.05, 0.322653958992597500;
+  expectedDisplacement << 0.05, 0.322653958995705500;
   double expectedLambda = 0.5;
 
   TestSuite t("Load Control with Inhomogeneous Dirichlet BCs");

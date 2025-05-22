@@ -203,7 +203,7 @@ public:
       linearSolver_.analyzePattern(Ax);
 
     if constexpr (not std::same_as<IDBCForceFunction, utils::ZeroIterationTag>)
-      rx -= idbcForceFunction_();
+      rx += idbcForceFunction_();
 
     while ((rNorm > settings_.tol && iter < settings_.maxIter) or iter < settings_.minIter) {
       this->notify(ITERATION_STARTED, state);
