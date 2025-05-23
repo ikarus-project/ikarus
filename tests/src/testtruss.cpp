@@ -198,6 +198,114 @@ static auto vonMisesTrussTest() {
   return t;
 }
 
+static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
+  TestSuite t("vonMisesTrussTest with inhomogeneous Dirichlet BCs");
+  std::cout << t.name() << " started with DBCOption = " << toString(dbcOption) << std::endl;
+
+  /// Construct grid
+  constexpr double h = 1.0;
+  constexpr double L = 10.0;
+  auto grid          = createGrid<Grids::OneDFoamGridIn2D>();
+  auto gridView      = grid->leafGridView();
+
+  /// Construct basis
+  using namespace Dune::Functions::BasisFactory;
+  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved{}));
+
+  /// Create finite elements
+  constexpr double E   = 30000;
+  constexpr double A   = 0.1;
+  constexpr double tol = 1e-10;
+  auto sk              = skills(truss(E, A));
+  using FEType         = decltype(makeFE(basis, sk));
+  std::vector<FEType> fes;
+  for (auto&& ge : elements(gridView)) {
+    fes.emplace_back(makeFE(basis, sk));
+    fes.back().bind(ge);
+  }
+
+  /// Collect dirichlet nodes
+  auto basisP = std::make_shared<const decltype(basis)>(basis);
+  DirichletValues dirichletValues(basisP->flat());
+  dirichletValues.fixBoundaryDOFs(
+      [&](auto& dirichletFlags, auto&& globalIndex) { dirichletFlags[globalIndex] = true; });
+  t.check(dirichletValues.fixedDOFsize() == 4, "Number of fixed DOFs is not equal to 4");
+
+  /// Create assembler
+  auto denseFlatAssembler = makeAssemblerManipulator(DenseFlatAssembler(fes, dirichletValues));
+
+  /// Create non-linear operator
+  double lambda = 0.0;
+  Eigen::VectorXd d;
+  d.setZero(basis.flat().size());
+
+  auto req = FEType::Requirement(basis);
+  denseFlatAssembler->bind(req, AffordanceCollections::elastoStatics, dbcOption);
+
+  const int pointLoadIdx = dbcOption == DBCOption::Full ? 3 : 1;
+  auto pointLoad         = [&](const auto&, const auto&, auto, auto, Eigen::VectorXd& vec) -> void {
+    vec[pointLoadIdx] -= -req.parameter();
+  };
+  denseFlatAssembler->bind(pointLoad);
+
+  /// Choose linear solver
+  auto linSolver = LinearSolver(SolverTypeTag::d_LDLT);
+
+  NewtonRaphsonConfig nrConfig({}, linSolver);
+  NonlinearSolverFactory nrFactory(nrConfig);
+  auto nr = nrFactory.create(denseFlatAssembler);
+
+  /// Create Observer to write information of the non-linear solver
+  auto f = DifferentiableFunctionFactory::op(denseFlatAssembler);
+
+  constexpr int loadSteps = 10;
+
+  /// Create loadcontrol
+  auto lc = ControlRoutineFactory::create(LoadControlConfig{loadSteps, 0.0, 0.5}, nr, denseFlatAssembler);
+
+  auto nonLinearSolverLogger = NonLinearSolverLogger();
+  auto controlLogger         = ControlLogger();
+
+  nonLinearSolverLogger.subscribeTo(lc.nonLinearSolver());
+  controlLogger.subscribeTo(lc);
+
+  Eigen::Matrix3Xd lambdaAndDisp;
+  lambdaAndDisp.setZero(Eigen::NoChange, loadSteps + 1);
+  auto lvkObserver = GenericListener(lc, ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
+    const auto& d              = state.domain.globalSolution();
+    const auto& lambda         = state.domain.parameter();
+    int step                   = state.loadStep;
+    lambdaAndDisp(0, step + 1) = lambda; // load factor
+    lambdaAndDisp(1, step + 1) = d[2];   // horizontal displacement at center node
+    lambdaAndDisp(2, step + 1) = d[3];   // vertical displacement at center node
+  });
+
+  /// Execute!
+  auto controlInfo = lc.run(req);
+  t.check(controlInfo.success == true) << "Load control failed to converge";
+
+  Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
+  Eigen::VectorXd uVec      = lambdaAndDisp.row(1);
+  Eigen::VectorXd vVec      = -lambdaAndDisp.row(2);
+
+  t.check(Dune::FloatCmp::ne(vVec.tail(1)[0], 0.0, tol))
+      << std::setprecision(16) << "Displacement value should not be zero. Actual:\t" << vVec.tail(1)[0];
+  checkScalars(t, lambdaVec.tail(1)[0], 0.5, " Incorrect last load factor", tol);
+
+  // return the load factor as a function of the vertical displacement
+  auto analyticalLoadDisplacementCurve = [&](auto& v) {
+    const double Ltruss = std::sqrt(h * h + L * L);
+    return 2.0 * E * A * Dune::power(h, 3) / Dune::power(Ltruss, 3) *
+           (v / h - 1.5 * Dune::power(v / h, 2) + 0.5 * Dune::power(v / h, 3));
+  };
+
+  for (std::size_t i = 0; i < lambdaAndDisp.cols(); ++i) {
+    checkScalars(t, lambdaVec[i], analyticalLoadDisplacementCurve(vVec[i]), " Incorrect load factor", tol);
+    checkScalars(t, uVec[i], 0.0, " Incorrect horizontal displacement", tol);
+  }
+  return t;
+}
+
 static auto truss3dTest() {
   TestSuite t("Truss3DTest");
   /// Construct grid
@@ -305,5 +413,7 @@ int main(int argc, char** argv) {
   t.subTest(trussAutoDiffTest<3, Grids::OneDFoamGridIn3D>());
   t.subTest(vonMisesTrussTest());
   t.subTest(truss3dTest());
+  t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Full));
+  t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Reduced));
   return t.exit();
 }
