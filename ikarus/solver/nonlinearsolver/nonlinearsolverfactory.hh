@@ -23,16 +23,18 @@ namespace Impl {
     return [&]() {
       auto& loadFactor = assembler->requirement().parameter();
       auto& x          = assembler->requirement().globalSolution();
-      const auto& K    = assembler->matrix(assembler->requirement(), assembler->dirichletValues(), DBCOption::Raw);
+      const auto& K    = assembler->matrix(DBCOption::Raw);
       auto& dv         = assembler->dirichletValues();
       CT newInc        = CT::Zero(dv.size());
       dv.evaluateInhomogeneousBoundaryCondition(newInc, loadFactor);
       dv.setZeroAtFixedDofs(x);
-      const auto F_dirichlet_full = (K * dv).eval();
-      if (assembler->dbcOption() == DBCOption::Full)
-        return assembler->dirichletValues().setZeroAtFixedDofs(F_dirichlet_full);
+      auto F_dirichlet = (K * newInc).eval();
+      if (assembler->dBCOption() == DBCOption::Full)
+        assembler->dirichletValues().setZeroAtFixedDofs(F_dirichlet);
       else
-        return assembler->createReducedVector(F_dirichlet_full);
+        assembler->createReducedVector(F_dirichlet);
+
+      return F_dirichlet;
     };
   }
 
