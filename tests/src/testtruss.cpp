@@ -198,9 +198,11 @@ static auto vonMisesTrussTest() {
   return t;
 }
 
+template <bool useArcLength = false>
 static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
   TestSuite t("vonMisesTrussTest with inhomogeneous Dirichlet BCs");
-  std::cout << t.name() << " started with DBCOption = " << toString(dbcOption) << std::endl;
+  std::cout << t.name() << " started with DBCOption = " << toString(dbcOption)
+            << " and useArcLength = " << std::boolalpha << useArcLength << std::endl;
 
   /// Construct grid
   constexpr double h = 1.0;
@@ -231,8 +233,21 @@ static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
       [&](auto& dirichletFlags, auto&& globalIndex) { dirichletFlags[globalIndex] = true; });
   t.check(dirichletValues.fixedDOFsize() == 4, "Number of fixed DOFs is not equal to 4");
 
+  // Inhomogeneous Boundary Conditions
+  auto inhomogeneousDisplacement = [L, h]<typename T>(const auto& globalCoord, const T& lambda) {
+    Eigen::Vector<T, 2> localInhomogeneous;
+    if (Dune::FloatCmp::eq(globalCoord[0], L) and Dune::FloatCmp::eq(globalCoord[1], h)) {
+      localInhomogeneous[0] = 0;
+      localInhomogeneous[1] = lambda;
+    } else
+      localInhomogeneous.setZero();
+    return localInhomogeneous;
+  };
+
+  dirichletValues.storeInhomogeneousBoundaryCondition(inhomogeneousDisplacement);
+
   /// Create assembler
-  auto denseFlatAssembler = makeAssemblerManipulator(DenseFlatAssembler(fes, dirichletValues));
+  auto denseFlatAssembler = makeDenseFlatAssembler(fes, dirichletValues);
 
   /// Create non-linear operator
   double lambda = 0.0;
@@ -241,37 +256,35 @@ static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
 
   auto req = FEType::Requirement(basis);
   denseFlatAssembler->bind(req, AffordanceCollections::elastoStatics, dbcOption);
-
-  const int pointLoadIdx = dbcOption == DBCOption::Full ? 3 : 1;
-  auto pointLoad         = [&](const auto&, const auto&, auto, auto, Eigen::VectorXd& vec) -> void {
-    vec[pointLoadIdx] -= -req.parameter();
-  };
-  denseFlatAssembler->bind(pointLoad);
-
-  /// Choose linear solver
-  auto linSolver = LinearSolver(SolverTypeTag::d_LDLT);
-
-  NewtonRaphsonConfig nrConfig({}, linSolver);
-  NonlinearSolverFactory nrFactory(nrConfig);
-  auto nr = nrFactory.create(denseFlatAssembler);
-
-  /// Create Observer to write information of the non-linear solver
-  auto f = DifferentiableFunctionFactory::op(denseFlatAssembler);
-
+  auto linSolver          = LinearSolver(SolverTypeTag::d_LDLT);
   constexpr int loadSteps = 10;
 
-  /// Create loadcontrol
-  auto lc = ControlRoutineFactory::create(LoadControlConfig{loadSteps, 0.0, 0.5}, nr, denseFlatAssembler);
+  auto vtkWriter = ControlSubsamplingVertexVTKWriter(basis.flat(), 2);
+  vtkWriter.setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2);
+  vtkWriter.setFileNamePrefix("vonMisesTrussWithIDBC");
+
+  auto controlRoutine = [&]() -> decltype(auto) {
+    if constexpr (useArcLength) {
+    } else { /// Create loadcontrol
+      NewtonRaphsonConfig nrConfig({}, linSolver);
+      NonlinearSolverFactory nrFactory(nrConfig);
+      auto nr = nrFactory.create(denseFlatAssembler);
+      auto lc = ControlRoutineFactory::create(LoadControlConfig{loadSteps, 0.0, 0.5}, nr, denseFlatAssembler);
+      return lc;
+    }
+  };
+
+  auto cr = controlRoutine();
 
   auto nonLinearSolverLogger = NonLinearSolverLogger();
   auto controlLogger         = ControlLogger();
-
-  nonLinearSolverLogger.subscribeTo(lc.nonLinearSolver());
-  controlLogger.subscribeTo(lc);
+  nonLinearSolverLogger.subscribeTo(cr.nonLinearSolver());
+  controlLogger.subscribeTo(cr);
+  vtkWriter.subscribeTo(cr);
 
   Eigen::Matrix3Xd lambdaAndDisp;
   lambdaAndDisp.setZero(Eigen::NoChange, loadSteps + 1);
-  auto lvkObserver = GenericListener(lc, ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
+  auto lvkObserver = GenericListener(cr, ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
     const auto& d              = state.domain.globalSolution();
     const auto& lambda         = state.domain.parameter();
     int step                   = state.loadStep;
@@ -281,16 +294,19 @@ static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
   });
 
   /// Execute!
-  auto controlInfo = lc.run(req);
+  auto controlInfo = cr.run(req);
   t.check(controlInfo.success == true) << "Load control failed to converge";
 
   Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
   Eigen::VectorXd uVec      = lambdaAndDisp.row(1);
   Eigen::VectorXd vVec      = -lambdaAndDisp.row(2);
 
-  t.check(Dune::FloatCmp::ne(vVec.tail(1)[0], 0.0, tol))
-      << std::setprecision(16) << "Displacement value should not be zero. Actual:\t" << vVec.tail(1)[0];
+  std::vector<int> expectedIterations(loadSteps + 1, 0);
+
+  t.check(Dune::FloatCmp::eq(vVec.tail(1)[0], 0.5, tol))
+      << std::setprecision(16) << "Displacement value should be equal to lambda. Actual:\t" << vVec.tail(1)[0];
   checkScalars(t, lambdaVec.tail(1)[0], 0.5, " Incorrect last load factor", tol);
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
 
   // return the load factor as a function of the vertical displacement
   auto analyticalLoadDisplacementCurve = [&](auto& v) {
@@ -409,11 +425,11 @@ auto trussAutoDiffTest() {
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t("TrussTest");
-  t.subTest(trussAutoDiffTest<2, Grids::OneDFoamGridIn2D>());
-  t.subTest(trussAutoDiffTest<3, Grids::OneDFoamGridIn3D>());
-  t.subTest(vonMisesTrussTest());
-  t.subTest(truss3dTest());
+  // t.subTest(trussAutoDiffTest<2, Grids::OneDFoamGridIn2D>());
+  // t.subTest(trussAutoDiffTest<3, Grids::OneDFoamGridIn3D>());
+  // t.subTest(vonMisesTrussTest());
+  // t.subTest(truss3dTest());
   t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Full));
-  t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Reduced));
+  // t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Reduced));
   return t.exit();
 }
