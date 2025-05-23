@@ -229,7 +229,7 @@ public:
     for (auto& f : dirichletFunctions_) {
       interpolate(
           basis_, inhomogeneousBoundaryVectorDummy,
-          [&](const auto& globalCoord) { return f.value(globalCoord, lambda); }, dirichletFlagsBackend_);
+          [&](const auto& globalCoord) { return f.value(globalCoord, lambda); });
       xIh += inhomogeneousBoundaryVectorDummy;
     }
   }
@@ -251,7 +251,7 @@ public:
     for (auto& f : dirichletFunctions_) {
       interpolate(
           basis_, inhomogeneousBoundaryVectorDummy,
-          [&](const auto& globalCoord) { return f.derivative(globalCoord, lambda); }, dirichletFlagsBackend_);
+          [&](const auto& globalCoord) { return f.derivative(globalCoord, lambda); });
       xIh += inhomogeneousBoundaryVectorDummy;
     }
   }
