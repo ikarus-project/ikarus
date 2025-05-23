@@ -247,9 +247,14 @@ public:
 
     Eigen::MatrixX2<double> residual2d, sol2d;
 
+    // std::cout << "req.globalSolution() (0)\t" << req.globalSolution().transpose() << std::endl;
+    // std::cout << "req.parameter() (0)\t" << req.parameter() << std::endl;
+
     /// Iterative solving scheme
     while (rNorm > settings_.tol && iter < settings_.maxIter) {
       this->notify(ITERATION_STARTED, state);
+
+      // std::cout << "iter " << iter << std::endl;
 
       /// Two-step solving procedure
       residual2d.resize(rx.rows(), 2);
@@ -258,6 +263,8 @@ public:
         residual2d << -rx, Fext0 - idbcForceFunction_();
       else
         residual2d << -rx, Fext0;
+
+      // std::cout << "residual2d (0)\n" << residual2d << std::endl;
 
       if constexpr (isLinearSolver) {
         linearSolver_.factorize(Ax);
@@ -269,11 +276,15 @@ public:
       const auto& deltaDR = sol2d.col(0).eval();
       const auto& deltaDL = sol2d.col(1).eval();
 
-      subsidiaryFunction(req, *this, subsidiaryArgs);
+      // std::cout << "deltaDR (0)\t" << deltaDR.transpose() << std::endl;
+      // std::cout << "deltaDL (0)\t" << deltaDL.transpose() << std::endl;
 
       const double deltalambda = (-subsidiaryArgs.f - subsidiaryArgs.dfdDD.dot(deltaDR)) /
                                  (subsidiaryArgs.dfdDD.dot(deltaDL) + subsidiaryArgs.dfdDlambda);
       deltaD = deltaDR + deltalambda * deltaDL;
+
+      // std::cout << "deltaD (0)\t" << deltaD.transpose() << std::endl;
+      // std::cout << "deltalambda (0)\t" << deltalambda << std::endl;
 
       this->notify(CORRECTION_UPDATED, state);
 
@@ -283,11 +294,22 @@ public:
       lambda += deltalambda;
       subsidiaryArgs.Dlambda += deltalambda;
 
+      req.syncParameterAndGlobalSolution(updateFunction_);
+
       dNorm                            = sqrt(deltaD.dot(deltaD) + deltalambda * deltalambda);
       solverInformation.correctionNorm = static_cast<double>(dNorm);
 
-      rx                             = residualFunction_(req);
-      Ax                             = jacobianFunction_(req);
+      rx = residualFunction_(req);
+      Ax = jacobianFunction_(req);
+      subsidiaryFunction(req, *this, subsidiaryArgs);
+
+      // std::cout << "rx " << rx << std::endl;
+      // std::cout << "f " << subsidiaryArgs.f << std::endl;
+      // std::cout << "x (1)\t" << x.transpose() << std::endl;
+      // std::cout << std::setprecision(16) << "req.globalSolution() (3)\t" << req.globalSolution().transpose()
+      //           << std::endl;
+      // std::cout << std::setprecision(16) << "req.parameter() (1)\t" << req.parameter() << std::endl;
+
       rNorm                          = sqrt(rx.dot(rx) + subsidiaryArgs.f * subsidiaryArgs.f);
       solverInformation.residualNorm = static_cast<double>(rNorm);
 
@@ -298,6 +320,7 @@ public:
       ++iter;
       solverInformation.iterations = iter;
       this->notify(ITERATION_ENDED, state);
+      // std::cout << std::endl;
     }
 
     if (iter == settings_.maxIter)
@@ -305,7 +328,6 @@ public:
     solverInformation.iterations = iter;
     if (solverInformation.success)
       this->notify(FINISHED_SUCESSFULLY, state);
-
     return solverInformation;
   }
 
