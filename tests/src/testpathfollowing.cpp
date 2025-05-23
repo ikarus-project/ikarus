@@ -70,6 +70,51 @@ static auto simple2DOperatorArcLengthTest(DifferentiableFunction& f, typename Di
 }
 
 template <typename DifferentiableFunction>
+static auto simple2DOperatorArcLengthTestWithIDBC(DifferentiableFunction& f,
+                                                  typename DifferentiableFunction::Domain& req, double stepSize,
+                                                  int loadSteps) {
+  req.globalSolution().setZero();
+  req.parameter() = 0.0;
+  auto linSolver  = Ikarus::LinearSolver(Ikarus::SolverTypeTag::d_LDLT);
+  auto pft        = Ikarus::ArcLength{}; // Type of path following technique
+
+  // We only solve for w dof and the u is an inhomoegenous boundary condition
+  auto updateFunction = []<typename D, typename C>(D& x, const C& dx) {
+    if constexpr (not std::is_same_v<C, Ikarus::utils::ZeroIncrementTag>)
+      x[1] += dx[0]; // here x[1] = w
+    if constexpr (requires { x.parameter(); })
+      x.globalSolution()[0] = 0.1 * x.parameter(); // update u = lambda * 0.1
+  };
+
+  auto idbcForceFunction = [&]() {
+    auto& loadFactor = req.parameter();
+    Eigen::Vector2d x{req.globalSolution()[0], 0.0};
+    const auto K = stiffnessMatrix(req.globalSolution(), req.parameter());
+    return Eigen::Vector<double, 1>{(K * x)[1]};
+  };
+
+  auto nrSettings = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig({}, linSolver, updateFunction, idbcForceFunction);
+  auto nr         = Ikarus::createNonlinearSolver(nrSettings, f);
+  auto alc        = Ikarus::PathFollowing(nr, loadSteps, stepSize, pft);
+  auto nonLinearSolverObserver = Ikarus::NonLinearSolverLogger().subscribeTo(*nr);
+  auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(alc);
+
+  const auto controlInfo              = alc.run(req);
+  std::vector<int> expectedIterations = {0, 4, 4, 4, 4, 4};
+  Eigen::Vector2d expectedDisplacement;
+  expectedDisplacement << 0.05440020579058119, 0.3518523740233018;
+  double expectedLambda = 0.5440020579058119;
+
+  TestSuite t("Arc Length with Inhomogeneous Dirichlet BCs");
+  t.check(controlInfo.success, "No convergence");
+  for (auto i = 0; i < 2; ++i)
+    checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + alc.name());
+  checkScalars(t, req.parameter(), expectedLambda, " --> " + alc.name());
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+  return t;
+}
+
+template <typename DifferentiableFunction>
 static auto simple2DOperatorLoadControlLCWithIDBC(DifferentiableFunction& f,
                                                   typename DifferentiableFunction::Domain& req, double stepSize,
                                                   int loadSteps) {
@@ -347,6 +392,7 @@ int main(int argc, char** argv) {
 
   auto fred = Ikarus::makeDifferentiableFunction(Ikarus::functions(fvLambdaRed, dfvLambdaRed), req);
 
+  t.subTest(simple2DOperatorArcLengthTestWithIDBC(fred, req, stepSize, loadSteps));
   t.subTest(simple2DOperatorLoadControlLCWithIDBC(fred, req, stepSize, loadSteps));
 
   return t.exit();

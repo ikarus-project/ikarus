@@ -253,8 +253,11 @@ public:
 
       /// Two-step solving procedure
       residual2d.resize(rx.rows(), 2);
-      residual2d << -rx, Fext0;
       sol2d.resize(rx.rows(), 2);
+      if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>)
+        residual2d << -rx, Fext0 - idbcForceFunction_();
+      else
+        residual2d << -rx, Fext0;
 
       if constexpr (isLinearSolver) {
         linearSolver_.factorize(Ax);
@@ -263,11 +266,14 @@ public:
         sol2d = linearSolver_(residual2d, Ax);
       }
 
+      const auto& deltaDR = sol2d.col(0).eval();
+      const auto& deltaDL = sol2d.col(1).eval();
+
       subsidiaryFunction(req, *this, subsidiaryArgs);
 
-      const double deltalambda = (-subsidiaryArgs.f - subsidiaryArgs.dfdDD.dot(sol2d.col(0))) /
-                                 (subsidiaryArgs.dfdDD.dot(sol2d.col(1)) + subsidiaryArgs.dfdDlambda);
-      deltaD = sol2d.col(0) + deltalambda * sol2d.col(1);
+      const double deltalambda = (-subsidiaryArgs.f - subsidiaryArgs.dfdDD.dot(deltaDR)) /
+                                 (subsidiaryArgs.dfdDD.dot(deltaDL) + subsidiaryArgs.dfdDlambda);
+      deltaD = deltaDR + deltalambda * deltaDL;
 
       this->notify(CORRECTION_UPDATED, state);
 
