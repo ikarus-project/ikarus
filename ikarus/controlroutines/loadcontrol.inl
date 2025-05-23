@@ -9,7 +9,9 @@
 
 #pragma once
 
+#include <ikarus/controlroutines/common.hh>
 #include <ikarus/controlroutines/loadcontrol.hh>
+#include <ikarus/utils/defaultfunctions.hh>
 
 namespace Ikarus {
 template <typename NLS>
@@ -24,8 +26,6 @@ LoadControl<NLS>::run(typename NLS::Domain& x) {
   auto state = typename LoadControl::State(x, info);
   this->notify(CONTROL_STARTED, state);
 
-  auto& loadParameter = x.parameter();
-
   // Initial step to check if the undeformed (or initial) state is in equilibrium
   this->notify(ControlMessages::STEP_STARTED, state);
   auto solverInfo = nonLinearSolver_->solve(x);
@@ -38,7 +38,7 @@ LoadControl<NLS>::run(typename NLS::Domain& x) {
   for (int ls = 0; ls < loadSteps_; ++ls) {
     state.loadStep = ls;
     this->notify(STEP_STARTED, state);
-    loadParameter += stepSize_;
+    this->predictor(x);
     solverInfo = nonLinearSolver_->solve(x);
     updateAndNotifyControlInfo(info, solverInfo, state);
     if (not solverInfo.success)
@@ -47,5 +47,12 @@ LoadControl<NLS>::run(typename NLS::Domain& x) {
   this->notify(CONTROL_ENDED, state);
   info.success = true;
   return info;
+}
+
+template <typename NLS>
+void LoadControl<NLS>::predictor(typename NLS::Domain& x) const {
+  const auto delta = idbcIncrement(x, *nonLinearSolver_, stepSize_);
+  x.parameter() += stepSize_;
+  x += delta;
 }
 } // namespace Ikarus

@@ -86,6 +86,13 @@ public:
    */
   ControlInformation run(typename NLS::Domain& x);
 
+  /**
+   * \brief Performs the prediction for every load increment.
+   *
+   * \param x The solution.
+   */
+  void predictor(typename NLS::Domain& x) const;
+
   /* \brief returns the nonlinear solver */
   NLS& nonLinearSolver() { return *nonLinearSolver_; }
 

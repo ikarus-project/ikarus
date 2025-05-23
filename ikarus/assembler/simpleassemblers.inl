@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include <ikarus/assembler/simpleassemblers.hh>
+
 namespace Ikarus {
 
 template <typename B, typename FEC>
@@ -36,6 +38,22 @@ Eigen::VectorXd FlatAssemblerBase<B, FEC>::createFullVector(Eigen::Ref<const Eig
       fullVec[i] = reducedVector[i - reducedCounter];
   }
   return fullVec;
+}
+
+template <typename B, typename FEC>
+Eigen::VectorXd FlatAssemblerBase<B, FEC>::createReducedVector(Eigen::Ref<const Eigen::VectorXd> fullVector) {
+  assert(fullVector.size() == static_cast<Eigen::Index>(this->size()) &&
+         "The full vector you passed has the wrong dimensions.");
+  Eigen::Index reducedCounter = 0;
+  Eigen::VectorXd reducedVec(this->reducedSize());
+  for (Eigen::Index i = 0; i < fullVector.size(); ++i) {
+    if (this->isConstrained(i)) {
+      ++reducedCounter;
+      continue;
+    } else
+      reducedVec[i - reducedCounter] = fullVector[i];
+  }
+  return reducedVec;
 }
 
 template <typename B, typename FEC>

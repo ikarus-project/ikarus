@@ -82,6 +82,8 @@ public:
   using WrappedAssembler::boundToDBCOption;
   using WrappedAssembler::boundToRequirement;
   using WrappedAssembler::createFullVector;
+  using WrappedAssembler::createReducedVector;
+  using WrappedAssembler::dirichletValues;
 
   using WrappedAssembler::affordanceCollection;
   using WrappedAssembler::constraintsBelow;
@@ -174,6 +176,8 @@ public:
   using WrappedAssembler::boundToDBCOption;
   using WrappedAssembler::boundToRequirement;
   using WrappedAssembler::createFullVector;
+  using WrappedAssembler::createReducedVector;
+  using WrappedAssembler::dirichletValues;
 
   using WrappedAssembler::affordanceCollection;
   using WrappedAssembler::constraintsBelow;
@@ -285,6 +289,8 @@ public:
   using WrappedAssembler::boundToDBCOption;
   using WrappedAssembler::boundToRequirement;
   using WrappedAssembler::createFullVector;
+  using WrappedAssembler::createReducedVector;
+  using WrappedAssembler::dirichletValues;
 
   using WrappedAssembler::affordanceCollection;
   using WrappedAssembler::constraintsBelow;
