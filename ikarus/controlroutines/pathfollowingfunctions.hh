@@ -13,7 +13,6 @@
 #pragma once
 
 #include <cmath>
-#include <iomanip>
 #include <string>
 #include <utility>
 #include <vector>
@@ -104,9 +103,6 @@ struct ArcLength
       const auto Dhat0 = idbcDelta / args.Dlambda; // extracting Dhat0, assuming IDBC: Dhat = lambda * Dhat0
       args.dfdDlambda  = ((Dhat0.dot(Dhat0) + psi * psi) * args.Dlambda) / root;
     }
-    // std::cout << "f " << args.f << std::endl;
-    // std::cout << "dfdDD " << args.dfdDD.transpose() << std::endl;
-    // std::cout << "dfdDlambda " << args.dfdDlambda << std::endl;
   }
 
   /**
@@ -136,29 +132,14 @@ struct ArcLength
     decltype(auto) K             = derivative(residual)(req);
     auto linearSolver            = createSPDLinearSolverFromNonLinearSolver(nonlinearSolver);
 
-    // std::cout << "req.globalSolution() (-1)\t" << req.globalSolution().transpose() << std::endl;
-    // std::cout << "req.parameter() (-1)\t" << req.parameter() << std::endl;
-
     req.syncParameterAndGlobalSolution(updateFunction);
-
-    // std::cout << "req.globalSolution() (0)\t" << req.globalSolution().transpose() << std::endl;
-    // std::cout << "req.parameter() (0)\t" << req.parameter() << std::endl;
-    // std::cout << "R (0)\t" << R.transpose() << std::endl;
-    // std::cout << "idbcDelta (0)\t" << idbcDelta.transpose() << std::endl;
-    // std::cout << "Dhat0 (0)\t" << Dhat0.transpose() << std::endl;
-    // std::cout << "idbcForceFunction (0)\t" << idbcForceFunction().transpose() << std::endl;
-    // std::cout << "K (0)\t" << K << std::endl;
 
     if constexpr (not std::same_as<std::remove_cvref_t<decltype(idbcForceFunction)>, utils::IDBCForceDefault>)
       R += idbcForceFunction();
 
-    // std::cout << "R (1)\t" << R.transpose() << std::endl;
-
     linearSolver.analyzePattern(K);
     linearSolver.factorize(K);
     linearSolver.solve(args.DD, -R);
-
-    // std::cout << "args.DD (0)\t" << args.DD.transpose() << std::endl;
 
     const auto DD2    = args.DD.squaredNorm();
     const auto Dhat02 = Dhat0.squaredNorm();
@@ -169,19 +150,10 @@ struct ArcLength
     args.DD      = args.DD * args.stepSize / s;
     args.Dlambda = args.stepSize / s;
 
-    // std::cout << "psi (1)\t" << psi << std::endl;
-    // std::cout << "s (1)\t" << s << std::endl;
-    // std::cout << "args.stepSize\t" << args.stepSize << std::endl;
-    // std::cout << "args.DD (1)\t" << args.DD.transpose() << std::endl;
-    // std::cout << "args.Dlambda (1)\t" << args.Dlambda << std::endl;
-
     idbcDelta *= args.Dlambda / dlambda;
 
     updateFunction(req.globalSolution(), args.DD);
     req.parameter() = args.Dlambda;
-
-    // std::cout << "req.globalSolution() (1)\t" << req.globalSolution().transpose() << std::endl;
-    // std::cout << "req.parameter() (1)\t" << req.parameter()<< std::endl;
 
     // modify the globalSolution() considering inhomogeneous Dirichlet BCs
     for (int i = 0; i < idbcDelta.size(); ++i)
@@ -190,12 +162,6 @@ struct ArcLength
 
     // rescaling of psi
     psi = sqrt((idbcDelta.squaredNorm() + args.DD.squaredNorm()) / (args.Dlambda * args.Dlambda));
-
-    // std::cout << "psi (2)\t" << psi << std::endl;
-    // std::cout << "args.DD (2)\t" << args.DD.transpose() << std::endl;
-    // std::cout << "args.Dlambda (2)\t" << args.Dlambda << std::endl;
-    // std::cout << "req.globalSolution() (2)\t" << req.globalSolution().transpose() << std::endl;
-    // std::cout << "req.parameter() (2)\t" << req.parameter() << std::endl;
 
     computedInitialPredictor = true;
   }
