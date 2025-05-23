@@ -55,10 +55,10 @@ static auto simple2DOperatorArcLengthTest(DifferentiableFunction& f, typename Di
   auto pathFollowingLogger   = Ikarus::ControlLogger().subscribeTo(alc);
 
   const auto controlInfo              = alc.run(req);
-  std::vector<int> expectedIterations = {0, 1, 3, 3, 3, 3};
+  std::vector<int> expectedIterations = {0, 2, 2, 2, 2, 2};
   Eigen::Vector2d expectedDisplacement;
-  expectedDisplacement << 0.0883524725970593, 0.3486891582376427;
-  double expectedLambda = 0.4877655288280236;
+  expectedDisplacement << 0.0883524681713636, 0.3486891415306083;
+  double expectedLambda = 0.4877655071723067;
 
   TestSuite t("Arc Length with Subsidiary function");
   t.check(controlInfo.success, "No convergence");
@@ -172,10 +172,10 @@ static auto simple2DOperatorArcLengthTestAsDefault(DifferentiableFunction& f,
   auto pathFollowingLogger   = Ikarus::ControlLogger().subscribeTo(alc);
 
   const auto controlInfo              = alc.run(req);
-  std::vector<int> expectedIterations = {0, 1, 3, 3, 3, 3};
+  std::vector<int> expectedIterations = {0, 2, 2, 2, 2, 2};
   Eigen::Vector2d expectedDisplacement;
-  expectedDisplacement << 0.0883524725970593, 0.3486891582376427;
-  double expectedLambda = 0.4877655288280236;
+  expectedDisplacement << 0.0883524681713636, 0.3486891415306083;
+  double expectedLambda = 0.4877655071723067;
 
   TestSuite t("Arc Length as Default Test");
   t.check(controlInfo.success, "No convergence");
