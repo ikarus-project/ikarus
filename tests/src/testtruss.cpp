@@ -16,11 +16,13 @@
 #include <ikarus/assembler/assemblermanipulatorfuser.hh>
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/controlroutines/loadcontrol.hh>
+#include <ikarus/controlroutines/pathfollowing.hh>
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/truss.hh>
 #include <ikarus/solver/eigenvaluesolver/generalizedeigensolverfactory.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
+#include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
@@ -265,6 +267,12 @@ static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
 
   auto controlRoutine = [&]() -> decltype(auto) {
     if constexpr (useArcLength) {
+      NewtonRaphsonWithSubsidiaryFunctionConfig nrConfig({}, linSolver);
+      NonlinearSolverFactory nrFactory(nrConfig);
+      auto nr  = nrFactory.create(denseFlatAssembler);
+      auto pft = Ikarus::ArcLength{}; // Type of path following technique
+      auto alc = Ikarus::PathFollowing(nr, loadSteps, sqrt(0.5) / loadSteps, pft);
+      return alc;
     } else { /// Create loadcontrol
       NewtonRaphsonConfig nrConfig({}, linSolver);
       NonlinearSolverFactory nrFactory(nrConfig);
@@ -431,5 +439,7 @@ int main(int argc, char** argv) {
   // t.subTest(truss3dTest());
   t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Full));
   // t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Reduced));
+  // t.subTest(vonMisesTrussWithIDBCTest<true>(DBCOption::Full));
+  // t.subTest(vonMisesTrussWithIDBCTest<true>(DBCOption::Reduced));
   return t.exit();
 }
