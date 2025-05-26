@@ -308,20 +308,18 @@ static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
 
   Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
   Eigen::VectorXd uVec      = lambdaAndDisp.row(1);
-  Eigen::VectorXd vVec      = -lambdaAndDisp.row(2);
+  Eigen::VectorXd vVec      = lambdaAndDisp.row(2);
 
   std::vector<int> expectedIterations(loadSteps + 1, 0);
 
-  t.check(Dune::FloatCmp::eq(vVec.tail(1)[0], 0.5, tol))
+  t.check(Dune::FloatCmp::eq(vVec.tail(1)[0], lambdaVec.tail(1)[0], tol))
       << std::setprecision(16) << "Displacement value should be equal to lambda. Actual:\t" << vVec.tail(1)[0];
   checkScalars(t, lambdaVec.tail(1)[0], 0.5, " Incorrect last load factor", tol);
   checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
 
   // return the load factor as a function of the vertical displacement
   auto analyticalLoadDisplacementCurve = [&](auto& v) {
-    const double Ltruss = std::sqrt(h * h + L * L);
-    return 2.0 * E * A * Dune::power(h, 3) / Dune::power(Ltruss, 3) *
-           (v / h - 1.5 * Dune::power(v / h, 2) + 0.5 * Dune::power(v / h, 3));
+    return v; // lambda = v because an inhomogeneous Dirichlet BC is applied
   };
 
   for (std::size_t i = 0; i < lambdaAndDisp.cols(); ++i) {
@@ -434,12 +432,12 @@ auto trussAutoDiffTest() {
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t("TrussTest");
-  // t.subTest(trussAutoDiffTest<2, Grids::OneDFoamGridIn2D>());
-  // t.subTest(trussAutoDiffTest<3, Grids::OneDFoamGridIn3D>());
-  // t.subTest(vonMisesTrussTest());
-  // t.subTest(truss3dTest());
+  t.subTest(trussAutoDiffTest<2, Grids::OneDFoamGridIn2D>());
+  t.subTest(trussAutoDiffTest<3, Grids::OneDFoamGridIn3D>());
+  t.subTest(vonMisesTrussTest());
+  t.subTest(truss3dTest());
   t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Full));
-  // t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Reduced));
+  t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Reduced));
   // t.subTest(vonMisesTrussWithIDBCTest<true>(DBCOption::Full));
   // t.subTest(vonMisesTrussWithIDBCTest<true>(DBCOption::Reduced));
   return t.exit();

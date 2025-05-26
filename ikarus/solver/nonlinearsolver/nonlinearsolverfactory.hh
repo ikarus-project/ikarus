@@ -58,7 +58,6 @@ namespace Impl {
         CT newInc = CT::Zero(dv.size());
         dv.evaluateInhomogeneousBoundaryCondition(newInc, x.parameter());
         setting.updateFunction(x, newInc);
-        dv.setZeroAtConstrainedDofs(x.globalSolution());
       }
     };
   }

@@ -43,7 +43,7 @@ auto createSPDLinearSolverFromNonLinearSolver(const NLS& nls) {
 template <typename NLS>
 typename NLS::Domain::SolutionVectorType idbcIncrement(typename NLS::Domain& x, const NLS& nls, double Dlambda) {
   auto y = x;
-  y.parameter() += Dlambda;
+  y.parameter() = Dlambda;
   y.syncParameterAndGlobalSolution(nls.updateFunction());
   const auto delta = (y.globalSolution() - x.globalSolution()).eval();
   return delta;
