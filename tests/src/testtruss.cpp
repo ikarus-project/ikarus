@@ -50,6 +50,7 @@ Eigen::Matrix<double, 4, 4> rotationMatrix2D(double theta) {
 
 static auto vonMisesTrussTest() {
   TestSuite t("vonMisesTrussTest");
+  std::cout << "Started: " << t.name() << std::endl;
   /// Construct grid
   constexpr double h = 1.0;
   constexpr double L = 10.0;
@@ -277,8 +278,8 @@ static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
     } else { /// Create loadcontrol
       NewtonRaphsonConfig nrConfig({}, linSolver);
       auto nrFactory = NonlinearSolverFactory(nrConfig).withIDBCForceFunction(denseFlatAssembler);
-      auto nr = nrFactory.create(denseFlatAssembler);
-      auto lc = ControlRoutineFactory::create(LoadControlConfig{loadSteps, 0.0, 0.5}, nr, denseFlatAssembler);
+      auto nr        = nrFactory.create(denseFlatAssembler);
+      auto lc        = ControlRoutineFactory::create(LoadControlConfig{loadSteps, 0.0, 0.5}, nr, denseFlatAssembler);
       return lc;
     }
   };

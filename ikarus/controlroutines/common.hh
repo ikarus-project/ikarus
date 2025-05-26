@@ -9,6 +9,7 @@
 #pragma once
 
 #include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
@@ -42,10 +43,16 @@ auto createSPDLinearSolverFromNonLinearSolver(const NLS& nls) {
 
 template <typename NLS>
 typename NLS::Domain::SolutionVectorType idbcIncrement(typename NLS::Domain& x, const NLS& nls, double Dlambda) {
-  auto y = x;
-  y.parameter() += Dlambda;
-  y.syncParameterAndGlobalSolution(nls.updateFunction());
-  const auto delta = (y.globalSolution() - x.globalSolution()).eval();
-  return delta;
+  if constexpr (not std::same_as<typename NLS::IDBCForceFunction, utils::IDBCForceDefault>) {
+    auto y = x;
+    y.parameter() += Dlambda;
+    y.syncParameterAndGlobalSolution(nls.updateFunction());
+    const auto delta = (y.globalSolution() - x.globalSolution()).eval();
+    return delta;
+  } else {
+    Eigen::VectorXd v;
+    v.setZero(x.globalSolution().size());
+    return v;
+  }
 }
 } // namespace Ikarus
