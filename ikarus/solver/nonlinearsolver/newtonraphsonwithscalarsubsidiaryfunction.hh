@@ -49,10 +49,11 @@ struct NewtonRaphsonWithSubsidiaryFunctionConfig
 
   template <typename UF2>
   auto rebindUpdateFunction(UF2&& updateFunction) const {
-    NewtonRaphsonWithSubsidiaryFunctionConfig<LS, UF2> settings{.parameters        = parameters,
-                                                                .linearSolver      = linearSolver,
-                                                                .updateFunction    = std::forward<UF2>(updateFunction),
-                                                                .idbcForceFunction = idbcForceFunction};
+    NewtonRaphsonWithSubsidiaryFunctionConfig<LS, UF2, IDBCF> settings{
+        .parameters        = parameters,
+        .linearSolver      = linearSolver,
+        .updateFunction    = std::forward<UF2>(updateFunction),
+        .idbcForceFunction = idbcForceFunction};
     return settings;
   }
 

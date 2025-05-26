@@ -77,9 +77,9 @@ struct TrustRegionConfig
   IDBCF idbcForceFunction{};
   template <typename UF2>
   auto rebindUpdateFunction(UF2&& updateFunction) const {
-    TrustRegionConfig<preConditioner, UF2> settings{.parameters        = parameters,
-                                                    .updateFunction    = std::forward<UF2>(updateFunction),
-                                                    .idbcForceFunction = idbcForceFunction};
+    TrustRegionConfig<preConditioner, UF2, IDBCF> settings{.parameters        = parameters,
+                                                           .updateFunction    = std::forward<UF2>(updateFunction),
+                                                           .idbcForceFunction = idbcForceFunction};
     return settings;
   }
   template <typename IDBC2>

@@ -269,14 +269,14 @@ static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
   auto controlRoutine = [&]() -> decltype(auto) {
     if constexpr (useArcLength) {
       NewtonRaphsonWithSubsidiaryFunctionConfig nrConfig({}, linSolver);
-      NonlinearSolverFactory nrFactory(nrConfig);
-      auto nr  = nrFactory.create(denseFlatAssembler);
-      auto pft = Ikarus::ArcLength{}; // Type of path following technique
-      auto alc = Ikarus::PathFollowing(nr, loadSteps, sqrt(0.5) / loadSteps, pft);
+      auto nrFactory = NonlinearSolverFactory(nrConfig).withIDBCForceFunction(denseFlatAssembler);
+      auto nr        = nrFactory.create(denseFlatAssembler);
+      auto pft       = Ikarus::ArcLength{}; // Type of path following technique
+      auto alc       = Ikarus::PathFollowing(nr, loadSteps, sqrt(0.5) / loadSteps, pft);
       return alc;
     } else { /// Create loadcontrol
       NewtonRaphsonConfig nrConfig({}, linSolver);
-      NonlinearSolverFactory nrFactory(nrConfig);
+      auto nrFactory = NonlinearSolverFactory(nrConfig).withIDBCForceFunction(denseFlatAssembler);
       auto nr = nrFactory.create(denseFlatAssembler);
       auto lc = ControlRoutineFactory::create(LoadControlConfig{loadSteps, 0.0, 0.5}, nr, denseFlatAssembler);
       return lc;

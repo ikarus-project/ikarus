@@ -49,10 +49,10 @@ struct NewtonRaphsonConfig
 
   template <typename UF2>
   auto rebindUpdateFunction(UF2&& updateFunction) const {
-    NewtonRaphsonConfig<LS, UF2> settings{.parameters        = parameters,
-                                          .linearSolver      = linearSolver,
-                                          .updateFunction    = std::forward<UF2>(updateFunction),
-                                          .idbcForceFunction = idbcForceFunction};
+    NewtonRaphsonConfig<LS, UF2, IDBCF> settings{.parameters        = parameters,
+                                                 .linearSolver      = linearSolver,
+                                                 .updateFunction    = std::forward<UF2>(updateFunction),
+                                                 .idbcForceFunction = idbcForceFunction};
     return settings;
   }
 

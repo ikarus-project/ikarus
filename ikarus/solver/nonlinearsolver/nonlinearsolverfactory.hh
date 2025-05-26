@@ -18,23 +18,26 @@
 namespace Ikarus {
 
 namespace Impl {
-  template <typename CT, typename A>
-  auto idbcForceFunctor(const A& assembler) {
-    return [&]() {
-      auto& loadFactor = assembler->requirement().parameter();
-      auto& x          = assembler->requirement().globalSolution();
-      const auto& K    = assembler->matrix(DBCOption::Raw);
-      auto& dv         = assembler->dirichletValues();
-      CT newInc        = CT::Zero(dv.size());
-      dv.evaluateInhomogeneousBoundaryCondition(newInc, loadFactor);
-      auto F_dirichlet = (K * newInc).eval();
-      if (assembler->dBCOption() == DBCOption::Full)
-        assembler->dirichletValues().setZeroAtConstrainedDofs(F_dirichlet);
-      else
-        F_dirichlet = assembler->createReducedVector(F_dirichlet);
-      return F_dirichlet;
-    };
-  }
+  struct IDBCForceFunction
+  {
+    template <typename CT, typename A>
+    auto operator()(const A& assembler) {
+      return [&]() {
+        auto& loadFactor = assembler->requirement().parameter();
+        auto& x          = assembler->requirement().globalSolution();
+        const auto& K    = assembler->matrix(DBCOption::Raw);
+        auto& dv         = assembler->dirichletValues();
+        CT newInc        = CT::Zero(dv.size());
+        dv.evaluateInhomogeneousBoundaryCondition(newInc, loadFactor);
+        auto F_dirichlet = (K * newInc).eval();
+        if (assembler->dBCOption() == DBCOption::Full)
+          assembler->dirichletValues().setZeroAtConstrainedDofs(F_dirichlet);
+        else
+          F_dirichlet = assembler->createReducedVector(F_dirichlet);
+        return F_dirichlet;
+      };
+    }
+  };
 
   template <typename CT, typename A, typename S>
   auto updateFunctor(const A& assembler, const S& setting) {
@@ -81,7 +84,15 @@ struct NonlinearSolverFactory
   NonlinearSolverFactory(NLSSetting s)
       : settings(s) {}
 
-  NLSSetting settings;
+  template <typename Assembler>
+  auto withIDBCForceFunction(Assembler&& assembler) const {
+    auto f               = DifferentiableFunctionFactory::op(assembler);
+    using fTraits        = typename decltype(f)::Traits;
+    using CorrectionType = std::remove_cvref_t<typename fTraits::template Range<1>>;
+    auto idbcForceF      = Impl::IDBCForceFunction{}.template operator()<CorrectionType>(assembler);
+    auto newSettings     = settings.rebindIDBCForceFunction(std::move(idbcForceF));
+    return NonlinearSolverFactory<std::decay_t<decltype(newSettings)>>{std::move(newSettings)};
+  }
 
   /**
    * \brief Creates a nonlinear solver using the provided assembler.
@@ -104,11 +115,12 @@ struct NonlinearSolverFactory
     using CorrectionType = std::remove_cvref_t<typename fTraits::template Range<1>>;
     using Domain         = typename fTraits::Domain;
 
-    auto updateF        = Impl::updateFunctor<CorrectionType>(assembler, settings);
-    auto idbcForceF     = Impl::idbcForceFunctor<CorrectionType>(assembler);
-    auto settingsNew    = settings.rebindUpdateFunction(std::move(updateF));
-    auto settingsNewNew = settingsNew.rebindIDBCForceFunction(std::move(idbcForceF));
-    return createNonlinearSolver(std::move(settingsNewNew), std::move(f));
+    auto updateF     = Impl::updateFunctor<CorrectionType>(assembler, settings);
+    auto settingsNew = settings.rebindUpdateFunction(std::move(updateF));
+    return createNonlinearSolver(std::move(settingsNew), std::move(f));
   }
+
+private:
+  NLSSetting settings;
 };
-}; // namespace Ikarus
+} // namespace Ikarus
