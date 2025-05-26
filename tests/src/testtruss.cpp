@@ -233,7 +233,7 @@ static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
   DirichletValues dirichletValues(basisP->flat());
   dirichletValues.fixBoundaryDOFs(
       [&](auto& dirichletFlags, auto&& globalIndex) { dirichletFlags[globalIndex] = true; });
-  t.check(dirichletValues.fixedDOFsize() == 4, "Number of fixed DOFs is not equal to 4");
+  t.check(dirichletValues.fixedDOFsize() == 4, "Number of constrained DOFs is not equal to 4");
 
   // Inhomogeneous Boundary Conditions
   auto inhomogeneousDisplacement = [L, h]<typename T>(const auto& globalCoord, const T& lambda) {
@@ -247,6 +247,7 @@ static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
   };
 
   dirichletValues.storeInhomogeneousBoundaryCondition(inhomogeneousDisplacement);
+  t.check(dirichletValues.fixedDOFsize() == 5, "Number of constrained DOFs is not equal to 5");
 
   /// Create assembler
   auto denseFlatAssembler = makeDenseFlatAssembler(fes, dirichletValues);
