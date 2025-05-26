@@ -52,6 +52,7 @@ namespace Impl {
           setting.updateFunction(x, assembler->createReducedVector(b));
         } else
           setting.updateFunction(x, b);
+        return;
       }
       // updates due to inhomogeneous bcs
       if constexpr (requires { x.parameter(); }) {
