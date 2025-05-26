@@ -33,7 +33,7 @@ auto createSPDLinearSolverFromNonLinearSolver(const NLS& nls) {
 
   auto&& residual = nls.residual();
 
-  if constexpr (traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, typename NLS::JacobianType>::value)
+  if constexpr (traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value)
     solverTag = SolverTypeTag::d_LDLT;
   else
     solverTag = SolverTypeTag::sd_SimplicialLDLT;

@@ -31,8 +31,7 @@ namespace Impl {
       if (assembler->dBCOption() == DBCOption::Full)
         assembler->dirichletValues().setZeroAtConstrainedDofs(F_dirichlet);
       else
-        assembler->createReducedVector(F_dirichlet);
-
+        F_dirichlet = assembler->createReducedVector(F_dirichlet);
       return F_dirichlet;
     };
   }
