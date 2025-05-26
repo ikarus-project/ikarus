@@ -27,7 +27,6 @@ namespace Impl {
       auto& dv         = assembler->dirichletValues();
       CT newInc        = CT::Zero(dv.size());
       dv.evaluateInhomogeneousBoundaryCondition(newInc, loadFactor);
-      dv.setZeroAtConstrainedDofs(x);
       auto F_dirichlet = (K * newInc).eval();
       if (assembler->dBCOption() == DBCOption::Full)
         assembler->dirichletValues().setZeroAtConstrainedDofs(F_dirichlet);
@@ -57,7 +56,8 @@ namespace Impl {
         auto& dv  = assembler->dirichletValues();
         CT newInc = CT::Zero(dv.size());
         dv.evaluateInhomogeneousBoundaryCondition(newInc, x.parameter());
-        setting.updateFunction(x, newInc);
+        const auto delta = (newInc - x.globalSolution()).eval();
+        setting.updateFunction(x, delta);
       }
     };
   }

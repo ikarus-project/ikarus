@@ -438,7 +438,7 @@ int main(int argc, char** argv) {
   t.subTest(truss3dTest());
   t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Full));
   t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Reduced));
-  // t.subTest(vonMisesTrussWithIDBCTest<true>(DBCOption::Full));
-  // t.subTest(vonMisesTrussWithIDBCTest<true>(DBCOption::Reduced));
+  t.subTest(vonMisesTrussWithIDBCTest<true>(DBCOption::Full));
+  t.subTest(vonMisesTrussWithIDBCTest<true>(DBCOption::Reduced));
   return t.exit();
 }
