@@ -282,7 +282,8 @@ public:
       lambda += deltalambda;
       subsidiaryArgs.Dlambda += deltalambda;
 
-      req.syncParameterAndGlobalSolution(updateFunction_);
+      if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>)
+        req.syncParameterAndGlobalSolution(updateFunction_);
 
       dNorm                            = sqrt(deltaD.dot(deltaD) + deltalambda * deltalambda);
       solverInformation.correctionNorm = static_cast<double>(dNorm);

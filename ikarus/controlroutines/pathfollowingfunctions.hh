@@ -182,7 +182,8 @@ struct ArcLength
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     nonlinearSolver.updateFunction()(req.globalSolution(), args.DD);
     req.parameter() += args.Dlambda;
-    req.syncParameterAndGlobalSolution(nonlinearSolver.updateFunction());
+    if constexpr (not std::same_as<typename NLS::IDBCForceFunction, utils::IDBCForceDefault>)
+      req.syncParameterAndGlobalSolution(nonlinearSolver.updateFunction());
   }
 
   /** \brief The name of the PathFollowing method. */
