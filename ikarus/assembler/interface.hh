@@ -140,7 +140,7 @@ public:
    */
   void bind(const FERequirement& req, AffordanceCollectionType affordanceCollection,
             DBCOption dbcOption = DBCOption::Full) {
-    req_         = std::make_optional<FERequirement>(req);
+    req_         = std::ref(req);
     affordances_ = std::make_optional<AffordanceCollectionType>(affordanceCollection);
     dBCOption_   = std::make_optional<DBCOption>(dbcOption);
   }
@@ -150,7 +150,7 @@ public:
    *
    * \param req Reference to the finite element requirement.
    */
-  void bind(const FERequirement& req) { req_ = std::make_optional<FERequirement>(req); }
+  void bind(const FERequirement& req) { req_ = std::ref(req); }
 
   /**
    * \brief Binds the assembler to an affordance collection.
@@ -215,9 +215,9 @@ public:
    * \brief Returns the requirement.
    *
    */
-  FERequirement& requirement() {
+  const FERequirement& requirement() {
     if (req_.has_value())
-      return req_.value();
+      return req_.value().get();
     else
       DUNE_THROW(Dune::InvalidStateException, "The requirement can only be obtained after binding");
   }
@@ -247,7 +247,7 @@ public:
 private:
   FEContainer feContainer_;
   DirichletValuesType dirichletValues_;
-  std::optional<FERequirement> req_;
+  std::optional<std::reference_wrapper<const FERequirement>> req_;
   std::optional<AffordanceCollectionType> affordances_;
   std::vector<size_t> constraintsBelow_{};
   size_t fixedDofs_{};
