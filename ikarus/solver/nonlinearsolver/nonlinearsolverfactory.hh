@@ -11,6 +11,8 @@
 #include <type_traits>
 #include <utility>
 
+#include <dune/common/float_cmp.hh>
+
 #include <ikarus/assembler/dirichletbcenforcement.hh>
 #include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/differentiablefunctionfactory.hh>
@@ -30,9 +32,12 @@ namespace Impl {
         CT newInc        = CT::Zero(dv.size());
         dv.evaluateInhomogeneousBoundaryCondition(newInc, loadFactor);
         auto F_dirichlet = (K * newInc).eval();
-        if (assembler->dBCOption() == DBCOption::Full)
+        if (assembler->dBCOption() == DBCOption::Full) {
           assembler->dirichletValues().setZeroAtConstrainedDofs(F_dirichlet);
-        else
+          for (const auto i : Dune::range(newInc.size()))
+            if (Dune::FloatCmp::ne(newInc[i], 0.0))
+              F_dirichlet[i] = newInc[i];
+        } else
           F_dirichlet = assembler->createReducedVector(F_dirichlet);
         return F_dirichlet;
       };

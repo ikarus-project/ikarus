@@ -19,18 +19,23 @@ using Dune::TestSuite;
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   Dune::TestSuite t;
-  LamesFirstParameterAndShearModulus matParameter = {.lambda = 24.0, .mu = 6.0};
+  LamesFirstParameterAndShearModulus matParameter = {.lambda = 24000.0, .mu = 6000.0};
   Materials::NeoHooke matNH(matParameter);
   auto reducedMat = planeStrain(matNH);
 
-  t.subTest(elasticStripTest(reducedMat, skills(), 1, std::make_pair(8, 2.207), 1, true, true));
-  t.subTest(elasticStripTest(reducedMat, skills(), 1, std::make_pair(8, 2.194), 2, true, true));
-  t.subTest(elasticStripTest(reducedMat, skills(eas<EAS::GreenLagrangeStrain>(4)), 2, std::make_pair(12, 2.207), 1,
-                             true, true));
-  t.subTest(elasticStripTest(reducedMat, skills(eas<EAS::DisplacementGradient>(4)), 2, std::make_pair(12, 2.207), 1,
-                             true, true));
-  t.subTest(elasticStripTest(reducedMat, skills(eas<EAS::DisplacementGradientTransposed>(4)), 2,
-                             std::make_pair(12, 2.207), 1, true, true));
+  auto testFunctor = [&](DBCOption dbcOption) {
+    t.subTest(elasticStripTest(dbcOption, reducedMat, skills(), 1, std::make_pair(8, 2.207), 1, true, true));
+    t.subTest(elasticStripTest(dbcOption, reducedMat, skills(), 1, std::make_pair(8, 2.194), 2, true, true));
+    t.subTest(elasticStripTest(dbcOption, reducedMat, skills(eas<EAS::GreenLagrangeStrain>(4)), 2,
+                               std::make_pair(12, 2.207), 1, true, true));
+    t.subTest(elasticStripTest(dbcOption, reducedMat, skills(eas<EAS::DisplacementGradient>(4)), 2,
+                               std::make_pair(12, 2.207), 1, true, true));
+    t.subTest(elasticStripTest(dbcOption, reducedMat, skills(eas<EAS::DisplacementGradientTransposed>(4)), 2,
+                               std::make_pair(12, 2.207), 1, true, true));
+  };
+
+  testFunctor(DBCOption::Full);
+  testFunctor(DBCOption::Reduced);
 
   return t.exit();
 }

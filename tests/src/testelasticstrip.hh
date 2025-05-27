@@ -37,8 +37,9 @@ using Dune::TestSuite;
 
 /** Adapted from Pfefferkorn et al. 2021 (https://doi.org/10.1002/nme.6605) */
 template <typename MAT, typename Skills>
-auto elasticStripTest(const MAT& material, Skills&& additionalSkills, int loadSteps, std::pair<int, double> testResults,
-                      int order = 1, bool logToConsole = false, bool writeVTK = false) {
+auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additionalSkills, int loadSteps,
+                      std::pair<int, double> testResults, int order = 1, bool logToConsole = false,
+                      bool writeVTK = false) {
   static_assert(MAT::isReduced, "elasticStripTest is only valid for a reduced material (planeStress or planeStrain).");
 
   TestSuite t("Elastic Strip Test for Nonlinear element with additional skills " + Dune::className(additionalSkills) +
@@ -111,7 +112,7 @@ auto elasticStripTest(const MAT& material, Skills&& additionalSkills, int loadSt
   double lambda = 0.0;
   auto req      = typename FEType::Requirement(d, lambda);
 
-  sparseFlatAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics, DBCOption::Full);
+  sparseFlatAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics, dbcOption);
 
   auto linSolver = LinearSolver(SolverTypeTag::sd_UmfPackLU);
   AffordanceCollection elastoStaticsNoScalar(VectorAffordance::forces, MatrixAffordance::stiffness);
