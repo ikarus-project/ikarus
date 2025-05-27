@@ -42,8 +42,9 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
                       bool writeVTK = false) {
   static_assert(MAT::isReduced, "elasticStripTest is only valid for a reduced material (planeStress or planeStrain).");
 
-  TestSuite t("Elastic Strip Test for Nonlinear element with additional skills " + Dune::className(additionalSkills) +
-              " and material type as " + Dune::className<MAT>());
+  TestSuite t("Elastic Strip Test for nonlinear solid element with additional skills " +
+              Dune::className(additionalSkills) + ", material type as " + Dune::className<MAT>() +
+              " and dbcOption = " + toString(dbcOption));
 
   constexpr double tol  = 1e-10;
   constexpr int gridDim = 2;

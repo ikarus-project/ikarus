@@ -32,12 +32,9 @@ namespace Impl {
         CT newInc        = CT::Zero(dv.size());
         dv.evaluateInhomogeneousBoundaryCondition(newInc, loadFactor);
         auto F_dirichlet = (K * newInc).eval();
-        if (assembler->dBCOption() == DBCOption::Full) {
+        if (assembler->dBCOption() == DBCOption::Full)
           assembler->dirichletValues().setZeroAtConstrainedDofs(F_dirichlet);
-          for (const auto i : Dune::range(newInc.size()))
-            if (Dune::FloatCmp::ne(newInc[i], 0.0))
-              F_dirichlet[i] = newInc[i];
-        } else
+        else
           F_dirichlet = assembler->createReducedVector(F_dirichlet);
         return F_dirichlet;
       };
