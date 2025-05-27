@@ -132,10 +132,10 @@ struct ArcLength
     decltype(auto) K             = derivative(residual)(req);
     auto linearSolver            = createSPDLinearSolverFromNonLinearSolver(nonlinearSolver);
 
-    req.syncParameterAndGlobalSolution(updateFunction);
-
-    if constexpr (not std::same_as<std::remove_cvref_t<decltype(idbcForceFunction)>, utils::IDBCForceDefault>)
+    if constexpr (not std::same_as<std::remove_cvref_t<decltype(idbcForceFunction)>, utils::IDBCForceDefault>) {
+      req.syncParameterAndGlobalSolution(updateFunction);
       R += idbcForceFunction();
+    }
 
     linearSolver.analyzePattern(K);
     linearSolver.factorize(K);
@@ -156,9 +156,11 @@ struct ArcLength
     req.parameter() = args.Dlambda;
 
     // modify the globalSolution() considering inhomogeneous Dirichlet BCs
-    for (int i = 0; i < idbcDelta.size(); ++i)
-      if (Dune::FloatCmp::ne(idbcDelta[i], 0.0))
-        req.globalSolution()[i] = idbcDelta[i];
+    if constexpr (not std::same_as<std::remove_cvref_t<decltype(idbcForceFunction)>, utils::IDBCForceDefault>) {
+      for (int i = 0; i < idbcDelta.size(); ++i)
+        if (Dune::FloatCmp::ne(idbcDelta[i], 0.0))
+          req.globalSolution()[i] = idbcDelta[i];
+    }
 
     // rescaling of psi
     psi = sqrt((idbcDelta.squaredNorm() + args.DD.squaredNorm()) / (args.Dlambda * args.Dlambda));
