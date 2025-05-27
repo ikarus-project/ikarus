@@ -253,11 +253,6 @@ static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
   /// Create assembler
   auto denseFlatAssembler = makeDenseFlatAssembler(fes, dirichletValues);
 
-  /// Create non-linear operator
-  double lambda = 0.0;
-  Eigen::VectorXd d;
-  d.setZero(basis.flat().size());
-
   auto req = FEType::Requirement(basis);
   denseFlatAssembler->bind(req, AffordanceCollections::elastoStatics, dbcOption);
   auto linSolver          = LinearSolver(SolverTypeTag::d_LDLT);

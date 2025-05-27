@@ -35,11 +35,7 @@
 using namespace Ikarus;
 using Dune::TestSuite;
 
-/**
- * \brief Adapted from Pfefferkorn, R., Bieber, S., Oesterle, B., Bischoff, M., Betsch, P., 2021. Improving efficiency
- * and robustness of enhanced assumed strain elements for nonlinear problems. Int J Numer Methods Eng 122, 1911–1939.
- * https://doi.org/10.1002/nme.6605
- */
+/** Adapted from Pfefferkorn et al. 2021 (https://doi.org/10.1002/nme.6605) */
 template <typename MAT, typename Skills>
 auto elasticStripTest(const MAT& material, Skills&& additionalSkills, int loadSteps, std::pair<int, double> testResults,
                       int order = 1, bool logToConsole = false, bool writeVTK = false) {
