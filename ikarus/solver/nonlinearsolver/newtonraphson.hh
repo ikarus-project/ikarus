@@ -209,9 +209,11 @@ public:
       linearSolver_.analyzePattern(Ax);
 
     if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>) {
-      if (x_old.has_value())
+      if (x_old.has_value()) {
+        rx = residualFunction_(x_old.value().get());
+        Ax = jacobianFunction_(x_old.value().get());
         rx += idbcForceFunction_(x_old.value().get(), x);
-      else
+      } else
         DUNE_THROW(Dune::InvalidStateException, "x_old has to be provided to call the idbcForceFunction_()");
     }
 
