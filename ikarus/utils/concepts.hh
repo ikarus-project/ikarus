@@ -516,7 +516,7 @@ namespace Concepts {
   template <typename T>
   concept FlatAssembler = requires(T t, const typename T::FERequirement& req,
                                    typename T::AffordanceCollectionType affordance, DBCOption dbcOption) {
-    { t.requirement() } -> std::convertible_to<const typename T::FERequirement&>;
+    { t.requirement() } -> std::convertible_to<typename T::FERequirement&>;
     { t.affordanceCollection() } -> std::convertible_to<typename T::AffordanceCollectionType>;
     { t.dBCOption() } -> std::convertible_to<DBCOption>;
 
