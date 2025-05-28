@@ -160,9 +160,12 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
 
   t.check(controlInfo.success, "Failed to converge.");
   checkScalars(t, controlInfo.totalIterations, expectedIterations, " Number of iterations");
-  const auto maxDisp = std::ranges::max(d.cwiseAbs());
 
-  checkScalars(t, maxDisp, expectedMaxDisp, " Max. vertical displacement", tol);
+  Dune::FieldVector<double, gridDim> bottomCenterPos{L / 2.0, 0.0};
+  const auto globalIndicesAtBottomCenterPos = utils::globalIndexFromGlobalPosition(basis.flat(), bottomCenterPos);
+  const auto maxVerticalDisp                = d[globalIndicesAtBottomCenterPos[1]];
+
+  checkScalars(t, maxVerticalDisp, expectedMaxDisp, " Max. vertical displacement", tol);
   checkScalars(t, lambda, expectedLambda, " Load factor", tol);
 
   return t;
