@@ -206,7 +206,10 @@ public:
   explicit TrustRegion(const F& f, UF2&& updateFunction = {}, IDBCF2&& internalForceFunction = {})
       : energyFunction_{f},
         updateFunction_{std::forward<UF2>(updateFunction)},
-        idbcForceFunction_{std::forward<IDBCF2>(internalForceFunction)} {}
+        idbcForceFunction_{std::forward<IDBCF2>(internalForceFunction)} {
+    static_assert(std::same_as<IDBCForceFunction, utils::IDBCForceDefault>,
+                  "Trust Region Method is not implemented to handle inhomogeneous Dirichlet BCs.");
+  }
 
   /**
    * \brief Sets up the TrustRegion solver with the provided settings and checks feasibility.
@@ -225,7 +228,8 @@ public:
    * \param x the solution.
    * \return NonLinearSolverInformation containing information about the solver result.
    */
-  [[nodiscard]] NonLinearSolverInformation solve(Domain& x) {
+  [[nodiscard]] NonLinearSolverInformation solve(Domain& x,
+                                                 std::optional<std::reference_wrapper<Domain>> x_old = std::nullopt) {
     using enum NonLinearSolverMessages;
 
     NonLinearSolverInformation solverInformation;
@@ -241,9 +245,6 @@ public:
     decltype(auto) e = energyF(x);
     decltype(auto) g = gradientF(x);
     decltype(auto) h = hessianF(x);
-
-    if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>)
-      g += idbcForceFunction_();
 
     eta_.resizeLike(g);
     Heta_.resizeLike(g);

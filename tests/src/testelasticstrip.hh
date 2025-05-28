@@ -46,6 +46,8 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
               Dune::className(additionalSkills) + ", material type as " + Dune::className<MAT>() +
               " and dbcOption = " + toString(dbcOption));
 
+  std::cout << "Started: " << t.name() << std::endl;
+
   constexpr double tol  = 1e-8;
   constexpr int gridDim = 2;
   using Grid            = Dune::YaspGrid<gridDim>;
