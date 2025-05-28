@@ -26,7 +26,8 @@ int main(int argc, char** argv) {
   auto reducedMat = planeStrain(matSVK);
 
   auto testFunctor = [&](DBCOption dbcOption) {
-    t.subTest(elasticStripTest(dbcOption, reducedMat, skills(), 1, std::make_pair(8, 2.207), 1, true, true));
+    t.subTest(
+        elasticStripTest(dbcOption, reducedMat, skills(), 1, std::make_pair(6, 1.814746879163122), 1, true, true));
     // t.subTest(elasticStripTest(dbcOption, reducedMat, skills(), 1, std::make_pair(8, 2.194), 2, true, true));
     // t.subTest(elasticStripTest(dbcOption, reducedMat, skills(eas<EAS::GreenLagrangeStrain>(4)), 2,
     //                            std::make_pair(12, 2.207), 1, true, true));

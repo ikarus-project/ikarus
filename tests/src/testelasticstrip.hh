@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include "testcommon.hh"
 #include "testhelpers.hh"
 
 #include <dune/common/test/testsuite.hh>
@@ -11,6 +10,7 @@
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
+#include <dune/grid/yaspgrid.hh>
 
 #include <Eigen/Core>
 
