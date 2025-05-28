@@ -28,7 +28,7 @@ LoadControl<NLS>::run(typename NLS::Domain& x) {
 
   // Initial step to check if the undeformed (or initial) state is in equilibrium
   this->notify(ControlMessages::STEP_STARTED, state);
-  auto solverInfo = nonLinearSolver_->solve(x);
+  auto solverInfo = nonLinearSolver_->solve(x, x);
   updateAndNotifyControlInfo(info, solverInfo, state);
   if (not solverInfo.success)
     return info;
@@ -38,8 +38,9 @@ LoadControl<NLS>::run(typename NLS::Domain& x) {
   for (int ls = 0; ls < loadSteps_; ++ls) {
     state.loadStep = ls;
     this->notify(STEP_STARTED, state);
+    auto x_old = x;
     this->predictor(x);
-    solverInfo = nonLinearSolver_->solve(x);
+    solverInfo = nonLinearSolver_->solve(x, x_old);
     updateAndNotifyControlInfo(info, solverInfo, state);
     if (not solverInfo.success)
       return info;

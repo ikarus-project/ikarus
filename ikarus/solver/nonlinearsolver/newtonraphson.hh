@@ -190,7 +190,7 @@ public:
   [[nodiscard(
       "The solve method returns information of the solution process. You should store this information and check if "
       "it was successful")]] NonLinearSolverInformation
-  solve(Domain& x) {
+  solve(Domain& x, std::optional<std::reference_wrapper<Domain>> x_old = std::nullopt) {
     using enum NonLinearSolverMessages;
 
     NonLinearSolverInformation solverInformation{};
@@ -208,8 +208,12 @@ public:
     if constexpr (isLinearSolver)
       linearSolver_.analyzePattern(Ax);
 
-    if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>)
-      rx += idbcForceFunction_();
+    if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>) {
+      if (x_old.has_value())
+        rx += idbcForceFunction_(x_old.value().get(), x);
+      else
+        DUNE_THROW(Dune::InvalidStateException, "x_old has to be provided to call the idbcForceFunction_()");
+    }
 
     while ((rNorm > settings_.tol && iter < settings_.maxIter) or iter < settings_.minIter) {
       this->notify(ITERATION_STARTED, state);

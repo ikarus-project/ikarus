@@ -22,21 +22,18 @@ namespace Ikarus {
 namespace Impl {
   struct IDBCForceFunction
   {
-    template <typename CT, typename A>
+    template <typename A>
     auto operator()(const A& assembler) {
-      return [&]() {
-        auto& loadFactor = assembler->requirement().parameter();
-        auto& x          = assembler->requirement().globalSolution();
-        const auto& K    = assembler->matrix(DBCOption::Raw);
-        auto& dv         = assembler->dirichletValues();
-        CT newInc        = CT::Zero(dv.size());
-        dv.evaluateInhomogeneousBoundaryCondition(newInc, loadFactor);
+      return [&]<typename D>(const D& x_old, const D& x_new) {
+        const auto& K = assembler->matrix(x_old, assembler->affordanceCollection().matrixAffordance(), DBCOption::Raw);
+        const auto newInc = x_new.globalSolution() - x_old.globalSolution();
 
         Eigen::VectorXd F_dirichlet;
-        F_dirichlet.setZero(dv.size());
-        for (const auto i : Dune::range(dv.size()))
+        F_dirichlet.setZero(newInc.size());
+        for (const auto i : Dune::range(newInc.size()))
           if (Dune::FloatCmp::ne(newInc[i], 0.0))
             F_dirichlet += K.col(i) * newInc[i];
+
         if (assembler->dBCOption() == DBCOption::Full)
           assembler->dirichletValues().setZeroAtConstrainedDofs(F_dirichlet);
         else
@@ -94,11 +91,8 @@ struct NonlinearSolverFactory
 
   template <typename Assembler>
   auto withIDBCForceFunction(Assembler&& assembler) const {
-    auto f               = DifferentiableFunctionFactory::op(assembler);
-    using fTraits        = typename decltype(f)::Traits;
-    using CorrectionType = std::remove_cvref_t<typename fTraits::template Range<1>>;
-    auto idbcForceF      = Impl::IDBCForceFunction{}.template operator()<CorrectionType>(assembler);
-    auto newSettings     = settings.rebindIDBCForceFunction(std::move(idbcForceF));
+    auto idbcForceF  = Impl::IDBCForceFunction{}.template operator()(assembler);
+    auto newSettings = settings.rebindIDBCForceFunction(std::move(idbcForceF));
     return NonlinearSolverFactory<std::decay_t<decltype(newSettings)>>{std::move(newSettings)};
   }
 
