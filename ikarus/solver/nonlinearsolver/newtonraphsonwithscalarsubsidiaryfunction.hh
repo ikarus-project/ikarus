@@ -258,9 +258,7 @@ public:
       sol2d.resize(rx.rows(), 2);
       if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>) {
         if (x_old.has_value()) {
-          rx = residualFunction_(x_old.value().get());
-          Ax = jacobianFunction_(x_old.value().get());
-          residual2d << -rx, Fext0 - idbcForceFunction_(x_old.value().get(), req);
+          residual2d << -rx, Fext0 - (idbcForceFunction_(x_old.value().get(), req) / lambda);
         } else
           DUNE_THROW(Dune::InvalidStateException, "x_old has to be provided to call the idbcForceFunction_()");
       } else

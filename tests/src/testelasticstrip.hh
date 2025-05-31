@@ -133,8 +133,8 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
       auto nrFactory = NonlinearSolverFactory(nrConfig).withIDBCForceFunction(sparseFlatAssembler);
       auto nr        = nrFactory.create(sparseFlatAssembler);
       auto pft       = Ikarus::ArcLength{}; // Type of path following technique
-      auto alc       = ControlRoutineFactory::create(PathFollowingConfig{loadSteps, 45.0 / loadSteps, pft}, nr,
-                                                     sparseFlatAssembler);
+      auto alc =
+          ControlRoutineFactory::create(PathFollowingConfig{loadSteps, 45.0 / loadSteps, pft}, nr, sparseFlatAssembler);
       return alc;
     } else { /// Create loadcontrol
       auto nrConfig =
@@ -179,7 +179,7 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
       t.check(not fe.internalVariable().isZero(),
               "Internal variables are zero and have not been updated by the nonlinear solver.");
 
-  double expectedLambda                            = 1.0;
+  double expectedLambda                            = useArcLength ? 0.481292374796350 : 1.0;
   const auto [expectedIterations, expectedMaxDisp] = testResults;
 
   t.check(controlInfo.success, "Failed to converge.");

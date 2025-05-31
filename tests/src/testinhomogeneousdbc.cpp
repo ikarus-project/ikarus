@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
       return expectedResults;
     } else {
       std::array<std::pair<int, double>, 4> expectedResultsSVK = {
-          std::make_pair(4, 4.812923747963501), std::make_pair(6, 1.850732157345016),
+          std::make_pair(4, 1.023987990175817), std::make_pair(6, 1.850732157345016),
           std::make_pair(10, 1.817539174273711), std::make_pair(11, 1.8408528524451402)};
 
       std::array<std::pair<int, double>, 4> expectedResultsNH = {
