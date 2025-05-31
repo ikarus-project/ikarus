@@ -50,7 +50,7 @@ set(programSourceFiles
     testcantileverbeamEAS.cpp
     testnonlinearas.cpp
     testconversions.cpp
-    testelasticstripwrtidbc.cpp
+    testinhomogeneousdbc.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
@@ -69,7 +69,7 @@ set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
     testcantileverbeamAS
     testnonlinearas
     testnonlineareas
-    testelasticstripwrtidbc
+    testinhomogeneousdbc
 )
 # Compile only tests
 dune_add_test(

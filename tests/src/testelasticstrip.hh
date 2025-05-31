@@ -44,7 +44,7 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
 
   TestSuite t("Elastic Strip Test for nonlinear solid element with additional skills " +
               Dune::className(additionalSkills) + ", material type as " + Dune::className<MAT>() +
-              " and dbcOption = " + toString(dbcOption));
+              ", dbcOption = " + toString(dbcOption) + " and order = " + std::to_string(order));
 
   std::cout << "Started: " << t.name() << std::endl;
 
