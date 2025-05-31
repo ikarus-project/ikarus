@@ -28,19 +28,36 @@ int main(int argc, char** argv) {
 
   auto reducedMats = Dune::makeTupleVector(planeStrain(matSVK), planeStrain(matNH));
 
-  std::array<std::pair<int, double>, 4> expectedResultsSVK = {
-      std::make_pair(6, 1.814746879163122), std::make_pair(6, 1.850732157345016), std::make_pair(10, 1.817539174273711),
-      std::make_pair(11, 1.8408528524451402)};
+  auto expectedResultsFunctor = []<bool useArcLength>() {
+    if constexpr (not useArcLength) {
+      std::array<std::pair<int, double>, 4> expectedResultsSVK = {
+          std::make_pair(6, 1.814746879163122), std::make_pair(6, 1.850732157345016),
+          std::make_pair(10, 1.817539174273711), std::make_pair(11, 1.8408528524451402)};
 
-  std::array<std::pair<int, double>, 4> expectedResultsNH = {
-      std::make_pair(7, 2.207111977583243), std::make_pair(7, 2.19445187105487), std::make_pair(11, 2.2070109913128926),
-      std::make_pair(10, 2.2078938377725192)};
+      std::array<std::pair<int, double>, 4> expectedResultsNH = {
+          std::make_pair(7, 2.207111977583243), std::make_pair(7, 2.19445187105487),
+          std::make_pair(11, 2.2070109913128926), std::make_pair(10, 2.2078938377725192)};
 
-  std::array<decltype(expectedResultsSVK), 2> expectedResults = {expectedResultsSVK, expectedResultsNH};
+      std::array<decltype(expectedResultsSVK), 2> expectedResults = {expectedResultsSVK, expectedResultsNH};
+      return expectedResults;
+    } else {
+      std::array<std::pair<int, double>, 4> expectedResultsSVK = {
+          std::make_pair(4, 4.812923747963501), std::make_pair(6, 1.850732157345016),
+          std::make_pair(10, 1.817539174273711), std::make_pair(11, 1.8408528524451402)};
+
+      std::array<std::pair<int, double>, 4> expectedResultsNH = {
+          std::make_pair(7, 2.207111977583243), std::make_pair(7, 2.19445187105487),
+          std::make_pair(11, 2.2070109913128926), std::make_pair(10, 2.2078938377725192)};
+
+      std::array<decltype(expectedResultsSVK), 2> expectedResults = {expectedResultsSVK, expectedResultsNH};
+      return expectedResults;
+    }
+  };
 
   auto testRange = Dune::Hybrid::integralRange(std::integral_constant<int, 0>(), std::integral_constant<int, 2>());
 
   auto testFunctor = [&]<bool useArcLength = false>(DBCOption dbcOption) {
+    auto expectedResults = expectedResultsFunctor.operator()<useArcLength>();
     Dune::Hybrid::forEach(testRange, [&](auto i) {
       t.subTest(
           elasticStripTest<useArcLength>(dbcOption, reducedMats[i], skills(), 1, expectedResults[i][0], 1, true, true));

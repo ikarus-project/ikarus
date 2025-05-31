@@ -133,7 +133,7 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
       auto nrFactory = NonlinearSolverFactory(nrConfig).withIDBCForceFunction(sparseFlatAssembler);
       auto nr        = nrFactory.create(sparseFlatAssembler);
       auto pft       = Ikarus::ArcLength{}; // Type of path following technique
-      auto alc       = ControlRoutineFactory::create(PathFollowingConfig{loadSteps, sqrt(101) / loadSteps, pft}, nr,
+      auto alc       = ControlRoutineFactory::create(PathFollowingConfig{loadSteps, 45.0 / loadSteps, pft}, nr,
                                                      sparseFlatAssembler);
       return alc;
     } else { /// Create loadcontrol
