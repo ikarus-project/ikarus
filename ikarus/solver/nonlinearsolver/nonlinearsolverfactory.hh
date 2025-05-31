@@ -20,6 +20,31 @@
 namespace Ikarus {
 
 namespace Impl {
+  struct IDBCForceFunctionPF
+  {
+    template <typename A>
+    auto operator()(const A& assembler) {
+      return [&]<typename D>(const D& x_old, const D& x_new) {
+        const auto& K = assembler->matrix(x_old, assembler->affordanceCollection().matrixAffordance(), DBCOption::Raw);
+        auto& dv      = assembler->dirichletValues();
+        auto newInc     = Eigen::VectorXd::Zero(dv.size()).eval();
+        dv.evaluateInhomogeneousBoundaryCondition(newInc, 1.0);
+
+        Eigen::VectorXd F_dirichlet;
+        F_dirichlet.setZero(newInc.size());
+        for (const auto i : Dune::range(newInc.size()))
+          if (Dune::FloatCmp::ne(newInc[i], 0.0))
+            F_dirichlet += K.col(i) * newInc[i];
+
+        if (assembler->dBCOption() == DBCOption::Full)
+          assembler->dirichletValues().setZeroAtConstrainedDofs(F_dirichlet);
+        else
+          F_dirichlet = assembler->createReducedVector(F_dirichlet);
+        return F_dirichlet;
+      };
+    }
+  };
+
   struct IDBCForceFunction
   {
     template <typename A>
@@ -92,7 +117,7 @@ struct NonlinearSolverFactory
 
   template <typename Assembler>
   auto withIDBCForceFunction(Assembler&& assembler) const {
-    auto idbcForceF  = Impl::IDBCForceFunction{}.template operator()(assembler);
+    auto idbcForceF  = Impl::IDBCForceFunctionPF{}.template operator()(assembler);
     auto newSettings = settings.rebindIDBCForceFunction(std::move(idbcForceF));
     return NonlinearSolverFactory<std::decay_t<decltype(newSettings)>>{std::move(newSettings)};
   }
