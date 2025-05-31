@@ -86,10 +86,9 @@ static auto simple2DOperatorArcLengthTestWithIDBC(DifferentiableFunction& f,
       x.globalSolution()[0] = 0.1 * x.parameter(); // update u = lambda * 0.1
   };
 
-  auto idbcForceFunction = [&]() {
-    auto& loadFactor = req.parameter();
-    Eigen::Vector2d x{req.globalSolution()[0], 0.0};
-    const auto K = stiffnessMatrix(req.globalSolution(), req.parameter());
+  auto idbcForceFunction = [&]<typename D>(const D& x_old, const D& x_new) {
+    Eigen::Vector2d x{x_new.globalSolution()[0], 0.0};
+    const auto K = stiffnessMatrix(x_old.globalSolution(), x_old.parameter());
     return Eigen::Vector<double, 1>{(K * x)[1]};
   };
 
@@ -130,10 +129,9 @@ static auto simple2DOperatorLoadControlLCWithIDBC(DifferentiableFunction& f,
       x.globalSolution()[0] = 0.1 * x.parameter(); // update u = lambda * 0.1
   };
 
-  auto idbcForceFunction = [&]() {
-    auto& loadFactor = req.parameter();
-    Eigen::Vector2d x{req.globalSolution()[0], 0.0};
-    const auto K = stiffnessMatrix(req.globalSolution(), req.parameter());
+  auto idbcForceFunction = [&]<typename D>(const D& x_old, const D& x_new) {
+    Eigen::Vector2d x{x_new.globalSolution()[0], 0.0};
+    const auto K = stiffnessMatrix(x_old.globalSolution(), x_old.parameter());
     return Eigen::Vector<double, 1>{(K * x)[1]};
   };
 

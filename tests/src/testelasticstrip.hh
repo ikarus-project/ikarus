@@ -157,6 +157,11 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
       checkScalars(t, d[i], inhomogeneousDisplacementExpected[i],
                    " Inhomogeneous boundary condition not correctly applied at i = " + std::to_string(i), tol);
 
+  if constexpr (FEType::hasEAS())
+    for (const auto& fe : fes)
+      t.check(not fe.internalVariable().isZero(),
+              "Internal variables are zero and have not been updated by the nonlinear solver.");
+
   double expectedLambda                            = 1.0;
   const auto [expectedIterations, expectedMaxDisp] = testResults;
 
