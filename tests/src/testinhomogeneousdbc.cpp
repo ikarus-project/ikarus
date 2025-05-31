@@ -40,28 +40,34 @@ int main(int argc, char** argv) {
 
   auto testRange = Dune::Hybrid::integralRange(std::integral_constant<int, 0>(), std::integral_constant<int, 2>());
 
-  auto testFunctor = [&](DBCOption dbcOption) {
+  auto testFunctor = [&]<bool useArcLength = false>(DBCOption dbcOption) {
     Dune::Hybrid::forEach(testRange, [&](auto i) {
-      t.subTest(elasticStripTest(dbcOption, reducedMats[i], skills(), 1, expectedResults[i][0], 1, true, true));
-      t.subTest(elasticStripTest(dbcOption, reducedMats[i], skills(), 1, expectedResults[i][1], 2, true, true));
+      t.subTest(
+          elasticStripTest<useArcLength>(dbcOption, reducedMats[i], skills(), 1, expectedResults[i][0], 1, true, true));
+      t.subTest(
+          elasticStripTest<useArcLength>(dbcOption, reducedMats[i], skills(), 1, expectedResults[i][1], 2, true, true));
       if (dbcOption == DBCOption::Reduced) {
         t.checkThrow<Dune::NotImplemented>(
             [&]() {
-              elasticStripTest(dbcOption, reducedMats[i], skills(eas<EAS::DisplacementGradient>(4)), 2,
-                               expectedResults[i][2]);
+              elasticStripTest<useArcLength>(dbcOption, reducedMats[i], skills(eas<EAS::DisplacementGradient>(4)), 2,
+                                             expectedResults[i][2]);
             },
             "elasticStripTest with EAS should throw a Dune::NotImplemented for DBCOption::Reduced.");
       } else {
-        t.subTest(elasticStripTest(dbcOption, reducedMats[i], skills(eas<EAS::DisplacementGradient>(4)), 2,
-                                   expectedResults[i][2], 1, true, true));
-        t.subTest(elasticStripTest(dbcOption, reducedMats[i], skills(eas<EAS::DisplacementGradientTransposed>(4)), 2,
-                                   expectedResults[i][3], 1, true, true));
+        t.subTest(elasticStripTest<useArcLength>(dbcOption, reducedMats[i], skills(eas<EAS::DisplacementGradient>(4)),
+                                                 2, expectedResults[i][2], 1, true, true));
+        t.subTest(elasticStripTest<useArcLength>(dbcOption, reducedMats[i],
+                                                 skills(eas<EAS::DisplacementGradientTransposed>(4)), 2,
+                                                 expectedResults[i][3], 1, true, true));
       }
     });
   };
 
   testFunctor(DBCOption::Full);
   testFunctor(DBCOption::Reduced);
+
+  testFunctor.operator()<true>(DBCOption::Full);
+  testFunctor.operator()<true>(DBCOption::Reduced);
 
   return t.exit();
 }

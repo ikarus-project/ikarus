@@ -202,7 +202,8 @@ public:
   [[nodiscard(
       "The solve method returns information of the solution process. You should store this information and check if "
       "it was successful")]] NonLinearSolverInformation
-  solve(Domain& req, SubsidiaryType&& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs) {
+  solve(Domain& req, SubsidiaryType&& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs,
+        std::optional<std::reference_wrapper<Domain>> x_old = std::nullopt) {
     using enum NonLinearSolverMessages;
 
     Ikarus::NonLinearSolverInformation solverInformation{};
@@ -255,9 +256,14 @@ public:
       /// Two-step solving procedure
       residual2d.resize(rx.rows(), 2);
       sol2d.resize(rx.rows(), 2);
-      if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>)
-        residual2d << -rx, Fext0 - idbcForceFunction_();
-      else
+      if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>) {
+        if (x_old.has_value()) {
+          rx = residualFunction_(x_old.value().get());
+          Ax = jacobianFunction_(x_old.value().get());
+          residual2d << -rx, Fext0 - idbcForceFunction_(x_old.value().get(), req);
+        } else
+          DUNE_THROW(Dune::InvalidStateException, "x_old has to be provided to call the idbcForceFunction_()");
+      } else
         residual2d << -rx, Fext0;
 
       if constexpr (isLinearSolver) {
@@ -272,7 +278,8 @@ public:
 
       const double deltalambda = (-subsidiaryArgs.f - subsidiaryArgs.dfdDD.dot(deltaDR)) /
                                  (subsidiaryArgs.dfdDD.dot(deltaDL) + subsidiaryArgs.dfdDlambda);
-      deltaD = deltaDR + deltalambda * deltaDL;
+      deltaD      = deltaDR + deltalambda * deltaDL;
+      correction_ = deltaD;
 
       this->notify(CORRECTION_UPDATED, state);
 

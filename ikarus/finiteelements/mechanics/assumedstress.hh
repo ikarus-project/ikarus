@@ -194,9 +194,10 @@ protected:
     asApplicabilityCheck();
     auto correctbeta = [&]<typename AssumedStressT>(const AssumedStressT& asFunction) {
       if (correction.size() != par.globalSolution().size())
-        DUNE_THROW(
-            Dune::NotImplemented,
-            "Solution vector and correction vector should be of the same size. Check if DBCOption::Full is used.");
+        DUNE_THROW(Dune::NotImplemented,
+                   "Solution vector and correction vector should be of the same size. Check if DBCOption::Full is "
+                   "used. The sizes are " +
+                       std::to_string(par.globalSolution().size()) + " and " + std::to_string(correction.size()));
       const auto localdxBlock = Ikarus::FEHelper::localSolutionBlockVector<Traits, Eigen::VectorXd, double>(
           correction, underlying().localView());
       const auto localdx = Dune::viewAsFlatEigenVector(localdxBlock);

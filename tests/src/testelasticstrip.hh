@@ -17,12 +17,14 @@
 #include <ikarus/assembler/assemblermanipulatorfuser.hh>
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/controlroutines/loadcontrol.hh>
+#include <ikarus/controlroutines/pathfollowing.hh>
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
+#include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
@@ -36,7 +38,7 @@ using namespace Ikarus;
 using Dune::TestSuite;
 
 /** Adapted from Pfefferkorn et al. 2021 (https://doi.org/10.1002/nme.6605) */
-template <typename MAT, typename Skills>
+template <bool useArcLength, typename MAT, typename Skills>
 auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additionalSkills, int loadSteps,
                       std::pair<int, double> testResults, int order = 1, bool logToConsole = false,
                       bool writeVTK = false) {
@@ -122,30 +124,45 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
   auto nonOp =
       DifferentiableFunctionFactory::op(sparseFlatAssembler, elastoStaticsNoScalar, sparseFlatAssembler->dBCOption());
 
-  auto nrConfig =
-      Ikarus::NewtonRaphsonConfig<decltype(linSolver)>{.parameters = {.tol = tol}, .linearSolver = linSolver};
-  auto nrFactory = NonlinearSolverFactory(nrConfig).withIDBCForceFunction(sparseFlatAssembler);
-  auto nr        = nrFactory.create(sparseFlatAssembler);
-
   // Only when creating the control routine via the Factory, the elements get registered for correction update
   // automatically.
-  auto lc = ControlRoutineFactory::create(LoadControlConfig{loadSteps, 0.0, 1.0}, nr, sparseFlatAssembler);
+  auto controlRoutine = [&]() -> decltype(auto) {
+    if constexpr (useArcLength) { /// Create ArcLengthControl
+      auto nrConfig = Ikarus::NewtonRaphsonWithSubsidiaryFunctionConfig<decltype(linSolver)>{.parameters = {.tol = tol},
+                                                                                             .linearSolver = linSolver};
+      auto nrFactory = NonlinearSolverFactory(nrConfig).withIDBCForceFunction(sparseFlatAssembler);
+      auto nr        = nrFactory.create(sparseFlatAssembler);
+      auto pft       = Ikarus::ArcLength{}; // Type of path following technique
+      auto alc       = ControlRoutineFactory::create(PathFollowingConfig{loadSteps, sqrt(101) / loadSteps, pft}, nr,
+                                                     sparseFlatAssembler);
+      return alc;
+    } else { /// Create loadcontrol
+      auto nrConfig =
+          Ikarus::NewtonRaphsonConfig<decltype(linSolver)>{.parameters = {.tol = tol}, .linearSolver = linSolver};
+      auto nrFactory = NonlinearSolverFactory(nrConfig).withIDBCForceFunction(sparseFlatAssembler);
+      auto nr        = nrFactory.create(sparseFlatAssembler);
+      auto lc        = ControlRoutineFactory::create(LoadControlConfig{loadSteps, 0.0, 1.0}, nr, sparseFlatAssembler);
+      return lc;
+    }
+  };
+
+  auto cr = controlRoutine();
 
   auto nonLinearSolverLogger = NonLinearSolverLogger();
   auto controlLogger         = ControlLogger();
   auto vtkWriter             = ControlSubsamplingVertexVTKWriter(basis.flat());
 
   if (logToConsole) {
-    nonLinearSolverLogger.subscribeTo(lc.nonLinearSolver());
-    controlLogger.subscribeTo(lc);
+    nonLinearSolverLogger.subscribeTo(cr.nonLinearSolver());
+    controlLogger.subscribeTo(cr);
   }
   if (writeVTK) {
     vtkWriter.setFileNamePrefix("ElasticStrip");
     vtkWriter.setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
-    vtkWriter.subscribeTo(lc);
+    vtkWriter.subscribeTo(cr);
   }
 
-  const auto controlInfo = lc.run(req);
+  const auto controlInfo = cr.run(req);
   d                      = req.globalSolution();
   lambda                 = req.parameter();
 

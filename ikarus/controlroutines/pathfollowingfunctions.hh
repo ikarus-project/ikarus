@@ -121,6 +121,7 @@ struct ArcLength
    */
   template <typename NLS>
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
+    auto x_old                   = req;
     auto& residual               = nonlinearSolver.residual();
     double dlambda               = 1.0;
     auto idbcDelta               = idbcIncrement(req, nonlinearSolver, dlambda);
@@ -134,7 +135,7 @@ struct ArcLength
 
     if constexpr (not std::same_as<std::remove_cvref_t<decltype(idbcForceFunction)>, utils::IDBCForceDefault>) {
       req.syncParameterAndGlobalSolution(updateFunction);
-      R += idbcForceFunction();
+      R += idbcForceFunction(x_old, req);
     }
 
     linearSolver.analyzePattern(K);

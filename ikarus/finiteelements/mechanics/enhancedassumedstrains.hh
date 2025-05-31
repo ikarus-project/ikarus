@@ -193,9 +193,10 @@ protected:
     auto correctAlpha = [&]<typename EAST>(const EAST& easFunction) {
       if constexpr (EAST::enhancedStrainSize != 0) {
         if (correction.size() != par.globalSolution().size())
-          DUNE_THROW(
-              Dune::NotImplemented,
-              "Solution vector and correction vector should be of the same size. Check if DBCOption::Full is used.");
+          DUNE_THROW(Dune::NotImplemented,
+                     "Solution vector and correction vector should be of the same size. Check if DBCOption::Full is "
+                     "used. The sizes are " +
+                         std::to_string(par.globalSolution().size()) + " and " + std::to_string(correction.size()));
         const auto& Rtilde      = calculateRtilde<ScalarType>(par);
         const auto localdxBlock = Ikarus::FEHelper::localSolutionBlockVector<Traits, Eigen::VectorXd, double>(
             correction, underlying().localView());
