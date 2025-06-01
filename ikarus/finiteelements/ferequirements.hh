@@ -383,7 +383,7 @@ public:
   SV& operator+=(const T& rhs) {
     if (!sol_)
       DUNE_THROW(Dune::InvalidStateException, "Solution vector is not initialized.");
-    if constexpr (not std::is_same_v<T, utils::ZeroIncrementTag>)
+    if constexpr (not std::is_same_v<T, utils::SyncParameterAndGlobalSolutionTag>)
       *sol_ += rhs;
     return *sol_;
   }
@@ -398,7 +398,7 @@ public:
    */
   template <typename UF>
   void syncParameterAndGlobalSolution(UF&& updateFunction) {
-    updateFunction(*this, utils::zeroIncrementTag);
+    updateFunction(*this, utils::syncParameterAndGlobalSolutionTag);
   }
 
 private:

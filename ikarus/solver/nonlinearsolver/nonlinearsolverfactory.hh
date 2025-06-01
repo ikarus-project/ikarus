@@ -48,7 +48,7 @@ namespace Impl {
   template <typename CT, typename A, typename S>
   auto updateFunctor(const A& assembler, const S& setting) {
     return [&]<typename D, typename C>(D& x, const C& b) {
-      if constexpr (not std::is_same_v<C, utils::ZeroIncrementTag>) {
+      if constexpr (not std::is_same_v<C, utils::SyncParameterAndGlobalSolutionTag>) {
         // the right-hand side is reduced
         if (assembler->dBCOption() == DBCOption::Reduced and assembler->reducedSize() == b.size()) {
           setting.updateFunction(x, assembler->createFullVector(b));

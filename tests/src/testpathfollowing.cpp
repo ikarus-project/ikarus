@@ -80,7 +80,7 @@ static auto simple2DOperatorArcLengthTestWithIDBC(DifferentiableFunction& f,
 
   // We only solve for w dof and the u is an inhomoegenous boundary condition
   auto updateFunction = []<typename D, typename C>(D& x, const C& dx) {
-    if constexpr (not std::is_same_v<C, Ikarus::utils::ZeroIncrementTag>)
+    if constexpr (not std::is_same_v<C, Ikarus::utils::SyncParameterAndGlobalSolutionTag>)
       x[1] += dx[0]; // here x[1] = w
     if constexpr (requires { x.parameter(); })
       x.globalSolution()[0] = 0.1 * x.parameter(); // update u = lambda * 0.1
@@ -122,7 +122,7 @@ static auto simple2DOperatorLoadControlLCWithIDBC(DifferentiableFunction& f,
 
   // We only solve for w dof and the u is an inhomoegenous boundary condition
   auto updateFunction = []<typename D, typename C>(D& x, const C& dx) {
-    if constexpr (not std::is_same_v<C, Ikarus::utils::ZeroIncrementTag>)
+    if constexpr (not std::is_same_v<C, Ikarus::utils::SyncParameterAndGlobalSolutionTag>)
       x[1] += dx[0]; // here x[1] = w
     if constexpr (requires { x.parameter(); })
       x.globalSolution()[0] = 0.1 * x.parameter(); // update u = lambda * 0.1

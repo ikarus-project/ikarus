@@ -32,9 +32,14 @@ struct SolverDefault
   }
 };
 
-struct ZeroIncrementTag
+/**
+ * \struct SyncParameterAndGlobalSolutionTag
+ * \brief A helper struct that tells the update function of the nonlinear solver to sync the global solution based on
+ * the parameter.
+ */
+struct SyncParameterAndGlobalSolutionTag
 {
-} inline constexpr zeroIncrementTag;
+} inline constexpr syncParameterAndGlobalSolutionTag;
 
 /**
  * \struct IDBCForceDefault
@@ -58,9 +63,9 @@ struct IDBCForceDefault
  */
 struct UpdateDefault
 {
-  template <typename A, typename B = ZeroIncrementTag>
+  template <typename A, typename B = SyncParameterAndGlobalSolutionTag>
   constexpr void operator()(A&& a, B&& b = {}) const {
-    if constexpr (not std::is_same_v<B, ZeroIncrementTag>) {
+    if constexpr (not std::is_same_v<B, SyncParameterAndGlobalSolutionTag>) {
       using Ikarus::operator+=;
       a += b;
     }
