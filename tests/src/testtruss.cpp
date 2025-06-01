@@ -241,7 +241,7 @@ static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
     Eigen::Vector<T, 2> localInhomogeneous;
     if (Dune::FloatCmp::eq(globalCoord[0], L) and Dune::FloatCmp::eq(globalCoord[1], h)) {
       localInhomogeneous[0] = 0;
-      localInhomogeneous[1] = lambda;
+      localInhomogeneous[1] = -lambda;
     } else
       localInhomogeneous.setZero();
     return localInhomogeneous;
@@ -308,14 +308,14 @@ static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
 
   std::vector<int> expectedIterations(loadSteps + 1, 0);
 
-  t.check(Dune::FloatCmp::eq(vVec.tail(1)[0], lambdaVec.tail(1)[0], tol))
+  t.check(Dune::FloatCmp::eq(vVec.tail(1)[0], -lambdaVec.tail(1)[0], tol))
       << std::setprecision(16) << "Displacement value should be equal to lambda. Actual:\t" << vVec.tail(1)[0];
   checkScalars(t, lambdaVec.tail(1)[0], 0.5, " Incorrect last load factor", tol);
   checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
 
   // return the load factor as a function of the vertical displacement
   auto analyticalLoadDisplacementCurve = [&](auto& v) {
-    return v; // lambda = v because an inhomogeneous Dirichlet BC is applied
+    return -v; // lambda = -v because an inhomogeneous Dirichlet BC is applied
   };
 
   for (std::size_t i = 0; i < lambdaAndDisp.cols(); ++i) {

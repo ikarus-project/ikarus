@@ -98,17 +98,17 @@ static auto simple2DOperatorArcLengthTestWithIDBC(DifferentiableFunction& f,
   auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(alc);
 
   const auto controlInfo              = alc.run(req);
-  std::vector<int> expectedIterations = {0, 4, 4, 4, 4, 4};
+  std::vector<int> expectedIterations = {0, 1, 2, 2, 2, 2};
   Eigen::Vector2d expectedDisplacement;
-  expectedDisplacement << 0.05440020579058119, 0.3518523740233018;
-  double expectedLambda = 0.5440020579058119;
+  expectedDisplacement << 0.05440020617136589, 0.351852377380214;
+  double expectedLambda = 0.5440020617136589;
 
   TestSuite t("Arc Length with Inhomogeneous Dirichlet BCs");
   t.check(controlInfo.success, "No convergence");
   for (auto i = 0; i < 2; ++i)
     checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + alc.name());
   checkScalars(t, req.parameter(), expectedLambda, " --> " + alc.name());
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
   return t;
 }
 
@@ -140,9 +140,9 @@ static auto simple2DOperatorLoadControlLCWithIDBC(DifferentiableFunction& f,
   auto pathFollowingObserver   = Ikarus::ControlLogger().subscribeTo(lc);
 
   const auto controlInfo              = lc.run(req);
-  std::vector<int> expectedIterations = {0, 3, 3, 3, 3, 3};
+  std::vector<int> expectedIterations = {0, 2, 2, 2, 3, 3};
   Eigen::Vector2d expectedDisplacement;
-  expectedDisplacement << 0.05, 0.322653958995705500;
+  expectedDisplacement << 0.05, 0.322653959150839100;
   double expectedLambda = 0.5;
 
   TestSuite t("Load Control with Inhomogeneous Dirichlet BCs");
@@ -150,7 +150,7 @@ static auto simple2DOperatorLoadControlLCWithIDBC(DifferentiableFunction& f,
   for (auto i = 0; i < 2; ++i)
     checkScalars(t, req.globalSolution()[i], expectedDisplacement[i], " --> " + lc.name());
   checkScalars(t, req.parameter(), expectedLambda, " --> " + lc.name());
-  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps);
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
   return t;
 }
 

@@ -40,6 +40,8 @@ LoadControl<NLS>::run(typename NLS::Domain& x) {
     this->notify(STEP_STARTED, state);
     this->predictor(x);
     solverInfo = nonLinearSolver_->solve(x, stepSize_);
+    if (solverInfo.iterations == 0)
+      x.syncParameterAndGlobalSolution(nonLinearSolver_->updateFunction());
     updateAndNotifyControlInfo(info, solverInfo, state);
     if (not solverInfo.success)
       return info;
