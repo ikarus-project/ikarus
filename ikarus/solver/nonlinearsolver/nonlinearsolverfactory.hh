@@ -58,16 +58,15 @@ namespace Impl {
           setting.updateFunction(x, assembler->createReducedVector(b));
         } else
           setting.updateFunction(x, b);
-        return;
-      }
-      // updates due to inhomogeneous bcs
-      if constexpr (requires { x.parameter(); }) {
-        auto& dv  = assembler->dirichletValues();
-        CT newInc = CT::Zero(dv.size());
-        dv.evaluateInhomogeneousBoundaryCondition(newInc, x.parameter());
-        for (const auto i : Dune::range(newInc.size()))
-          if (Dune::FloatCmp::ne(newInc[i], 0.0))
-            x.globalSolution()[i] = newInc[i];
+      } else { // updates due to inhomogeneous bcs
+        if constexpr (requires { x.parameter(); }) {
+          auto& dv  = assembler->dirichletValues();
+          CT newInc = CT::Zero(dv.size());
+          dv.evaluateInhomogeneousBoundaryCondition(newInc, x.parameter());
+          for (const auto i : Dune::range(newInc.size()))
+            if (Dune::FloatCmp::ne(newInc[i], 0.0))
+              x.globalSolution()[i] = newInc[i];
+        }
       }
     };
   }
