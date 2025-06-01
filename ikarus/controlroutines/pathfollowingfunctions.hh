@@ -96,7 +96,7 @@ struct ArcLength
    * \tparam NLS Type of the nonlinear solver.
    *
    * \param req The solution.
-   * \param nls The nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
@@ -125,7 +125,7 @@ struct ArcLength
    * \tparam NLS Type of the nonlinear solver.
    *
    * \param req The solution.
-   * \param nls The nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    * \ingroup  controlroutines
    */
@@ -181,7 +181,7 @@ struct ArcLength
    * \tparam NLS Type of the nonlinear solver.
    *
    * \param req The solution.
-   * \param nls The nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
@@ -224,7 +224,7 @@ struct LoadControlSubsidiaryFunction
    * \tparam NLS Type of the nonlinear solver.
    *
    * \param req The solution.
-   * \param nls The nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
@@ -243,7 +243,7 @@ struct LoadControlSubsidiaryFunction
    * \tparam NLS Type of the nonlinear solver.
    *
    * \param req The solution.
-   * \param nls The nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
@@ -262,7 +262,7 @@ struct LoadControlSubsidiaryFunction
    * \tparam NLS Type of the nonlinear solver.
    *
    * \param req The solution.
-   * \param nls The nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
@@ -310,7 +310,7 @@ struct DisplacementControl
    * \tparam NLS Type of the nonlinear solver.
    *
    * \param req The solution.
-   * \param nls The nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
@@ -331,7 +331,7 @@ struct DisplacementControl
    * \tparam NLS Type of the nonlinear solver.
    *
    * \param req The solution.
-   * \param nls The nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
@@ -350,7 +350,7 @@ struct DisplacementControl
    * \tparam NLS Type of the nonlinear solver.
    *
    * \param req The solution.
-   * \param nls The nonlinear solver.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
