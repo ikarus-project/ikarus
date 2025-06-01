@@ -83,11 +83,10 @@ struct TrustRegionConfig
     return settings;
   }
   template <typename IDBC2>
-  auto rebindIDBCForceFunction(IDBC2&& internalForceFunction) const {
-    TrustRegionConfig<preConditioner, UF, IDBC2> settings{
-        .parameters        = parameters,
-        .updateFunction    = updateFunction,
-        .idbcForceFunction = std::forward<IDBC2>(internalForceFunction)};
+  auto rebindIDBCForceFunction(IDBC2&& idbcForceFunction) const {
+    TrustRegionConfig<preConditioner, UF, IDBC2> settings{.parameters        = parameters,
+                                                          .updateFunction    = updateFunction,
+                                                          .idbcForceFunction = std::forward<IDBC2>(idbcForceFunction)};
     return settings;
   }
 };
@@ -179,6 +178,7 @@ struct Stats
 * \tparam F Type of the differentiable function to solve.
 * \tparam preConditioner Type of preconditioner to use (default is IncompleteCholesky).
 * \tparam UF Type of the update function
+* \tparam IDBCF Type of the force function to handle inhomogeneous Dirichlet BCs (defaults to IDBCForceDefault).
 */
 template <typename F, PreConditioner preConditioner, typename UF, typename IDBCF>
 class TrustRegion : public NonlinearSolverBase<F>
@@ -191,7 +191,7 @@ public:
   using CorrectionType         = typename FTraits::template Range<1>; ///< Type of the correction of x += deltaX.
   using UpdateFunction         = UF;                                  ///< Type of the update function.
   using DifferentiableFunction = F;                                   ///< Type of function to minimize
-  using IDBCForceFunction      = IDBCF;
+  using IDBCForceFunction      = IDBCF; ///< Type representing the force function to handle inhomogeneous Dirichlet BCs.
 
   using EnergyType   = typename FTraits::template Range<0>; ///< Type of the scalar cost
   using GradientType = typename FTraits::template Range<1>; ///< Type of the gradient vector
@@ -201,12 +201,13 @@ public:
    * \brief Constructs a TrustRegion solver instance.
    * \param f Function to solve.
    * \param updateFunction Update function
+   * \param idbcForceFunction Force function to handle inhomogeneous Dirichlet BCs (default is IDBCForceDefault).
    */
   template <typename UF2 = UF, typename IDBCF2 = IDBCF>
-  explicit TrustRegion(const F& f, UF2&& updateFunction = {}, IDBCF2&& internalForceFunction = {})
+  explicit TrustRegion(const F& f, UF2&& updateFunction = {}, IDBCF2&& idbcForceFunction = {})
       : energyFunction_{f},
         updateFunction_{std::forward<UF2>(updateFunction)},
-        idbcForceFunction_{std::forward<IDBCF2>(internalForceFunction)} {
+        idbcForceFunction_{std::forward<IDBCF2>(idbcForceFunction)} {
     static_assert(std::same_as<IDBCForceFunction, utils::IDBCForceDefault>,
                   "Trust Region Method is not implemented to handle inhomogeneous Dirichlet BCs.");
   }

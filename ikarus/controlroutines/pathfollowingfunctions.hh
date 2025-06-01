@@ -93,6 +93,10 @@ struct ArcLength
    * This method calculates the subsidiary function value and its derivatives for the given arguments and stores it in
    * the given args structure.
    *
+   * \tparam NLS Type of the nonlinear solver.
+   *
+   * \param req The solution.
+   * \param nls The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
@@ -119,9 +123,10 @@ struct ArcLength
    * convergence characteristics.
    *
    * \tparam NLS Type of the nonlinear solver.
-   * \param nonlinearSolver The nonlinear solver.
-   * \param args The subsidiary function arguments.
+   *
    * \param req The solution.
+   * \param nls The nonlinear solver.
+   * \param args The subsidiary function arguments.
    * \ingroup  controlroutines
    */
   template <typename NLS>
@@ -174,9 +179,10 @@ struct ArcLength
    * This method updates the prediction step for the standard arc-length method.
    *
    * \tparam NLS Type of the nonlinear solver.
-   * \param nonlinearSolver The nonlinear solver.
-   * \param args The subsidiary function arguments.
+   *
    * \param req The solution.
+   * \param nls The nonlinear solver.
+   * \param args The subsidiary function arguments.
    */
   template <typename NLS>
   void intermediatePrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
@@ -215,6 +221,10 @@ struct LoadControlSubsidiaryFunction
    *
    * This method calculates the subsidiary function value and its derivatives for the given arguments.
    *
+   * \tparam NLS Type of the nonlinear solver.
+   *
+   * \param req The solution.
+   * \param nls The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
@@ -230,10 +240,11 @@ struct LoadControlSubsidiaryFunction
    *
    * This method initializes the prediction step for the load control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
-   * \param args The subsidiary function arguments.
+   * \tparam NLS Type of the nonlinear solver.
+   *
    * \param req The solution.
+   * \param nls The nonlinear solver.
+   * \param args The subsidiary function arguments.
    */
   template <typename NLS>
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
@@ -248,10 +259,11 @@ struct LoadControlSubsidiaryFunction
    *
    * This method updates the prediction step for the load control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
-   * \param args The subsidiary function arguments.
+   * \tparam NLS Type of the nonlinear solver.
+   *
    * \param req The solution.
+   * \param nls The nonlinear solver.
+   * \param args The subsidiary function arguments.
    */
   template <typename NLS>
   void intermediatePrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
@@ -295,6 +307,10 @@ struct DisplacementControl
    *
    * This method calculates the subsidiary function value and its derivatives for the given arguments.
    *
+   * \tparam NLS Type of the nonlinear solver.
+   *
+   * \param req The solution.
+   * \param nls The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
@@ -312,10 +328,11 @@ struct DisplacementControl
    *
    * This method initializes the prediction step for the displacement control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
-   * \param args The subsidiary function arguments.
+   * \tparam NLS Type of the nonlinear solver.
+   *
    * \param req The solution.
+   * \param nls The nonlinear solver.
+   * \param args The subsidiary function arguments.
    */
   template <typename NLS>
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
@@ -330,10 +347,11 @@ struct DisplacementControl
    *
    * This method updates the prediction step for the displacement control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
-   * \param args The subsidiary function arguments.
+   * \tparam NLS Type of the nonlinear solver.
+   *
    * \param req The solution.
+   * \param nls The nonlinear solver.
+   * \param args The subsidiary function arguments.
    */
   template <typename NLS>
   void intermediatePrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {

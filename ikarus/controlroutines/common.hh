@@ -53,6 +53,13 @@ auto createSPDLinearSolverFromNonLinearSolver(const NLS& nls) {
   return LinearSolver(solverTag);
 }
 
+/**
+ * \brief A helper function to calculate the increment in the solution vector based on inhomogeneous Dirichlet BCs.
+ * \tparam NLS Type of the nonlinear solver.
+ * \param x The solution.
+ * \param nls The nonlinear solver.
+ * \param Dlambda The step size denoting increment in the load factor.
+ */
 template <typename NLS>
 typename NLS::Domain::SolutionVectorType idbcIncrement(typename NLS::Domain& x, const NLS& nls, double Dlambda) {
   if constexpr (Concepts::HasValidIDBCForceFunction<NLS>) {

@@ -57,11 +57,11 @@ struct NewtonRaphsonConfig
   }
 
   template <typename IDBCF2>
-  auto rebindIDBCForceFunction(IDBCF2&& internalForceFunction) const {
+  auto rebindIDBCForceFunction(IDBCF2&& idbcForceFunction) const {
     NewtonRaphsonConfig<LS, UF, IDBCF2> settings{.parameters        = parameters,
                                                  .linearSolver      = linearSolver,
                                                  .updateFunction    = updateFunction,
-                                                 .idbcForceFunction = std::forward<IDBCF2>(internalForceFunction)};
+                                                 .idbcForceFunction = std::forward<IDBCF2>(idbcForceFunction)};
     return settings;
   }
 
@@ -136,6 +136,7 @@ auto createNonlinearSolver(NRConfig&& config, F&& f) {
  * \tparam F Type of the differentiable function to solve.
  * \tparam LS Type of the linear solver used internally (default is SolverDefault).
  * \tparam UF Type of the update function (default is UpdateDefault).
+ * \tparam IDBCF Type of the force function to handle inhomogeneous Dirichlet BCs (defaults to IDBCForceDefault).
  * \relates makeNewtonRaphson
  * \ingroup solvers
  */
@@ -152,24 +153,25 @@ public:
 
   using Domain = typename SignatureTraits::Domain; ///< Type representing the parameter vector of the function.
 
-  using UpdateFunction         = UF; ///< Type representing the update function.
-  using DifferentiableFunction = F;  ///< Type of the non-linear operator
-  using IDBCForceFunction      = IDBCF;
+  using UpdateFunction         = UF;    ///< Type representing the update function.
+  using DifferentiableFunction = F;     ///< Type of the non-linear operator
+  using IDBCForceFunction      = IDBCF; ///< Type representing the force function to handle inhomogeneous Dirichlet BCs.
 
   /**
    * \brief Constructor for NewtonRaphson.
    * \param residual residual to solve.
    * \param linearSolver Linear solver used internally (default is SolverDefault).
    * \param updateFunction Update function (default is UpdateDefault).
+   * \param idbcForceFunction Force function to handle inhomogeneous Dirichlet BCs (default is IDBCForceDefault).
    */
   template <typename LS2 = LS, typename UF2 = UF, typename IDBCF2 = IDBCF>
   explicit NewtonRaphson(const DifferentiableFunction& residual, LS2&& linearSolver = {}, UF2&& updateFunction = {},
-                         IDBCF2&& internalForceFunction = {})
+                         IDBCF2&& idbcForceFunction = {})
       : residualFunction_{residual},
         jacobianFunction_{derivative(residualFunction_)},
         linearSolver_{std::forward<LS2>(linearSolver)},
         updateFunction_{std::forward<UF2>(updateFunction)},
-        idbcForceFunction_{std::forward<IDBCF2>(internalForceFunction)} {}
+        idbcForceFunction_{std::forward<IDBCF2>(idbcForceFunction)} {}
 
   /**
    * \brief Set up the solver with the given settings.

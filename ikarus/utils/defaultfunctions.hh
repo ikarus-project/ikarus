@@ -36,6 +36,10 @@ struct ZeroIncrementTag
 {
 } inline constexpr zeroIncrementTag;
 
+/**
+ * \struct IDBCForceDefault
+ * \brief Default struct used to represent that no inhomogeneous Dirichlet BCs are present.
+ */
 struct IDBCForceDefault
 {
 };

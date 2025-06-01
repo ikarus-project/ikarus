@@ -99,7 +99,7 @@ target_compile_features(testfunctiontraits PUBLIC cxx_std_20)
 
 set(TEST_DEPENDING_ON_IGA testklshell testadaptivestepsizing)
 
-set(TEST_NEED_MORE_TIME testadaptivestepsizing testcantileverbeamEAS)
+set(TEST_NEED_MORE_TIME testadaptivestepsizing testcantileverbeamEAS testinhomogeneousdbc)
 
 set(TEST_DEPENDING_ON_MUESLI testmueslimaterials)
 

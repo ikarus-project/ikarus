@@ -92,6 +92,18 @@ struct NonlinearSolverFactory
   NonlinearSolverFactory(NLSSetting s)
       : settings(s) {}
 
+  /**
+   * \brief A helper function to create another NonlinearSolverFactory object after binding IDBCForceFunction to the
+   * configuration of the nonlinear solver. This then helps to handle inhomogeneous Dirichlet BCs when using a certain
+   * control routine to perform a nonlinear analysis.
+   *
+   * \tparam Assembler The type of the assembler used for creating the nonlinear solver.
+   *
+   * \param assembler The assembler to be used for creating the nonlinear solver.
+   *
+   * \return The created
+   * nonlinear solver factory.
+   */
   template <typename Assembler>
   auto withIDBCForceFunction(Assembler&& assembler) const {
     auto idbcForceF  = Impl::IDBCForceFunction{}.template operator()(assembler);
@@ -109,7 +121,8 @@ struct NonlinearSolverFactory
    * \return The created nonlinear solver.
    *
    * \note The assembler's dBCOption is checked, and the appropriate update function
-   *       is used based on whether the option is set to Reduced or not.
+   *       is used based on whether the option is set to Reduced or not. If inhomogeneous Dirichlet BCs are present,
+   *       please call withIDBCForceFunction first.
    */
   template <typename Assembler>
   requires Concepts::FlatAssembler<typename std::remove_cvref_t<Assembler>::element_type>
