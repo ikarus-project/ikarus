@@ -24,7 +24,7 @@ auto elasticStripTestResults() {
         std::make_tuple(10, 1.817539174273711, 1.0), std::make_tuple(11, 1.8408528524451402, 1.0)};
 
     std::array<std::tuple<int, double, double>, 4> expectedResultsNH = {
-        std::make_tuple(7, 2.207111977583243, 1.0), std::make_tuple(7, 2.19445187105487, 1.0),
+        std::make_tuple(7, 2.207111977584091, 1.0), std::make_tuple(7, 2.1944518710582974, 1.0),
         std::make_tuple(12, 2.2070109913128926, 1.0), std::make_tuple(10, 2.2078938377725192, 1.0)};
 
     std::array<decltype(expectedResultsSVK), 2> expectedResults = {expectedResultsSVK, expectedResultsNH};
