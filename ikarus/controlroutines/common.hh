@@ -8,11 +8,23 @@
 
 #pragma once
 
+#include <concepts>
+
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
+
+namespace Concepts {
+  /**
+   * \concept HasValidIDBCForceFunction
+   * \brief A concept to check if the underlying solver has a valid function to handle inhomogeneous Dirichlet BCs.
+   * \tparam NLS Type of the nonlinear solver.
+   */
+  template <typename NLS>
+  concept HasValidIDBCForceFunction = not std::same_as<typename NLS::IDBCForceFunction, utils::IDBCForceDefault>;
+} // namespace Concepts
 
 /**
  * \brief A helper function that returns a linear solver suitable for symmetric, positive-definite sparse or dense
@@ -43,7 +55,7 @@ auto createSPDLinearSolverFromNonLinearSolver(const NLS& nls) {
 
 template <typename NLS>
 typename NLS::Domain::SolutionVectorType idbcIncrement(typename NLS::Domain& x, const NLS& nls, double Dlambda) {
-  if constexpr (not std::same_as<typename NLS::IDBCForceFunction, utils::IDBCForceDefault>) {
+  if constexpr (Concepts::HasValidIDBCForceFunction<NLS>) {
     auto y = x;
     y.parameter() += Dlambda;
     y.syncParameterAndGlobalSolution(nls.updateFunction());

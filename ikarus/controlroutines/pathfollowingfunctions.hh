@@ -29,8 +29,13 @@
 namespace Ikarus {
 
 namespace Impl {
+
   template <typename NLS>
-  concept HasValidIDBCForceFunction = not std::same_as<typename NLS::IDBCForceFunction, utils::IDBCForceDefault>;
+  void checkHasNoValidIDBCForceFunction() {
+    static_assert(not Concepts::HasValidIDBCForceFunction<NLS>,
+                  "The given path following function is not implemented to handle inhomogeneous Dirichlet BCs.");
+  }
+
 } // namespace Impl
 
 /**
@@ -132,7 +137,7 @@ struct ArcLength
     decltype(auto) K             = derivative(residual)(req);
     auto linearSolver            = createSPDLinearSolverFromNonLinearSolver(nonlinearSolver);
 
-    if constexpr (not std::same_as<typename NLS::IDBCForceFunction, utils::IDBCForceDefault>)
+    if constexpr (Concepts::HasValidIDBCForceFunction<NLS>)
       R += idbcForceFunction(req);
 
     linearSolver.analyzePattern(K);
@@ -154,7 +159,7 @@ struct ArcLength
     req.parameter() = args.Dlambda;
 
     // modify the globalSolution() considering inhomogeneous Dirichlet BCs
-    if constexpr (not std::same_as<typename NLS::IDBCForceFunction, utils::IDBCForceDefault>)
+    if constexpr (Concepts::HasValidIDBCForceFunction<NLS>)
       req.syncParameterAndGlobalSolution(updateFunction);
 
     // rescaling of psi
@@ -179,7 +184,7 @@ struct ArcLength
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     nonlinearSolver.updateFunction()(req.globalSolution(), args.DD);
     req.parameter() += args.Dlambda;
-    if constexpr (not std::same_as<typename NLS::IDBCForceFunction, utils::IDBCForceDefault>)
+    if constexpr (Concepts::HasValidIDBCForceFunction<NLS>)
       req.syncParameterAndGlobalSolution(nonlinearSolver.updateFunction());
   }
 
@@ -213,8 +218,8 @@ struct LoadControlSubsidiaryFunction
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
-  requires(not Impl::HasValidIDBCForceFunction<NLS>)
   void operator()(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) const {
+    Impl::checkHasNoValidIDBCForceFunction<NLS>();
     args.f = args.Dlambda - args.stepSize;
     args.dfdDD.setZero();
     args.dfdDlambda = 1.0;
@@ -231,8 +236,8 @@ struct LoadControlSubsidiaryFunction
    * \param req The solution.
    */
   template <typename NLS>
-  requires(not Impl::HasValidIDBCForceFunction<NLS>)
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
+    Impl::checkHasNoValidIDBCForceFunction<NLS>();
     args.Dlambda             = args.stepSize;
     req.parameter()          = args.Dlambda;
     computedInitialPredictor = true;
@@ -249,8 +254,8 @@ struct LoadControlSubsidiaryFunction
    * \param req The solution.
    */
   template <typename NLS>
-  requires(not Impl::HasValidIDBCForceFunction<NLS>)
   void intermediatePrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
+    Impl::checkHasNoValidIDBCForceFunction<NLS>();
     if (not computedInitialPredictor)
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     req.parameter() += args.Dlambda;
@@ -293,8 +298,8 @@ struct DisplacementControl
    * \param args The subsidiary function arguments.
    */
   template <typename NLS>
-  requires(not Impl::HasValidIDBCForceFunction<NLS>)
   void operator()(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) const {
+    Impl::checkHasNoValidIDBCForceFunction<NLS>();
     const auto controlledDOFsNorm = args.DD(controlledIndices).norm();
     args.f                        = controlledDOFsNorm - args.stepSize;
     args.dfdDlambda               = 0.0;
@@ -313,8 +318,8 @@ struct DisplacementControl
    * \param req The solution.
    */
   template <typename NLS>
-  requires(not Impl::HasValidIDBCForceFunction<NLS>)
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
+    Impl::checkHasNoValidIDBCForceFunction<NLS>();
     args.DD(controlledIndices).array() = args.stepSize;
     req.globalSolution()               = args.DD;
     computedInitialPredictor           = true;
@@ -331,8 +336,8 @@ struct DisplacementControl
    * \param req The solution.
    */
   template <typename NLS>
-  requires(not Impl::HasValidIDBCForceFunction<NLS>)
   void intermediatePrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
+    Impl::checkHasNoValidIDBCForceFunction<NLS>();
     if (not computedInitialPredictor)
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     req.globalSolution() += args.DD;
