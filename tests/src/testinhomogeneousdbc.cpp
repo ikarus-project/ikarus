@@ -6,13 +6,16 @@
 #include "testelasticstrip.hh"
 
 #include <dune/common/test/testsuite.hh>
+#include <dune/grid/uggrid.hh>
 
 #include <Eigen/Core>
 
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
+#include <ikarus/finiteelements/mechanics/linearelastic.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/mixin.hh>
+
 using namespace Ikarus;
 using Dune::TestSuite;
 
@@ -45,6 +48,136 @@ auto elasticStripTestResults() {
     std::array<decltype(expectedResultsSVK), 2> expectedResults = {expectedResultsSVK, expectedResultsNH};
     return expectedResults;
   }
+}
+
+/** Adapted from Macneal and Harder 1985 (https://doi.org/10.1016/0168-874X(85)90003-4) */
+auto linearPatchTestWithIDBC(DBCOption dbcOption) {
+  TestSuite t("Patch test for a geometrically linear problem involving inhomogeneous Dirichlet BCs with dbcOption = " +
+              toString(dbcOption));
+
+  std::cout << "Started: " << t.name() << std::endl;
+
+  constexpr int gridDim     = 2;
+  constexpr int basis_order = 1;
+
+  const double E  = 1000;
+  const double nu = 0.25;
+  double Dhat     = 0.001;
+
+  Dune::GridFactory<Dune::UGGrid<gridDim>> gridFactory;
+  gridFactory.insertVertex({0.0, 0.0});   // 0
+  gridFactory.insertVertex({0.24, 0.0});  // 1
+  gridFactory.insertVertex({0.0, 0.12});  // 2
+  gridFactory.insertVertex({0.24, 0.12}); // 3
+  gridFactory.insertVertex({0.04, 0.02}); // 4
+  gridFactory.insertVertex({0.18, 0.03}); // 5
+  gridFactory.insertVertex({0.08, 0.08}); // 6
+  gridFactory.insertVertex({0.16, 0.08}); // 7
+
+  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 1, 4, 5});
+  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {5, 1, 7, 3});
+  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {6, 7, 2, 3});
+  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {0, 4, 2, 6});
+  gridFactory.insertElement(Dune::GeometryTypes::quadrilateral, {4, 5, 6, 7});
+  auto grid = gridFactory.createGrid();
+
+  auto gridView = grid->leafGridView();
+
+  using namespace Dune::Functions::BasisFactory;
+  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<basis_order>(), FlatInterleaved()));
+
+  auto matParameter = toLamesFirstParameterAndShearModulus({.emodul = E, .nu = nu});
+  Materials::LinearElasticity linMat(matParameter);
+  auto reducedMat = Materials::planeStress(linMat);
+
+  auto sk      = skills(linearElastic(reducedMat));
+  using FEType = decltype(makeFE(basis, sk));
+  std::vector<FEType> fes;
+
+  for (auto&& ge : elements(gridView)) {
+    fes.emplace_back(makeFE(basis, sk));
+    fes.back().bind(ge);
+  }
+
+  Ikarus::DirichletValues dirichletValues(basis.flat());
+
+  Dune::FieldVector<double, gridDim> bottomLeftPos{0.0, 0.0};
+  Dune::FieldVector<double, gridDim> topLeftPos{0.0, 0.12};
+  const auto bottomLeftIndices = utils::globalIndexFromGlobalPosition(basis.flat(), bottomLeftPos);
+  const auto topLeftIndices    = utils::globalIndexFromGlobalPosition(basis.flat(), topLeftPos);
+  dirichletValues.setSingleDOF(bottomLeftIndices[0], true); // ux at (0, 0) = 0
+  dirichletValues.setSingleDOF(bottomLeftIndices[1], true); // uy at (0, 0) = 0
+  dirichletValues.setSingleDOF(topLeftIndices[0], true);    // ux at (0, 0.12) = 0
+  t.check(dirichletValues.fixedDOFsize() == 3, "Number of fixed DOFs is not equal to 3");
+
+  // Inhomogeneous Boundary Conditions
+  auto inhomogeneousDisplacement = [Dhat]<typename T>(const auto& globalCoord, const T& lambda) {
+    Eigen::Vector<T, 2> localInhomogeneous;
+    if (Dune::FloatCmp::eq(globalCoord[0], 0.24)) {
+      localInhomogeneous[0] = Dhat * lambda;
+      localInhomogeneous[1] = 0;
+    } else
+      localInhomogeneous.setZero();
+    return localInhomogeneous;
+  };
+
+  dirichletValues.storeInhomogeneousBoundaryCondition(inhomogeneousDisplacement);
+  t.check(dirichletValues.fixedDOFsize() == 5, "Number of fixed DOFs is not equal to 5");
+
+  auto denseFlatAssembler = makeDenseFlatAssembler(fes, dirichletValues);
+
+  Eigen::VectorXd d;
+  d.setZero(basis.flat().size());
+  auto dRed = d;
+
+  auto req = typename FEType::Requirement(basis);
+  denseFlatAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics, dbcOption);
+  auto linSolver = LinearSolver(SolverTypeTag::d_LDLT);
+
+  if (dbcOption == DBCOption::Reduced)
+    dRed = denseFlatAssembler->createReducedVector(dRed);
+
+  const auto& K = denseFlatAssembler->matrix();
+  auto R        = denseFlatAssembler->vector();
+
+  const auto F_dirichlet = utils::obtainForcesDueToIDBCForLinearCase(denseFlatAssembler);
+  R += F_dirichlet;
+
+  linSolver.compute(K);
+  linSolver.solve(dRed, -R);
+
+  if (dbcOption == DBCOption::Reduced)
+    d = denseFlatAssembler->createFullVector(dRed);
+  else
+    d = dRed;
+
+  Eigen::VectorXd inhomogeneousDisp(basis.flat().dimension());
+  dirichletValues.evaluateInhomogeneousBoundaryCondition(inhomogeneousDisp, 1.0);
+  for (int i = 0; i < basis.flat().dimension(); ++i)
+    if (Dune::FloatCmp::ne(inhomogeneousDisp[i], 0.0))
+      d[i] = inhomogeneousDisp[i];
+
+  double expectedSigmaXX = 4.1666666666666667;
+  Eigen::VectorXd expectedDisplacement;
+  expectedDisplacement.setZero(d.size());
+  expectedDisplacement << 0.0, 0.0, 0.001, 0.0, 0.0, -0.000125, 0.001, -0.000125, 0.0001666666666666667,
+      -0.0000208333333333333, 0.000750, -0.00003125, 0.0003333333333333333, -0.0000833333333333333,
+      0.000666666666666667, -0.0000833333333333333;
+
+  constexpr double tol = 1e-10;
+  for (const auto i : Dune::range(d.size()))
+    if (std::abs(expectedDisplacement[i]) > tol)
+      checkScalars(t, d[i], expectedDisplacement[i], " Incorrect displacement at i = " + std::to_string(i), tol);
+
+  req.insertGlobalSolution(d);
+
+  // constant stress states for patch test
+  for (const auto& fe : fes) {
+    const auto sigma = fe.calculateAt<ResultTypes::linearStress>(req, {0.5, 0.5}).asVec();
+    checkScalars(t, sigma[0], expectedSigmaXX, " Incorrect sigma_xx", tol);
+  }
+
+  return t;
 }
 
 int main(int argc, char** argv) {
@@ -87,6 +220,9 @@ int main(int argc, char** argv) {
 
   testFunctor.operator()<true>(DBCOption::Full);
   testFunctor.operator()<true>(DBCOption::Reduced);
+
+  t.subTest(linearPatchTestWithIDBC(DBCOption::Full));
+  t.subTest(linearPatchTestWithIDBC(DBCOption::Reduced));
 
   return t.exit();
 }

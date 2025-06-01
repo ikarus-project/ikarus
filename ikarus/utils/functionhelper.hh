@@ -122,4 +122,29 @@ decltype(auto) maybeDeref(T& t) {
     return t;
 }
 
+/**
+ * \brief A helper function to compute the forces due to inhomogeneous Dirichlet BCs for linear problems.
+ * \tparam A Type of the assembler.
+ * \param assembler The assembler.
+ */
+template <typename A>
+auto obtainForcesDueToIDBCForLinearCase(const A& assembler) {
+  const auto& K = assembler->matrix(DBCOption::Raw);
+  auto& dv      = assembler->dirichletValues();
+  auto newInc   = Eigen::VectorXd::Zero(dv.size()).eval();
+  dv.evaluateInhomogeneousBoundaryConditionDerivative(newInc, 1.0);
+
+  Eigen::VectorXd F_dirichlet;
+  F_dirichlet.setZero(newInc.size());
+  for (const auto i : Dune::range(newInc.size()))
+    if (Dune::FloatCmp::ne(newInc[i], 0.0))
+      F_dirichlet += K.col(i) * newInc[i];
+
+  if (assembler->dBCOption() == DBCOption::Full)
+    assembler->dirichletValues().setZeroAtConstrainedDofs(F_dirichlet);
+  else
+    F_dirichlet = assembler->createReducedVector(F_dirichlet);
+  return F_dirichlet;
+}
+
 } // namespace Ikarus::utils
