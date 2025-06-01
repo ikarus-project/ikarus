@@ -185,12 +185,13 @@ public:
   /**
    * \brief Solve the nonlinear system.
    * \param x Where the solution should be stored.
+   * \param stepSize the step size of the control routine (defaults to 0.0)
    * \return Information about the solution process.
    */
   [[nodiscard(
       "The solve method returns information of the solution process. You should store this information and check if "
       "it was successful")]] NonLinearSolverInformation
-  solve(Domain& x, std::optional<std::reference_wrapper<Domain>> x_old = std::nullopt) {
+  solve(Domain& x, double stepSize = 0.0) {
     using enum NonLinearSolverMessages;
 
     NonLinearSolverInformation solverInformation{};
@@ -209,12 +210,8 @@ public:
       linearSolver_.analyzePattern(Ax);
 
     if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>) {
-      if (x_old.has_value()) {
-        rx = residualFunction_(x_old.value().get());
-        Ax = jacobianFunction_(x_old.value().get());
-        rx += idbcForceFunction_(x_old.value().get(), x);
-      } else
-        DUNE_THROW(Dune::InvalidStateException, "x_old has to be provided to call the idbcForceFunction_()");
+      rx += idbcForceFunction_(x) * stepSize;
+      rNorm = floatingPointNorm(rx);
     }
 
     while ((rNorm > settings_.tol && iter < settings_.maxIter) or iter < settings_.minIter) {
@@ -234,6 +231,9 @@ public:
         updateFunction_(x.globalSolution(), correction_);
       else
         updateFunction_(x, correction_);
+
+      if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>)
+        x.syncParameterAndGlobalSolution(updateFunction_);
 
       this->notify(CORRECTIONNORM_UPDATED, state);
       this->notify(SOLUTION_CHANGED, state);

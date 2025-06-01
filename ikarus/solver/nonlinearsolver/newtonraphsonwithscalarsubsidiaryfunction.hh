@@ -202,8 +202,7 @@ public:
   [[nodiscard(
       "The solve method returns information of the solution process. You should store this information and check if "
       "it was successful")]] NonLinearSolverInformation
-  solve(Domain& req, SubsidiaryType&& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs,
-        std::optional<std::reference_wrapper<Domain>> x_old = std::nullopt) {
+  solve(Domain& req, SubsidiaryType&& subsidiaryFunction, SubsidiaryArgs& subsidiaryArgs) {
     using enum NonLinearSolverMessages;
 
     Ikarus::NonLinearSolverInformation solverInformation{};
@@ -256,12 +255,9 @@ public:
       /// Two-step solving procedure
       residual2d.resize(rx.rows(), 2);
       sol2d.resize(rx.rows(), 2);
-      if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>) {
-        if (x_old.has_value()) {
-          residual2d << -rx, Fext0 - (idbcForceFunction_(req, req));
-        } else
-          DUNE_THROW(Dune::InvalidStateException, "x_old has to be provided to call the idbcForceFunction_()");
-      } else
+      if constexpr (not std::same_as<IDBCForceFunction, utils::IDBCForceDefault>)
+        residual2d << -rx, Fext0 - (idbcForceFunction_(req));
+      else
         residual2d << -rx, Fext0;
 
       if constexpr (isLinearSolver) {

@@ -226,10 +226,10 @@ public:
   /**
    * \brief Solves the nonlinear optimization problem using the TrustRegion algorithm.
    * \param x the solution.
+   * \param stepSize the step size of the control routine (defaults to 0.0)
    * \return NonLinearSolverInformation containing information about the solver result.
    */
-  [[nodiscard]] NonLinearSolverInformation solve(Domain& x,
-                                                 std::optional<std::reference_wrapper<Domain>> x_old = std::nullopt) {
+  [[nodiscard]] NonLinearSolverInformation solve(Domain& x, double stepSize = 0.0) {
     using enum NonLinearSolverMessages;
 
     NonLinearSolverInformation solverInformation;

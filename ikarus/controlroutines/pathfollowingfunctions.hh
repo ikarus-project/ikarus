@@ -121,7 +121,6 @@ struct ArcLength
    */
   template <typename NLS>
   void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
-    auto x_old                   = req;
     auto& residual               = nonlinearSolver.residual();
     double dlambda               = 1.0;
     auto idbcDelta               = idbcIncrement(req, nonlinearSolver, dlambda);
@@ -133,10 +132,8 @@ struct ArcLength
     decltype(auto) K             = derivative(residual)(req);
     auto linearSolver            = createSPDLinearSolverFromNonLinearSolver(nonlinearSolver);
 
-    if constexpr (not std::same_as<std::remove_cvref_t<decltype(idbcForceFunction)>, utils::IDBCForceDefault>) {
-      req.syncParameterAndGlobalSolution(updateFunction);
-      R += idbcForceFunction(x_old, req);
-    }
+    if constexpr (not std::same_as<typename NLS::IDBCForceFunction, utils::IDBCForceDefault>)
+      R += idbcForceFunction(req);
 
     linearSolver.analyzePattern(K);
     linearSolver.factorize(K);
@@ -157,11 +154,8 @@ struct ArcLength
     req.parameter() = args.Dlambda;
 
     // modify the globalSolution() considering inhomogeneous Dirichlet BCs
-    if constexpr (not std::same_as<std::remove_cvref_t<decltype(idbcForceFunction)>, utils::IDBCForceDefault>) {
-      for (int i = 0; i < idbcDelta.size(); ++i)
-        if (Dune::FloatCmp::ne(idbcDelta[i], 0.0))
-          req.globalSolution()[i] = idbcDelta[i];
-    }
+    if constexpr (not std::same_as<typename NLS::IDBCForceFunction, utils::IDBCForceDefault>)
+      req.syncParameterAndGlobalSolution(updateFunction);
 
     // rescaling of psi
     psi = sqrt((idbcDelta.squaredNorm() + args.DD.squaredNorm()) / (args.Dlambda * args.Dlambda));

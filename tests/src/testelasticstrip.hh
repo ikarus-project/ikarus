@@ -40,7 +40,7 @@ using Dune::TestSuite;
 /** Adapted from Pfefferkorn et al. 2021 (https://doi.org/10.1002/nme.6605) */
 template <bool useArcLength, typename MAT, typename Skills>
 auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additionalSkills, int loadSteps,
-                      std::pair<int, double> testResults, int order = 1, bool logToConsole = false,
+                      std::tuple<int, double, double> testResults, int order = 1, bool logToConsole = false,
                       bool writeVTK = false) {
   static_assert(MAT::isReduced, "elasticStripTest is only valid for a reduced material (planeStress or planeStrain).");
 
@@ -179,8 +179,7 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
       t.check(not fe.internalVariable().isZero(),
               "Internal variables are zero and have not been updated by the nonlinear solver.");
 
-  double expectedLambda                            = useArcLength ? 0.481292374796350 : 1.0;
-  const auto [expectedIterations, expectedMaxDisp] = testResults;
+  const auto [expectedIterations, expectedMaxDisp, expectedLambda] = testResults;
 
   t.check(controlInfo.success, "Failed to converge.");
   checkScalars(t, controlInfo.totalIterations, expectedIterations, " Number of iterations");
