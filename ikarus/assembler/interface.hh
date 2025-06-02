@@ -140,7 +140,7 @@ public:
    */
   void bind(const FERequirement& req, AffordanceCollectionType affordanceCollection,
             DBCOption dbcOption = DBCOption::Full) {
-    req_         = std::ref(req);
+    req_         = std::make_optional<std::reference_wrapper<const FERequirement>>(std::ref(req));
     affordances_ = std::make_optional<AffordanceCollectionType>(affordanceCollection);
     dBCOption_   = std::make_optional<DBCOption>(dbcOption);
   }
@@ -150,7 +150,9 @@ public:
    *
    * \param req Reference to the finite element requirement.
    */
-  void bind(const FERequirement& req) { req_ = std::ref(req); }
+  void bind(const FERequirement& req) {
+    req_ = std::make_optional<std::reference_wrapper<const FERequirement>>(std::ref(req));
+  }
 
   /**
    * \brief Binds the assembler to an affordance collection.
