@@ -39,32 +39,34 @@ void obtainLagrangeGlobalNodePositions(const LV& localView,
 /**
  * \brief A helper function to obtain the global index from the global positions for a Lagrange node
  * \ingroup utils
- * \tparam size Size of the global nodal coordinate vector
+ * \tparam worldDim Dimension of the world space.
  * \tparam Basis Type of the basis.
  *
  * \param basis The grid basis.
  * \param pos Global position
  * \return Global index
  */
-template <int size, typename Basis>
-auto globalIndexFromGlobalPosition(const Basis& basis, const Dune::FieldVector<double, size>& pos) {
+template <int worldDim, typename Basis>
+auto globalIndexFromGlobalPosition(const Basis& basis, const Dune::FieldVector<double, worldDim>& pos) {
   static_assert(Concepts::LagrangeNode<std::remove_cvref_t<decltype(basis.localView().tree().child(0))>>,
                 "globalIndexFromGlobalPosition is only supported for Lagrange basis");
   constexpr double tol = 1e-8;
   using LocalView      = std::remove_cvref_t<decltype(basis.localView())>;
   using MultiIndex     = typename LocalView::MultiIndex;
+  using Element        = typename LocalView::Element;
+  constexpr int myDim  = Element::mydimension;
   Dune::HierarchicSearch hSearch(basis.gridView().grid(), basis.gridView().indexSet());
   const auto& ele = hSearch.findEntity(pos);
   auto localView  = basis.localView();
   localView.bind(ele);
   const auto geo   = localView.element().geometry();
   const auto& node = localView.tree();
-  std::optional<std::array<MultiIndex, size>> globalIndices;
+  std::optional<std::array<MultiIndex, worldDim>> globalIndices;
 
-  auto fT = [&](int nodeNumber, Dune::FieldVector<double, size>&& localCoordinate) {
+  auto fT = [&](int nodeNumber, Dune::FieldVector<double, myDim>&& localCoordinate) {
     if (Dune::FloatCmp::eq(geo.global(localCoordinate), pos, tol)) {
       globalIndices.emplace();
-      for (int j = 0; j < size; j++)
+      for (int j = 0; j < worldDim; j++)
         globalIndices.value()[j] = localView.index(node.child(j).localIndex(nodeNumber));
       return true;
     }

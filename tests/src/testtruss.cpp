@@ -88,8 +88,10 @@ static auto vonMisesTrussTest() {
   auto req = FEType::Requirement(basis);
   denseFlatAssembler->bind(req, AffordanceCollections::elastoStatics, DBCOption::Full);
 
-  auto pointLoad = [&](const auto&, const auto&, auto, auto, Eigen::VectorXd& vec) -> void {
-    vec[3] -= -req.parameter();
+  Dune::FieldVector<double, 2> pointLoadPos{L, h};
+  const auto globalIndicesAtPointLoadPos = utils::globalIndexFromGlobalPosition(basis.flat(), pointLoadPos);
+  auto pointLoad                         = [&](const auto&, const auto&, auto, auto, Eigen::VectorXd& vec) -> void {
+    vec[globalIndicesAtPointLoadPos[1]] -= -req.parameter();
   };
   denseFlatAssembler->bind(pointLoad);
 
