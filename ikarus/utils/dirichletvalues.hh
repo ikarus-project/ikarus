@@ -207,10 +207,8 @@ public:
    * \brief Function to write zeros at constrained Dirichlet entries
    *
    * \param xIh The vector is expected to have full size the zeros should be written
-   * \tparam V The type of the vector
    */
-  template <typename V>
-  void setZeroAtConstrainedDofs(V& xIh) const {
+  void setZeroAtConstrainedDofs(Eigen::VectorXd& xIh) const {
     for (Eigen::Index i = 0; i < xIh.size(); ++i)
       if (this->isConstrained(i))
         xIh[i] = 0.0;

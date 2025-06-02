@@ -112,10 +112,9 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
 
   auto sparseFlatAssembler = makeSparseFlatAssembler(fes, dirichletValues);
 
-  Eigen::VectorXd d;
-  d.setZero(basis.flat().size());
-  double lambda = 0.0;
-  auto req      = typename FEType::Requirement(d, lambda);
+  auto req     = typename FEType::Requirement(basis);
+  auto& d      = req.globalSolution();
+  auto& lambda = req.parameter();
 
   sparseFlatAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics, dbcOption);
 

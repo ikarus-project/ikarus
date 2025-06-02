@@ -16,6 +16,7 @@
 #include <ikarus/assembler/dirichletbcenforcement.hh>
 #include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/differentiablefunctionfactory.hh>
+#include <ikarus/utils/functionhelper.hh>
 
 namespace Ikarus {
 
@@ -24,31 +25,14 @@ namespace Impl {
   {
     template <typename A>
     auto operator()(const A& assembler) {
-      return [&]<typename D>(const D& x) {
-        const auto& K = assembler->matrix(x, assembler->affordanceCollection().matrixAffordance(), DBCOption::Raw);
-        auto& dv      = assembler->dirichletValues();
-        auto newInc   = Eigen::VectorXd::Zero(dv.size()).eval();
-        dv.evaluateInhomogeneousBoundaryConditionDerivative(newInc, 1.0);
-
-        Eigen::VectorXd F_dirichlet;
-        F_dirichlet.setZero(newInc.size());
-        for (const auto i : Dune::range(newInc.size()))
-          if (Dune::FloatCmp::ne(newInc[i], 0.0))
-            F_dirichlet += K.col(i) * newInc[i];
-
-        if (assembler->dBCOption() == DBCOption::Full)
-          assembler->dirichletValues().setZeroAtConstrainedDofs(F_dirichlet);
-        else
-          F_dirichlet = assembler->createReducedVector(F_dirichlet);
-        return F_dirichlet;
-      };
+      return [&]<typename D>(const D&) { return utils::obtainForcesDueToIDBC(assembler); };
     }
   };
 
   template <typename CT, typename A, typename S>
   auto updateFunctor(const A& assembler, const S& setting) {
     return [&]<typename D, typename C>(D& x, const C& b) {
-      if constexpr (not std::is_same_v<C, utils::SyncParameterAndGlobalSolutionTag>) {
+      if constexpr (not std::is_same_v<C, utils::SyncFERequirements>) {
         // the right-hand side is reduced
         if (assembler->dBCOption() == DBCOption::Reduced and assembler->reducedSize() == b.size()) {
           setting.updateFunction(x, assembler->createFullVector(b));
@@ -58,15 +42,9 @@ namespace Impl {
           setting.updateFunction(x, assembler->createReducedVector(b));
         } else
           setting.updateFunction(x, b);
-      } else { // updates due to inhomogeneous bcs
-        if constexpr (requires { x.parameter(); }) {
-          auto& dv  = assembler->dirichletValues();
-          CT newInc = CT::Zero(dv.size());
-          dv.evaluateInhomogeneousBoundaryCondition(newInc, x.parameter());
-          for (const auto i : Dune::range(newInc.size()))
-            if (Dune::FloatCmp::ne(newInc[i], 0.0))
-              x.globalSolution()[i] = newInc[i];
-        }
+      } else {
+        if constexpr (requires { x.parameter(); })
+          utils::syncFERequirement(assembler); // updates due to inhomogeneous bcs
       }
     };
   }

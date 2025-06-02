@@ -126,11 +126,11 @@ auto linearPatchTestWithIDBC(DBCOption dbcOption) {
 
   auto denseFlatAssembler = makeDenseFlatAssembler(fes, dirichletValues);
 
-  Eigen::VectorXd d;
-  d.setZero(basis.flat().size());
-  auto dRed = d;
-
-  auto req = typename FEType::Requirement(basis);
+  auto req     = typename FEType::Requirement(basis);
+  auto& d      = req.globalSolution();
+  auto& lambda = req.parameter();
+  lambda       = 1.0; // linear case
+  auto dRed    = d;
   denseFlatAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics, dbcOption);
   auto linSolver = LinearSolver(SolverTypeTag::d_LDLT);
 
@@ -140,7 +140,7 @@ auto linearPatchTestWithIDBC(DBCOption dbcOption) {
   const auto& K = denseFlatAssembler->matrix();
   auto R        = denseFlatAssembler->vector();
 
-  const auto F_dirichlet = utils::obtainForcesDueToIDBCForLinearCase(denseFlatAssembler);
+  const auto F_dirichlet = utils::obtainForcesDueToIDBC(denseFlatAssembler);
   R += F_dirichlet;
 
   linSolver.compute(K);
@@ -151,11 +151,7 @@ auto linearPatchTestWithIDBC(DBCOption dbcOption) {
   else
     d = dRed;
 
-  Eigen::VectorXd inhomogeneousDisp(basis.flat().dimension());
-  dirichletValues.evaluateInhomogeneousBoundaryCondition(inhomogeneousDisp, 1.0);
-  for (int i = 0; i < basis.flat().dimension(); ++i)
-    if (Dune::FloatCmp::ne(inhomogeneousDisp[i], 0.0))
-      d[i] = inhomogeneousDisp[i];
+  utils::syncFERequirement(denseFlatAssembler);
 
   double expectedSigmaXX = 4.1666666666666667;
   Eigen::VectorXd expectedDisplacement;
@@ -168,8 +164,6 @@ auto linearPatchTestWithIDBC(DBCOption dbcOption) {
   for (const auto i : Dune::range(d.size()))
     if (std::abs(expectedDisplacement[i]) > tol)
       checkScalars(t, d[i], expectedDisplacement[i], " Incorrect displacement at i = " + std::to_string(i), tol);
-
-  req.insertGlobalSolution(d);
 
   // constant stress states for patch test
   for (const auto& fe : fes) {

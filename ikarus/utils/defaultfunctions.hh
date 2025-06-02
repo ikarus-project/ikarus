@@ -33,13 +33,13 @@ struct SolverDefault
 };
 
 /**
- * \struct SyncParameterAndGlobalSolutionTag
+ * \struct SyncFERequirements
  * \brief A helper struct that tells the update function of the nonlinear solver to sync the global solution based on
- * the parameter.
+ * the parameter, i.e., to sync the FERequirements.
  */
-struct SyncParameterAndGlobalSolutionTag
+struct SyncFERequirements
 {
-} inline constexpr syncParameterAndGlobalSolutionTag;
+} inline constexpr syncFERequirements;
 
 /**
  * \struct IDBCForceDefault
@@ -63,9 +63,9 @@ struct IDBCForceDefault
  */
 struct UpdateDefault
 {
-  template <typename A, typename B = SyncParameterAndGlobalSolutionTag>
+  template <typename A, typename B = SyncFERequirements>
   constexpr void operator()(A&& a, B&& b = {}) const {
-    if constexpr (not std::is_same_v<B, SyncParameterAndGlobalSolutionTag>) {
+    if constexpr (not std::is_same_v<B, SyncFERequirements>) {
       using Ikarus::operator+=;
       a += b;
     }
