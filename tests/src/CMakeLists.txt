@@ -50,6 +50,7 @@ set(programSourceFiles
     testcantileverbeamEAS.cpp
     testnonlinearas.cpp
     testconversions.cpp
+testDisplacementPressure.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
