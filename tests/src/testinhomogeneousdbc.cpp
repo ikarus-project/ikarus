@@ -151,7 +151,11 @@ auto linearPatchTestWithIDBC(DBCOption dbcOption) {
   else
     d = dRed;
 
-  utils::syncFERequirement(denseFlatAssembler);
+  Eigen::VectorXd inhomogeneousDisp(basis.flat().dimension());
+  dirichletValues.evaluateInhomogeneousBoundaryCondition(inhomogeneousDisp, 1.0);
+  for (int i = 0; i < basis.flat().dimension(); ++i)
+    if (Dune::FloatCmp::ne(inhomogeneousDisp[i], 0.0))
+      d[i] = inhomogeneousDisp[i];
 
   double expectedSigmaXX = 4.1666666666666667;
   Eigen::VectorXd expectedDisplacement;

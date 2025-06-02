@@ -150,23 +150,4 @@ auto obtainForcesDueToIDBC(const A& assembler) {
   return F_dirichlet;
 }
 
-/**
- * \brief A helper function to synchronize the global solution and the parameter when inhomogeneous Dirichlet BCs are
- * involved.
- * \tparam A Type of the assembler.
- * \param assembler The assembler.
- */
-template <typename A>
-requires(std::is_pointer_v<std::remove_cvref_t<A>> || traits::isSharedPtr<std::remove_cvref_t<A>>::value)
-void syncFERequirement(A& assembler) {
-  using SolutionType  = typename A::element_type::FERequirement::SolutionVectorType;
-  auto& x             = assembler->requirement();
-  auto& dv            = assembler->dirichletValues();
-  SolutionType newInc = SolutionType::Zero(dv.size());
-  dv.evaluateInhomogeneousBoundaryCondition(newInc, x.parameter());
-  for (const auto i : Dune::range(newInc.size()))
-    if (Dune::FloatCmp::ne(newInc[i], 0.0))
-      x.globalSolution()[i] = newInc[i];
-}
-
 } // namespace Ikarus::utils
