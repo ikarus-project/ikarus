@@ -302,9 +302,6 @@ auto checkAddresses() {
   double lambda = 0.0;
   auto req      = std::remove_cvref_t<decltype(fes[1])>::Requirement(d, lambda);
 
-  // t.check(&d == &(req.globalSolution()), "Mismatch in address of global Solution");
-  // t.check(&lambda == &(req.parameter()), "Mismatch in address of parameter");
-
   auto sparseFlatAssembler = makeSparseFlatAssembler(fes, dirichletValues);
   sparseFlatAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Raw);
   t.check(&req == &(sparseFlatAssembler->requirement()), "Mismatch in address of requirements");
