@@ -9,6 +9,8 @@
 #pragma once
 #include "linearalgebrahelper.hh"
 
+#include <type_traits>
+
 namespace Ikarus::utils {
 /**
  * \struct SolverDefault
@@ -31,6 +33,23 @@ struct SolverDefault
 };
 
 /**
+ * \struct SyncFERequirements
+ * \brief A helper struct that tells the update function of the nonlinear solver to sync the global solution based on
+ * the parameter, i.e., to sync the FERequirements.
+ */
+struct SyncFERequirements
+{
+} inline constexpr syncFERequirements;
+
+/**
+ * \struct IDBCForceDefault
+ * \brief Default struct used to represent that no inhomogeneous Dirichlet BCs are present.
+ */
+struct IDBCForceDefault
+{
+};
+
+/**
  * \struct UpdateDefault
  * \ingroup utils
  * \brief Default functor for updating operations.
@@ -44,10 +63,12 @@ struct SolverDefault
  */
 struct UpdateDefault
 {
-  template <typename A, typename B>
-  constexpr void operator()(A&& a, B&& b) const {
-    using Ikarus::operator+=;
-    a += b;
+  template <typename A, typename B = SyncFERequirements>
+  constexpr void operator()(A&& a, B&& b = {}) const {
+    if constexpr (not std::is_same_v<B, SyncFERequirements>) {
+      using Ikarus::operator+=;
+      a += b;
+    }
   }
 };
 

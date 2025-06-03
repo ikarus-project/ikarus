@@ -74,13 +74,22 @@ public:
   size_t size() { return dirichletValues_.size(); }
 
   /**
-   * \brief Creates the full-sized vector of size Dof and inserts the values of a reduced vector at the "free"
+   * \brief Creates the full-sized vector of size size() and inserts the values of a reduced vector at the "free"
    * degrees of freedom and writes a zero for the fixed doffs.
    *
    * \param reducedVector Reference to the reduced vector.
    * \return Eigen::VectorXd The full-sized vector.
    */
   Eigen::VectorXd createFullVector(Eigen::Ref<const Eigen::VectorXd> reducedVector);
+
+  /**
+   * \brief Creates the reduzed-sized vector of size reducedSize() and inserts the values of a full vector at the
+   * "free" degrees of freedom
+   *
+   * \param fullVector Reference to the full vector.
+   * \return Eigen::VectorXd The full-sized vector.
+   */
+  Eigen::VectorXd createReducedVector(Eigen::Ref<const Eigen::VectorXd> fullVector);
 
   /**
    * \brief Returns the container of finite elements.

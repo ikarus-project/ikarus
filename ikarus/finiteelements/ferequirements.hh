@@ -20,6 +20,7 @@
 
 #include <ikarus/finiteelements/feresulttypes.hh>
 #include <ikarus/utils/basis.hh>
+#include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/makeenum.hh>
 
 namespace Ikarus {
@@ -329,6 +330,18 @@ public:
   }
 
   /**
+   * \brief A helper function to get the size of the solution vector.
+   *
+   * \return Size of the solution vector.
+   */
+  std::size_t size() {
+    if constexpr (Concepts::EigenVector<SolutionVectorType>)
+      return globalSolution().size();
+    else
+      return 0;
+  }
+
+  /**
    * \brief Get the parameter value.
    *
    * \return Reference to the parameter value.
@@ -370,8 +383,22 @@ public:
   SV& operator+=(const T& rhs) {
     if (!sol_)
       DUNE_THROW(Dune::InvalidStateException, "Solution vector is not initialized.");
-    *sol_ += rhs;
+    if constexpr (not std::is_same_v<T, utils::SyncFERequirements>)
+      *sol_ += rhs;
     return *sol_;
+  }
+
+  /**
+   * \brief This function syncs the parameter and the global solution vector.
+   * The can get out of sync, when the given update function changes the global solution vector due to a change of the
+   * parameter. This is usually the case for inhomogeneous boundary conditions.
+   *
+   * \tparam UF The type of the update function.
+   * \param updateFunction The update function.
+   */
+  template <typename UF>
+  void syncParameterAndGlobalSolution(UF&& updateFunction) {
+    updateFunction(*this, utils::syncFERequirements);
   }
 
 private:

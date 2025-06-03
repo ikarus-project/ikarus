@@ -99,6 +99,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Add push-forward and pull-back operations for stress measures ([#372](https://github.com/ikarus-project/ikarus/pull/372)).
 - Fix and simplify broadcasters and listeners.
   Broadcasters can now only emit messages with a single signature, i.e. `void(MessageType message, const State& state)` [#376](https://github.com/ikarus-project/ikarus/pull/376).
+- Add support to handle inhomogeneous Dirichlet boundary conditions (IDBC) [#362](https://github.com/ikarus-project/ikarus/pull/362).
 
 ## Release v0.4 (Ganymede)
 

@@ -84,7 +84,7 @@ auto cantileverBeamTest(const MAT& material, Skills&& additionalSkills, std::pai
                         bool logToConsole = false, bool writeVTK = false) {
   if constexpr (dim == 2)
     static_assert(MAT::isReduced,
-                  "cantileverBeamTest (3d) is only valid for a reduced material (planeStress or planeStrain).");
+                  "cantileverBeamTest (2d) is only valid for a reduced material (planeStress or planeStrain).");
   if constexpr (dim == 3)
     static_assert(not MAT::isReduced, "cantileverBeamTest (3d) is only valid for 3d material");
 
