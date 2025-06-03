@@ -3,6 +3,7 @@
 
 #include <config.h>
 
+#include "dummyproblem.hh"
 #include "testhelpers.hh"
 
 #include <dune/common/test/testsuite.hh>
@@ -285,6 +286,33 @@ auto SimpleAssemblersTest(const PreBasis& preBasis) {
   return t;
 }
 
+auto checkAddresses() {
+  TestSuite t("CheckAddresses");
+
+  using Grid     = Dune::YaspGrid<2>;
+  using GridView = Grid::LeafGridView;
+
+  DummyProblem<Grid, true> testCase({5, 5});
+  auto& basis           = testCase.basis();
+  auto& fes             = testCase.finiteElements();
+  auto& dirichletValues = testCase.dirichletValues();
+
+  Eigen::VectorXd d;
+  d.setZero(basis.flat().size());
+  double lambda = 0.0;
+  auto req      = std::remove_cvref_t<decltype(fes[1])>::Requirement(d, lambda);
+
+  auto sparseFlatAssembler = makeSparseFlatAssembler(fes, dirichletValues);
+  sparseFlatAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics, Ikarus::DBCOption::Raw);
+  t.check(&req == &(sparseFlatAssembler->requirement()), "Mismatch in address of requirements");
+  t.check(&(req.globalSolution()) == &(sparseFlatAssembler->requirement().globalSolution()),
+          "Mismatch in address of globalSolution of requirements");
+  t.check(&(req.parameter()) == &(sparseFlatAssembler->requirement().parameter()),
+          "Mismatch in address of parameter of requirements");
+
+  return t;
+}
+
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
@@ -295,5 +323,7 @@ int main(int argc, char** argv) {
 
   t.subTest(SimpleAssemblersTest(firstOrderLagrangePrePower2Basis));
   t.subTest(SimpleAssemblersTest(secondOrderLagrangePrePower2Basis));
+
+  t.subTest(checkAddresses());
   return t.exit();
 }
