@@ -138,10 +138,7 @@ auto obtainForcesDueToIDBC(const A& assembler) {
   dv.evaluateInhomogeneousBoundaryConditionDerivative(newInc, 1.0);
 
   Eigen::VectorXd F_dirichlet;
-  F_dirichlet.setZero(newInc.size());
-  for (const auto i : Dune::range(newInc.size()))
-    if (Dune::FloatCmp::ne(newInc[i], 0.0))
-      F_dirichlet += K.col(i) * newInc[i];
+  F_dirichlet = K * newInc;
 
   if (assembler->dBCOption() == DBCOption::Full)
     assembler->dirichletValues().setZeroAtConstrainedDofs(F_dirichlet);
