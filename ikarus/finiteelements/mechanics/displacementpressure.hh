@@ -22,6 +22,7 @@
   #include <ikarus/finiteelements/fehelper.hh>
   #include <ikarus/finiteelements/ferequirements.hh>
   #include <ikarus/finiteelements/mechanics/loads.hh>
+  #include <ikarus/finiteelements/mechanics/materials/hyperelastic/interface.hh>
   #include <ikarus/finiteelements/mechanics/materials/tags.hh>
   #include <ikarus/finiteelements/mechanics/strainenhancements/easfunctions.hh>
   #include <ikarus/finiteelements/physicshelper.hh>
@@ -76,6 +77,35 @@ namespace FEHelper {
 
 } // namespace FEHelper
 
+template <typename DEV, typename VOL>
+struct ConstitutiveDriver
+{
+  static constexpr auto strainType = StrainTags::greenLagrangian;
+  auto operator()(const auto& Estrain, double p) const {
+    const auto Sdev = dev.template stresses<strainType, true>(Estrain);
+    const auto Cdev = dev.template tangentModuli<strainType, true>(Estrain);
+
+    const auto Uhat   = vol.template storedEnergy<strainType>(Estrain);
+    const auto dUdE   = vol.template stresses<strainType, true>(Estrain);
+    const auto d2UdE2 = vol.template tangentModuli<strainType, true>(Estrain);
+
+    const auto S = (Sdev + p * dUdE).eval();
+    const auto C = (Cdev + p * d2UdE2).eval();
+
+    return std::make_tuple(Uhat, dUdE, S, C, kappa);
+  }
+
+  ConstitutiveDriver(const DEV& dev, const VOL& vol, double kappa)
+      : dev(dev),
+        vol(vol),
+        kappa(kappa) {}
+
+private:
+  DEV dev;
+  VOL vol;
+  double kappa;
+};
+
 template <typename PreFE, typename FE, typename PRE>
 class DisplacementPressure;
 
@@ -83,11 +113,14 @@ class DisplacementPressure;
  * \brief A PreFE struct for non-linear elastic elements.
  * \tparam MAT Type of the material.
  */
-template <Concepts::Material MAT>
+template <Concepts::Material MATDEV, Concepts::Material MATVOL>
 struct DisplacementPressurePre
 {
-  using Material = MAT;
-  MAT material;
+  using MaterialDEV = MATDEV;
+  using MaterialVOL = MATVOL;
+  MaterialDEV materialDev;
+  MaterialVOL materialVol;
+  double kappa;
 
   template <typename PreFE, typename FE>
   using Skill = DisplacementPressure<PreFE, FE, DisplacementPressurePre>;
@@ -114,7 +147,6 @@ public:
   using Geometry    = typename Traits::Geometry;
   using GridView    = typename Traits::GridView;
   using Element     = typename Traits::Element;
-  using Material    = PRE::Material;
   using Pre         = PRE;
 
   using LocalBasisType_U =
@@ -147,7 +179,7 @@ public:
    * \param pre The pre fe
    */
   explicit DisplacementPressure(const Pre& pre)
-      : mat_{pre.material} {}
+      : constitutiveDriver_{pre.materialDev, pre.materialVol, pre.kappa} {}
 
 protected:
   /**
@@ -233,19 +265,19 @@ public:
     return material<ScalarType>().template storedEnergy<strainType>(strain);
   }
 
-  /**
-   * \brief Get the stress for the given strain.
-   *
-   * \tparam ScalarType The scalar type for the material and strain.
-   * \tparam strainDim The dimension of the strain vector.
-   * \tparam voigt A boolean indicating whether to use the Voigt notation for stress.
-   * \param strain The strain vector.
-   * \return The stress vector calculated using the material's stresses function.
-   */
-  template <typename ScalarType, int strainDim, bool voigt = true>
-  auto stress(const Eigen::Vector<ScalarType, strainDim>& strain) const {
-    return material<ScalarType>().template stresses<strainType, voigt>(strain);
-  }
+  // /**
+  //  * \brief Get the stress for the given strain.
+  //  *
+  //  * \tparam ScalarType The scalar type for the material and strain.
+  //  * \tparam strainDim The dimension of the strain vector.
+  //  * \tparam voigt A boolean indicating whether to use the Voigt notation for stress.
+  //  * \param strain The strain vector.
+  //  * \return The stress vector calculated using the material's stresses function.
+  //  */
+  // template <typename ScalarType, int strainDim, bool voigt = true>
+  // auto stress(const Eigen::Vector<ScalarType, strainDim>& strain) const {
+  //   return material<ScalarType>().template stresses<strainType, voigt>(strain);
+  // }
 
   /**
    * \brief Get the material tangent for the given strain for the given Requirement.
@@ -267,13 +299,13 @@ public:
   const Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType_U>>& localBasis() const { return localBasisU_; }
   const Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType_P>>& localBasisP() const { return localBasisP_; }
 
-  template <typename ScalarType = double>
-  decltype(auto) material() const {
-    if constexpr (Concepts::AutodiffScalar<ScalarType>)
-      return mat_.template rebind<ScalarType>();
-    else
-      return mat_;
-  }
+  // template <typename ScalarType = double>
+  // decltype(auto) material() const {
+  //   if constexpr (Concepts::AutodiffScalar<ScalarType>)
+  //     return mat_.template rebind<ScalarType>();
+  //   else
+  //     return mat_;
+  // }
 
 public:
   /**
@@ -332,7 +364,7 @@ private:
   std::shared_ptr<const Geometry> geo_;
   Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType_U>> localBasisU_;
   Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType_P>> localBasisP_;
-  Material mat_;
+  ConstitutiveDriver<typename PRE::MaterialDEV, typename PRE::MaterialVOL> constitutiveDriver_;
   size_t numberOfNodes_{0};
   int order_{};
 
@@ -369,12 +401,12 @@ public:
   template <typename ST>
   auto materialStiffnessMatrixFunction(const Requirement& par, typename Traits::template MatrixType<ST>& K,
                                        const VectorXOptRef<ST>& dx = std::nullopt) const {
-    return [&](const StrainType<ST>& strain, const BopType<ST>& bopI, const BopType<ST>& bopJ, const int I, const int J,
-               const auto& gp) {
-      const auto C            = materialTangent(strain);
-      const double intElement = geo_->integrationElement(gp.position()) * gp.weight();
-      K.template block<myDim, myDim>(I * myDim, J * myDim) += (bopI.transpose() * C * bopJ) * intElement;
-    };
+    return
+        [&](const auto& C, const BopType<ST>& bopI, const BopType<ST>& bopJ, const int I, const int J, const auto& gp) {
+          // const auto C            = materialTangent(strain);
+          const double intElement = geo_->integrationElement(gp.position()) * gp.weight();
+          K.template block<myDim, myDim>(I * myDim, J * myDim) += (bopI.transpose() * C * bopJ) * intElement;
+        };
   }
 
   /**
@@ -434,21 +466,29 @@ protected:
                            const VectorXOptRef<ScalarType>& dx = std::nullopt) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
-    const auto uFunction  = displacementFunction(par, dx);
-    const auto pFunction  = pressureFunction(par, dx);
-    auto pFE              = underlying().localView().tree().child(Dune::Indices::_1);
+    // const auto uFunction = displacementFunction(par, dx);
+    const auto pFunction = pressureFunction(par, dx);
+
+    auto pFE         = underlying().localView().tree().child(Dune::Indices::_1);
+    auto plocalBasis = pFE.finiteElement().localBasis();
+    std::vector<Dune::FieldVector<double, 1>> Np;
+
     const auto eps        = strainFunction(par, dx);
     const auto kMFunction = materialStiffnessMatrixFunction<ScalarType>(par, K, dx);
     const auto kGFunction = geometricStiffnessMatrixFunction<ScalarType>(par, K, dx);
     for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
-      const auto EVoigt   = (eps.evaluate(gpIndex, on(gridElement))).eval();
-      const auto stresses = stress(EVoigt);
+      const auto EVoigt = (eps.evaluate(gpIndex, on(gridElement))).eval();
+      const auto p      = pFunction.evaluate(gpIndex, on(gridElement)).eval();
+      plocalBasis.evaluateFunction(gp.position(), Np);
+      auto [Uhat, dUdE, S, C, kappa] = constitutiveDriver_(EVoigt, p[0]);
+
+      // Loop over u-u
       for (size_t i = 0; i < numberOfNodes_; ++i) {
         const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
         for (size_t j = 0; j < numberOfNodes_; ++j) {
           const auto bopJ = eps.evaluateDerivative(gpIndex, wrt(coeff(j)), on(gridElement));
-          const auto kgIJ = eps.evaluateDerivative(gpIndex, wrt(coeff(i, j)), along(stresses), on(gridElement));
-          kMFunction(EVoigt, bopI, bopJ, i, j, gp);
+          const auto kgIJ = eps.evaluateDerivative(gpIndex, wrt(coeff(i, j)), along(S), on(gridElement));
+          kMFunction(C, bopI, bopJ, i, j, gp);
           kGFunction(kgIJ, i, j, gp);
         }
       }
@@ -457,19 +497,19 @@ protected:
       for (size_t i = 0; i < numberOfNodes_; ++i) {
         const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
         for (auto j : Dune::range(pFE.size())) {
-          auto jIdx     = pFE.localIndex(j);
-          const auto ct = (bopI.transpose() * stresses).eval();
-          K.template block<myDim, 1>(i * myDim, jIdx) += ct * geo_->integrationElement(gp.position()) * gp.weight();
+          auto jIdx         = pFE.localIndex(j);
+          const auto upTerm = (bopI.transpose() * dUdE * Np[j][0]).eval();
+          K.template block<myDim, 1>(i * myDim, jIdx) += upTerm * geo_->integrationElement(gp.position()) * gp.weight();
         }
       }
 
-      // Loop over p-u
+      // Loop over p-u (this is redundant -> symmetrize lower)
       for (auto i : Dune::range(pFE.size())) {
         auto iIdx = pFE.localIndex(i);
         for (size_t j = 0; j < numberOfNodes_; ++j) {
-          const auto bopJ = eps.evaluateDerivative(gpIndex, wrt(coeff(j)), on(gridElement));
-          const auto ct   = (bopJ.transpose() * stresses).transpose().eval();
-          K.template block<1, myDim>(iIdx, j * myDim) += ct * geo_->integrationElement(gp.position()) * gp.weight();
+          const auto bopJ   = eps.evaluateDerivative(gpIndex, wrt(coeff(j)), on(gridElement));
+          const auto upTerm = (bopJ.transpose() * dUdE * Np[i][0]).transpose().eval();
+          K.template block<1, myDim>(iIdx, j * myDim) += upTerm * geo_->integrationElement(gp.position()) * gp.weight();
         }
       }
 
@@ -477,8 +517,9 @@ protected:
       for (auto i : Dune::range(pFE.size())) {
         auto iIdx = pFE.localIndex(i);
         for (auto j : Dune::range(pFE.size())) {
-          auto jIdx = pFE.localIndex(i);
-          K(iIdx, jIdx) += 0.5;
+          auto jIdx   = pFE.localIndex(j);
+          auto ppTerm = Np[i][0] * (1.0 / kappa) * Np[j][0];
+          K(iIdx, jIdx) -= ppTerm * geo_->integrationElement(gp.position()) * gp.weight();
         }
       }
     }
@@ -498,16 +539,32 @@ protected:
                            const VectorXOptRef<ScalarType>& dx = std::nullopt) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
-    const auto eps          = strainFunction(par, dx);
+    const auto eps       = strainFunction(par, dx);
+    const auto pFunction = pressureFunction(par, dx);
+
+    auto pFE         = underlying().localView().tree().child(Dune::Indices::_1);
+    auto plocalBasis = pFE.finiteElement().localBasis();
+    std::vector<Dune::FieldVector<double, 1>> Np;
+
     const auto fIntFunction = internalForcesFunction<ScalarType>(par, force, dx);
 
-    // Internal forces
     for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
-      const auto EVoigt   = (eps.evaluate(gpIndex, on(gridElement))).eval();
-      const auto stresses = stress(EVoigt);
+      const auto EVoigt = (eps.evaluate(gpIndex, on(gridElement))).eval();
+      const auto p      = pFunction.evaluate(gpIndex, on(gridElement)).eval();
+      plocalBasis.evaluateFunction(gp.position(), Np);
+      auto [Uhat, dUdE, S, C, kappa] = constitutiveDriver_(EVoigt, p[0]);
+
+      // Loop over u
       for (size_t i = 0; i < numberOfNodes_; ++i) {
         const auto bopI = eps.evaluateDerivative(gpIndex, wrt(coeff(i)), on(gridElement));
-        fIntFunction(stresses, bopI, i, gp);
+        fIntFunction(S, bopI, i, gp);
+      }
+
+      // Loop over p
+      for (auto i : Dune::range(pFE.size())) {
+        auto iIdx  = pFE.localIndex(i);
+        auto pTerm = Np[i][0] * (Uhat - p[0] / kappa);
+        force(iIdx) += pTerm * geo_->integrationElement(gp.position()) * gp.weight();
       }
     }
   }
@@ -519,10 +576,9 @@ protected:
  * \param mat Material parameters for the non-linear elastic element.
  * \return A non-linear elastic pre finite element.
  */
-template <Concepts::Material MAT>
-auto displacementPressure(const MAT& mat) {
-  DisplacementPressurePre<MAT> pre(mat);
-
+template <Concepts::Material MaterialDEV, Concepts::Material MaterialVOL>
+auto displacementPressure(const MaterialDEV& materialDev, const MaterialVOL& materialVol, double kappa) {
+  DisplacementPressurePre<MaterialDEV, MaterialVOL> pre(materialDev, materialVol, kappa);
   return pre;
 }
 
