@@ -54,9 +54,9 @@ class TestVtkWriter(unittest.TestCase):
             fes.append(finite_elements.makeFE(basis, linElastic, vLoad))
             fes[-1].bind(e)
 
-        req = fes[0].createRequirement()
-        req.insertParameter(lambdaLoad)
-        req.insertGlobalSolution(d)
+        self.req = fes[0].createRequirement()
+        self.req.insertParameter(lambdaLoad)
+        self.req.insertGlobalSolution(d)
 
         self.dirichletValues = iks.dirichletValues(self.flatBasis)
 
@@ -68,14 +68,14 @@ class TestVtkWriter(unittest.TestCase):
 
         self.sparseAssembler = assembler.sparseFlatAssembler(fes, self.dirichletValues)
         self.sparseAssembler.bind(
-            req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full
+            self.req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full
         )
 
         Msparse = self.sparseAssembler.matrix()
         forces = self.sparseAssembler.vector()
 
         self.x = sp.sparse.linalg.spsolve(Msparse, -forces)
-        req.insertGlobalSolution(self.x)
+        self.req.insertGlobalSolution(self.x)
 
     def assertIsFile(self, path):
         if not pathlib.Path(path).resolve().is_file():
@@ -143,16 +143,16 @@ class TestVtkWriter(unittest.TestCase):
             fes.append(finite_elements.makeFE(basis, linElastic))
             fes[-1].bind(e)
 
-        req = fes[0].createRequirement()
+        reqYASP = fes[0].createRequirement()
         lambdaLoad = iks.Scalar(3.0)
-        req.insertParameter(lambdaLoad)
-        req.insertGlobalSolution(d)
+        reqYASP.insertParameter(lambdaLoad)
+        reqYASP.insertGlobalSolution(d)
 
         dirichletValuesYASP = iks.dirichletValues(flatBasisYASP)
         sparseAssemblerYASP = assembler.sparseFlatAssembler(fes, dirichletValuesYASP)
 
         sparseAssemblerYASP.bind(
-            req, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full
+            reqYASP, iks.AffordanceCollection.elastoStatics, iks.DBCOption.Full
         )
 
         writer3 = io.vtkWriter(sparseAssemblerYASP, dataFormat=FormatTypes.ascii)
