@@ -24,22 +24,15 @@ struct DifferentiableFunctionFactory
   template <typename Assembler, typename... Affordances>
   static auto op(Assembler&& as, AffordanceCollection<Affordances...> affordances,
                  DBCOption dbcOption = DBCOption::Full) {
-    auto assemblerPtr = [as]() {
-      if constexpr (traits::Pointer<std::remove_cvref_t<Assembler>> or
-                    traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value)
-        return as;
-      else
-        return std::make_shared<std::remove_cvref_t<Assembler>>(std::forward<Assembler>(as));
-    }();
+    auto asPtr = toSharedPointer(std::forward<Assembler>(as));
 
     using FERequirement = typename traits::remove_pointer_t<std::remove_cvref_t<Assembler>>::FERequirement;
 
-    [[maybe_unused]] auto KFunction = [dbcOption, assembler = assemblerPtr,
-                                       affordances](const FERequirement& p) -> auto& {
+    [[maybe_unused]] auto KFunction = [dbcOption, assembler = asPtr, affordances](const FERequirement& p) -> auto& {
       return assembler->matrix(p, affordances.matrixAffordance(), dbcOption);
     };
 
-    [[maybe_unused]] auto residualFunction = [dbcOption, assembler = assemblerPtr,
+    [[maybe_unused]] auto residualFunction = [dbcOption, assembler = asPtr,
                                               affordances](const FERequirement& p) -> auto& {
       return assembler->vector(p, affordances.vectorAffordance(), dbcOption);
     };
@@ -48,7 +41,7 @@ struct DifferentiableFunctionFactory
                                    // of the functions. therefore, no valid values needed
 
     if constexpr (affordances.hasScalarAffordance) {
-      [[maybe_unused]] auto energyFunction = [assembler = assemblerPtr, affordances](const FERequirement& p) -> auto& {
+      [[maybe_unused]] auto energyFunction = [assembler = asPtr, affordances](const FERequirement& p) -> auto& {
         return assembler->scalar(p, affordances.scalarAffordance());
       };
 
@@ -59,45 +52,36 @@ struct DifferentiableFunctionFactory
 
   template <typename Assembler>
   static auto op(Assembler&& as, DBCOption dbcOption) {
-    auto ex = []() {
-      DUNE_THROW(Dune::InvalidStateException,
-                 "Assembler has to be bound to an affordance collection before you can call "
-                 "this method");
-    };
-    if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
-                  traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value) {
-      if (as->boundToAffordanceCollection()) {
-        return op(std::forward<Assembler>(as), as->affordanceCollection(), dbcOption);
-      } else {
-        ex();
-      }
-    } else {
-      if (as->boundToAffordanceCollection()) {
-        return op(std::forward<Assembler>(as), as.affordanceCollection(), dbcOption);
-      } else {
-        ex();
-      }
-    }
-    __builtin_unreachable();
+    auto asPtr = toSharedPointer(std::forward<Assembler>(as));
+    if (as->boundToAffordanceCollection())
+      return op(asPtr, as->affordanceCollection(), dbcOption);
+
+    DUNE_THROW(Dune::InvalidStateException,
+               "Assembler has to be bound to an affordance collection before you can call "
+               "this method");
   }
 
   template <typename Assembler>
   static auto op(Assembler&& as) {
-    auto ex = []() {
-      DUNE_THROW(Dune::InvalidStateException,
-                 "Assembler has to be bound to an affordance collection and to an "
-                 "DBCOption before you can call "
-                 "this method");
-    };
-    if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> or
+    auto asPtr = toSharedPointer(std::forward<Assembler>(as));
+
+    if (asPtr->boundToAffordanceCollection() and asPtr->boundToDBCOption())
+      return op(asPtr, asPtr->affordanceCollection(), asPtr->dBCOption());
+    DUNE_THROW(Dune::InvalidStateException,
+               "Assembler has to be bound to an affordance collection and to an "
+               "DBCOption before you can call "
+               "this method");
+  }
+
+private:
+  // Convert to shared pointer if needed
+  template <typename Assembler>
+  static decltype(auto) toSharedPointer(Assembler&& as) {
+    if constexpr (std::is_pointer_v<std::remove_cvref_t<Assembler>> ||
                   traits::isSharedPtr<std::remove_cvref_t<Assembler>>::value) {
-      if (not(as->boundToAffordanceCollection() and as->boundToDBCOption()))
-        ex();
-      return op(std::forward<Assembler>(as), as->affordanceCollection(), as->dBCOption());
+      return std::forward<Assembler>(as);
     } else {
-      if (not(as->boundToAffordanceCollection() and as->boundToDBCOption()))
-        ex();
-      return op(std::forward<Assembler>(as), as.affordanceCollection(), as.dBCOption());
+      return std::make_shared<std::remove_cvref_t<Assembler>>(std::forward<Assembler>(as));
     }
   }
 };

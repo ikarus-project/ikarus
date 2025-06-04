@@ -16,11 +16,13 @@
 #include <ikarus/assembler/assemblermanipulatorfuser.hh>
 #include <ikarus/assembler/simpleassemblers.hh>
 #include <ikarus/controlroutines/loadcontrol.hh>
+#include <ikarus/controlroutines/pathfollowing.hh>
 #include <ikarus/finiteelements/fefactory.hh>
 #include <ikarus/finiteelements/mechanics/truss.hh>
 #include <ikarus/solver/eigenvaluesolver/generalizedeigensolverfactory.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
+#include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
 #include <ikarus/utils/basis.hh>
 #include <ikarus/utils/dirichletvalues.hh>
@@ -48,6 +50,7 @@ Eigen::Matrix<double, 4, 4> rotationMatrix2D(double theta) {
 
 static auto vonMisesTrussTest() {
   TestSuite t("vonMisesTrussTest");
+  std::cout << "Started: " << t.name() << std::endl;
   /// Construct grid
   constexpr double h = 1.0;
   constexpr double L = 10.0;
@@ -200,6 +203,130 @@ static auto vonMisesTrussTest() {
   return t;
 }
 
+template <bool useArcLength = false>
+static auto vonMisesTrussWithIDBCTest(const DBCOption dbcOption) {
+  TestSuite t("vonMisesTrussTest with inhomogeneous Dirichlet BCs");
+  std::cout << t.name() << " started with DBCOption = " << toString(dbcOption)
+            << " and useArcLength = " << std::boolalpha << useArcLength << std::endl;
+
+  /// Construct grid
+  constexpr double h = 1.0;
+  constexpr double L = 10.0;
+  auto grid          = createGrid<Grids::OneDFoamGridIn2D>();
+  auto gridView      = grid->leafGridView();
+
+  /// Construct basis
+  using namespace Dune::Functions::BasisFactory;
+  auto basis = Ikarus::makeBasis(gridView, power<2>(lagrange<1>(), FlatInterleaved{}));
+
+  /// Create finite elements
+  constexpr double E   = 30000;
+  constexpr double A   = 0.1;
+  constexpr double tol = 1e-10;
+  auto sk              = skills(truss(E, A));
+  using FEType         = decltype(makeFE(basis, sk));
+  std::vector<FEType> fes;
+  for (auto&& ge : elements(gridView)) {
+    fes.emplace_back(makeFE(basis, sk));
+    fes.back().bind(ge);
+  }
+
+  /// Collect dirichlet nodes
+  auto basisP = std::make_shared<const decltype(basis)>(basis);
+  DirichletValues dirichletValues(basisP->flat());
+  dirichletValues.fixBoundaryDOFs(
+      [&](auto& dirichletFlags, auto&& globalIndex) { dirichletFlags[globalIndex] = true; });
+  t.check(dirichletValues.fixedDOFsize() == 4, "Number of constrained DOFs is not equal to 4");
+
+  // Inhomogeneous Boundary Conditions
+  auto inhomogeneousDisplacement = [L, h]<typename T>(const auto& globalCoord, const T& lambda) {
+    Eigen::Vector<T, 2> localInhomogeneous;
+    if (Dune::FloatCmp::eq(globalCoord[0], L) and Dune::FloatCmp::eq(globalCoord[1], h)) {
+      localInhomogeneous[0] = 0;
+      localInhomogeneous[1] = -lambda;
+    } else
+      localInhomogeneous.setZero();
+    return localInhomogeneous;
+  };
+
+  dirichletValues.storeInhomogeneousBoundaryCondition(inhomogeneousDisplacement);
+  t.check(dirichletValues.fixedDOFsize() == 5, "Number of constrained DOFs is not equal to 5");
+
+  /// Create assembler
+  auto denseFlatAssembler = makeDenseFlatAssembler(fes, dirichletValues);
+
+  auto req = FEType::Requirement(basis);
+  denseFlatAssembler->bind(req, AffordanceCollections::elastoStatics, dbcOption);
+  auto linSolver          = LinearSolver(SolverTypeTag::d_LDLT);
+  constexpr int loadSteps = 10;
+
+  auto vtkWriter = ControlSubsamplingVertexVTKWriter(basis.flat(), 2);
+  vtkWriter.setFieldInfo("displacement", Dune::VTK::FieldInfo::Type::vector, 2);
+  vtkWriter.setFileNamePrefix("vonMisesTrussWithIDBC");
+
+  auto controlRoutine = [&]() -> decltype(auto) {
+    if constexpr (useArcLength) {
+      NewtonRaphsonWithSubsidiaryFunctionConfig nrConfig({}, linSolver);
+      auto nrFactory = NonlinearSolverFactory(nrConfig).withIDBCForceFunction(denseFlatAssembler);
+      auto nr        = nrFactory.create(denseFlatAssembler);
+      auto pft       = Ikarus::ArcLength{}; // Type of path following technique
+      auto alc       = Ikarus::PathFollowing(nr, loadSteps, sqrt(0.5) / loadSteps, pft);
+      return alc;
+    } else { /// Create loadcontrol
+      NewtonRaphsonConfig nrConfig({}, linSolver);
+      auto nrFactory = NonlinearSolverFactory(nrConfig).withIDBCForceFunction(denseFlatAssembler);
+      auto nr        = nrFactory.create(denseFlatAssembler);
+      auto lc        = ControlRoutineFactory::create(LoadControlConfig{loadSteps, 0.0, 0.5}, nr, denseFlatAssembler);
+      return lc;
+    }
+  };
+
+  auto cr = controlRoutine();
+
+  auto nonLinearSolverLogger = NonLinearSolverLogger();
+  auto controlLogger         = ControlLogger();
+  nonLinearSolverLogger.subscribeTo(cr.nonLinearSolver());
+  controlLogger.subscribeTo(cr);
+  vtkWriter.subscribeTo(cr);
+
+  Eigen::Matrix3Xd lambdaAndDisp;
+  lambdaAndDisp.setZero(Eigen::NoChange, loadSteps + 1);
+  auto lvkObserver = GenericListener(cr, ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
+    const auto& d              = state.domain.globalSolution();
+    const auto& lambda         = state.domain.parameter();
+    int step                   = state.loadStep;
+    lambdaAndDisp(0, step + 1) = lambda; // load factor
+    lambdaAndDisp(1, step + 1) = d[2];   // horizontal displacement at center node
+    lambdaAndDisp(2, step + 1) = d[3];   // vertical displacement at center node
+  });
+
+  /// Execute!
+  auto controlInfo = cr.run(req);
+  t.check(controlInfo.success == true) << "Load control failed to converge";
+
+  Eigen::VectorXd lambdaVec = lambdaAndDisp.row(0);
+  Eigen::VectorXd uVec      = lambdaAndDisp.row(1);
+  Eigen::VectorXd vVec      = lambdaAndDisp.row(2);
+
+  std::vector<int> expectedIterations(loadSteps + 1, 0);
+
+  t.check(Dune::FloatCmp::eq(vVec.tail(1)[0], -lambdaVec.tail(1)[0], tol))
+      << std::setprecision(16) << "Displacement value should be equal to lambda. Actual:\t" << vVec.tail(1)[0];
+  checkScalars(t, lambdaVec.tail(1)[0], 0.5, " Incorrect last load factor", tol);
+  checkSolverInfos(t, expectedIterations, controlInfo, loadSteps + 1);
+
+  // return the load factor as a function of the vertical displacement
+  auto analyticalLoadDisplacementCurve = [&](auto& v) {
+    return -v; // lambda = -v because an inhomogeneous Dirichlet BC is applied
+  };
+
+  for (std::size_t i = 0; i < lambdaAndDisp.cols(); ++i) {
+    checkScalars(t, lambdaVec[i], analyticalLoadDisplacementCurve(vVec[i]), " Incorrect load factor", tol);
+    checkScalars(t, uVec[i], 0.0, " Incorrect horizontal displacement", tol);
+  }
+  return t;
+}
+
 static auto truss3dTest() {
   TestSuite t("Truss3DTest");
   /// Construct grid
@@ -307,5 +434,9 @@ int main(int argc, char** argv) {
   t.subTest(trussAutoDiffTest<3, Grids::OneDFoamGridIn3D>());
   t.subTest(vonMisesTrussTest());
   t.subTest(truss3dTest());
+  t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Full));
+  t.subTest(vonMisesTrussWithIDBCTest(DBCOption::Reduced));
+  t.subTest(vonMisesTrussWithIDBCTest<true>(DBCOption::Full));
+  t.subTest(vonMisesTrussWithIDBCTest<true>(DBCOption::Reduced));
   return t.exit();
 }

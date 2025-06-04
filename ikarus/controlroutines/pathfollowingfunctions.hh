@@ -13,7 +13,6 @@
 #pragma once
 
 #include <cmath>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -23,12 +22,22 @@
 
 #include <Eigen/Core>
 
-#include <ikarus/solver/linearsolver/linearsolver.hh>
+#include <ikarus/controlroutines/common.hh>
 #include <ikarus/utils/concepts.hh>
 #include <ikarus/utils/defaultfunctions.hh>
-#include <ikarus/utils/traits.hh>
 
 namespace Ikarus {
+
+namespace Impl {
+
+  template <typename NLS>
+  void checkHasNoValidIDBCForceFunction() {
+    static_assert(not Concepts::HasValidIDBCForceFunction<NLS>,
+                  "The given path following function is not implemented to handle inhomogeneous Dirichlet BCs.");
+  }
+
+} // namespace Impl
+
 /**
  * \struct SubsidiaryArgs
  * \brief Structure containing arguments for subsidiary functions.
@@ -84,66 +93,83 @@ struct ArcLength
    * This method calculates the subsidiary function value and its derivatives for the given arguments and stores it in
    * the given args structure.
    *
+   * \tparam NLS Type of the nonlinear solver.
+   *
+   * \param req The solution.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
-  void operator()(SubsidiaryArgs& args) const {
-    const auto root = sqrt(args.DD.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
+  template <typename NLS>
+  void operator()(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) const {
+    const auto idbcDelta = idbcIncrement(req, nonlinearSolver, args.Dlambda);
+    const auto root = sqrt(args.DD.squaredNorm() + idbcDelta.squaredNorm() + psi * psi * args.Dlambda * args.Dlambda);
     args.f          = root - args.stepSize;
     if (not computedInitialPredictor) {
       args.dfdDD.setZero();
       args.dfdDlambda = 0.0;
     } else {
-      args.dfdDD      = args.DD / root;
-      args.dfdDlambda = (psi * psi * args.Dlambda) / root;
+      args.dfdDD       = args.DD / root;
+      const auto Dhat0 = idbcDelta / args.Dlambda; // extracting Dhat0, assuming IDBC: Dhat = lambda * Dhat0
+      args.dfdDlambda  = ((Dhat0.dot(Dhat0) + psi * psi) * args.Dlambda) / root;
     }
   }
 
   /**
    * \brief Performs the initial prediction for the standard arc-length method.
    *
-   * This method initializes the prediction step for the standard arc-length method it computes \f$\psi\f$ and
+   * \details This method initializes the prediction step for the standard arc-length method it computes \f$\psi\f$ and
    * computes initial \f$\mathrm{D}\mathbf{D}\f$ and \f$\mathrm{D} \lambda\f$.
+   * Based on Eq. 4.13 of \cite rothAlgorithmenZurNichtlinearen2020d, the scaling factor psi is modified for better
+   * convergence characteristics.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
-   * \param args The subsidiary function arguments.
+   * \tparam NLS Type of the nonlinear solver.
+   *
    * \param req The solution.
+   * \param nonlinearSolver The nonlinear solver.
+   * \param args The subsidiary function arguments.
    * \ingroup  controlroutines
    */
-  template <typename F>
-  requires(Ikarus::Concepts::LinearSolverCheck<Ikarus::LinearSolver, typename F::Traits::template Range<1>,
-                                               typename F::Domain::SolutionVectorType>)
-  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
-    SolverTypeTag solverTag;
-    using JacobianType = std::remove_cvref_t<typename F::Traits::template Range<1>>;
-    static_assert((traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value) or
-                      (traits::isSpecializationTypeNonTypeAndType<Eigen::SparseMatrix, JacobianType>::value),
-                  "Linear solver not implemented for the chosen derivative type of the non-linear operator");
+  template <typename NLS>
+  void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
+    auto& residual               = nonlinearSolver.residual();
+    double dlambda               = 1.0;
+    auto idbcDelta               = idbcIncrement(req, nonlinearSolver, dlambda);
+    const auto Dhat0             = idbcDelta / dlambda;
+    const auto idbcForceFunction = nonlinearSolver.idbcForceFunction();
+    const auto updateFunction    = nonlinearSolver.updateFunction();
+    req.parameter()              = dlambda;
+    decltype(auto) R             = residual(req);
+    decltype(auto) K             = derivative(residual)(req);
+    auto linearSolver            = createSPDLinearSolverFromNonLinearSolver(nonlinearSolver);
 
-    if constexpr (traits::isSpecializationTypeAndNonTypes<Eigen::Matrix, JacobianType>::value)
-      solverTag = SolverTypeTag::d_LDLT;
-    else
-      solverTag = SolverTypeTag::sd_SimplicialLDLT;
+    if constexpr (Concepts::HasValidIDBCForceFunction<NLS>)
+      R += idbcForceFunction(req);
 
-    req.parameter()  = 1.0;
-    decltype(auto) R = residual(req);
-    decltype(auto) K = derivative(residual)(req);
-
-    auto linearSolver = LinearSolver(solverTag); // for the linear predictor step
     linearSolver.analyzePattern(K);
     linearSolver.factorize(K);
     linearSolver.solve(args.DD, -R);
 
-    const auto DD2 = args.DD.squaredNorm();
+    const auto DD2    = args.DD.squaredNorm();
+    const auto Dhat02 = Dhat0.squaredNorm();
 
-    psi    = sqrt(DD2);
-    auto s = sqrt(psi * psi + DD2);
+    psi    = sqrt(DD2 + Dhat02);
+    auto s = sqrt(DD2 + Dhat02 + psi * psi * dlambda * dlambda);
 
     args.DD      = args.DD * args.stepSize / s;
     args.Dlambda = args.stepSize / s;
 
-    req.globalSolution()     = args.DD;
-    req.parameter()          = args.Dlambda;
+    idbcDelta *= args.Dlambda / dlambda;
+
+    updateFunction(req.globalSolution(), args.DD);
+    req.parameter() = args.Dlambda;
+
+    // modify the globalSolution() considering inhomogeneous Dirichlet BCs
+    if constexpr (Concepts::HasValidIDBCForceFunction<NLS>)
+      req.syncParameterAndGlobalSolution(updateFunction);
+
+    // rescaling of psi
+    psi = sqrt((idbcDelta.squaredNorm() + args.DD.squaredNorm()) / (args.Dlambda * args.Dlambda));
+
     computedInitialPredictor = true;
   }
 
@@ -152,17 +178,20 @@ struct ArcLength
    *
    * This method updates the prediction step for the standard arc-length method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
-   * \param args The subsidiary function arguments.
+   * \tparam NLS Type of the nonlinear solver.
+   *
    * \param req The solution.
+   * \param nonlinearSolver The nonlinear solver.
+   * \param args The subsidiary function arguments.
    */
-  template <typename F>
-  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void intermediatePrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
     if (not computedInitialPredictor)
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
-    req.globalSolution() += args.DD;
+    nonlinearSolver.updateFunction()(req.globalSolution(), args.DD);
     req.parameter() += args.Dlambda;
+    if constexpr (Concepts::HasValidIDBCForceFunction<NLS>)
+      req.syncParameterAndGlobalSolution(nonlinearSolver.updateFunction());
   }
 
   /** \brief The name of the PathFollowing method. */
@@ -192,9 +221,15 @@ struct LoadControlSubsidiaryFunction
    *
    * This method calculates the subsidiary function value and its derivatives for the given arguments.
    *
+   * \tparam NLS Type of the nonlinear solver.
+   *
+   * \param req The solution.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
-  void operator()(SubsidiaryArgs& args) const {
+  template <typename NLS>
+  void operator()(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) const {
+    Impl::checkHasNoValidIDBCForceFunction<NLS>();
     args.f = args.Dlambda - args.stepSize;
     args.dfdDD.setZero();
     args.dfdDlambda = 1.0;
@@ -205,13 +240,15 @@ struct LoadControlSubsidiaryFunction
    *
    * This method initializes the prediction step for the load control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
-   * \param args The subsidiary function arguments.
+   * \tparam NLS Type of the nonlinear solver.
+   *
    * \param req The solution.
+   * \param nonlinearSolver The nonlinear solver.
+   * \param args The subsidiary function arguments.
    */
-  template <typename F>
-  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
+    Impl::checkHasNoValidIDBCForceFunction<NLS>();
     args.Dlambda             = args.stepSize;
     req.parameter()          = args.Dlambda;
     computedInitialPredictor = true;
@@ -222,13 +259,15 @@ struct LoadControlSubsidiaryFunction
    *
    * This method updates the prediction step for the load control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
-   * \param args The subsidiary function arguments.
+   * \tparam NLS Type of the nonlinear solver.
+   *
    * \param req The solution.
+   * \param nonlinearSolver The nonlinear solver.
+   * \param args The subsidiary function arguments.
    */
-  template <typename F>
-  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void intermediatePrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
+    Impl::checkHasNoValidIDBCForceFunction<NLS>();
     if (not computedInitialPredictor)
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     req.parameter() += args.Dlambda;
@@ -268,9 +307,15 @@ struct DisplacementControl
    *
    * This method calculates the subsidiary function value and its derivatives for the given arguments.
    *
+   * \tparam NLS Type of the nonlinear solver.
+   *
+   * \param req The solution.
+   * \param nonlinearSolver The nonlinear solver.
    * \param args The subsidiary function arguments.
    */
-  void operator()(SubsidiaryArgs& args) const {
+  template <typename NLS>
+  void operator()(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) const {
+    Impl::checkHasNoValidIDBCForceFunction<NLS>();
     const auto controlledDOFsNorm = args.DD(controlledIndices).norm();
     args.f                        = controlledDOFsNorm - args.stepSize;
     args.dfdDlambda               = 0.0;
@@ -283,13 +328,15 @@ struct DisplacementControl
    *
    * This method initializes the prediction step for the displacement control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
-   * \param args The subsidiary function arguments.
+   * \tparam NLS Type of the nonlinear solver.
+   *
    * \param req The solution.
+   * \param nonlinearSolver The nonlinear solver.
+   * \param args The subsidiary function arguments.
    */
-  template <typename F>
-  void initialPrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void initialPrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
+    Impl::checkHasNoValidIDBCForceFunction<NLS>();
     args.DD(controlledIndices).array() = args.stepSize;
     req.globalSolution()               = args.DD;
     computedInitialPredictor           = true;
@@ -300,13 +347,15 @@ struct DisplacementControl
    *
    * This method updates the prediction step for the displacement control method.
    *
-   * \tparam F Type of the residual function.
-   * \param residual The residual function.
-   * \param args The subsidiary function arguments.
+   * \tparam NLS Type of the nonlinear solver.
+   *
    * \param req The solution.
+   * \param nonlinearSolver The nonlinear solver.
+   * \param args The subsidiary function arguments.
    */
-  template <typename F>
-  void intermediatePrediction(typename F::Domain& req, F& residual, SubsidiaryArgs& args) {
+  template <typename NLS>
+  void intermediatePrediction(typename NLS::Domain& req, NLS& nonlinearSolver, SubsidiaryArgs& args) {
+    Impl::checkHasNoValidIDBCForceFunction<NLS>();
     if (not computedInitialPredictor)
       DUNE_THROW(Dune::InvalidStateException, "initialPrediction has to be called before intermediatePrediction.");
     req.globalSolution() += args.DD;

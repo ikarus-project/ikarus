@@ -224,8 +224,8 @@ auto KLShellAndAdaptiveStepSizing(const PathFollowingType& pft, const std::vecto
       << "Total number of iterations is wrong --> " << controlInfoWSS.totalIterations << " is not equal to "
       << std::to_string(controlInfoWSSIterations) + " --> " + pft.name();
 
-  checkSolverInfos(t, expectedIterations[0], controlInfoWSS, loadSteps, message1);
-  checkSolverInfos(t, expectedIterations[1], controlInfoWoSS, loadSteps, message2);
+  checkSolverInfos(t, expectedIterations[0], controlInfoWSS, loadSteps + 1, message1);
+  checkSolverInfos(t, expectedIterations[1], controlInfoWoSS, loadSteps + 1, message2);
 
   auto f = DifferentiableFunctionFactory::op(sparseAssembler);
   t.check(utils::checkGradient(f, req, {.draw = false})) << "Check gradient failed";
@@ -244,8 +244,8 @@ int main(int argc, char** argv) {
 
   /// expected iterations for each step for a path following type with and without step sizing
   const std::vector<std::vector<int>> expectedIterationsALC = {
-      {0, 9, 9, 6, 5, 4, 4},
-      {0, 9, 8, 6, 5, 5, 5}
+      {0, 8, 8, 5, 4, 3, 3},
+      {0, 8, 7, 5, 4, 4, 4}
   };
   const std::vector<std::vector<int>> expectedIterationsLC = {
       {0, 10, 4, 4, 3, 3, 3},
@@ -254,8 +254,8 @@ int main(int argc, char** argv) {
 
   /// expected results(max(displacement) and lambda) for a path following type with and without step sizing
   const std::vector<std::vector<double>> expectedResultsALC = {
-      {0.1032139637288574, 0.0003103004514250302},
-      { 0.162759603260405, 0.0007765975850229621}
+      {0.1100133758097153, 0.0003488536211530896},
+      {0.1627596032557576, 0.0007765975849705009}
   };
   const std::vector<std::vector<double>> expectedResultsLC = {
       {0.08741028329554552, 0.0002318693543601816},

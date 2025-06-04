@@ -61,27 +61,38 @@ struct TRSettings
  * \brief Configuration settings for the TrustRegion solver.
  */
 
-template <PreConditioner preConditioner = PreConditioner::IncompleteCholesky, typename UF = utils::UpdateDefault>
+template <PreConditioner preConditioner = PreConditioner::IncompleteCholesky, typename UF = utils::UpdateDefault,
+          typename IDBCF = utils::IDBCForceDefault>
 struct TrustRegionConfig
 {
   static_assert(std::copy_constructible<UF>,
                 " The update function should be copy constructable. If it is a lambda wrap it in a std::function");
 
-  using UpdateFunction = UF;
+  using UpdateFunction    = UF;
+  using IDBCForceFunction = IDBCF;
 
   TRSettings parameters;
   static constexpr PreConditioner preConditionerType = preConditioner;
   UF updateFunction;
+  IDBCF idbcForceFunction{};
   template <typename UF2>
   auto rebindUpdateFunction(UF2&& updateFunction) const {
-    TrustRegionConfig<preConditioner, UF2> settings{.parameters     = parameters,
-                                                    .updateFunction = std::forward<UF2>(updateFunction)};
+    TrustRegionConfig<preConditioner, UF2, IDBCF> settings{.parameters        = parameters,
+                                                           .updateFunction    = std::forward<UF2>(updateFunction),
+                                                           .idbcForceFunction = idbcForceFunction};
+    return settings;
+  }
+  template <typename IDBC2>
+  auto rebindIDBCForceFunction(IDBC2&& idbcForceFunction) const {
+    TrustRegionConfig<preConditioner, UF, IDBC2> settings{.parameters        = parameters,
+                                                          .updateFunction    = updateFunction,
+                                                          .idbcForceFunction = std::forward<IDBC2>(idbcForceFunction)};
     return settings;
   }
 };
 
 template <typename F, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
-          typename UF = utils::UpdateDefault>
+          typename UF = utils::UpdateDefault, typename IDBCF = utils::IDBCForceDefault>
 class TrustRegion;
 
 /**
@@ -97,9 +108,11 @@ requires traits::isSpecializationNonTypeAndTypes<TrustRegionConfig, std::remove_
 auto createNonlinearSolver(TRConfig&& config, F&& f) {
   static constexpr PreConditioner preConditioner = std::remove_cvref_t<TRConfig>::preConditionerType;
   using UF                                       = std::remove_cvref_t<TRConfig>::UpdateFunction;
+  using IDBCF                                    = std::remove_cvref_t<TRConfig>::IDBCForceFunction;
   static_assert(std::remove_cvref_t<F>::nDerivatives == 2,
                 "The number of derivatives in the DifferentiableFunction have to be exactly 2.");
-  auto solver = std::make_shared<TrustRegion<F, preConditioner, UF>>(f, std::forward<TRConfig>(config).updateFunction);
+  auto solver = std::make_shared<TrustRegion<F, preConditioner, UF, IDBCF>>(
+      f, std::forward<TRConfig>(config).updateFunction, std::forward<TRConfig>(config).idbcForceFunction);
 
   solver->setup(config.parameters);
   return solver;
@@ -165,11 +178,10 @@ struct Stats
 * \tparam F Type of the differentiable function to solve.
 * \tparam preConditioner Type of preconditioner to use (default is IncompleteCholesky).
 * \tparam UF Type of the update function
+* \tparam IDBCF Type of the force function to handle inhomogeneous Dirichlet BCs (defaults to IDBCForceDefault).
 */
-template <typename F, PreConditioner preConditioner, typename UF>
+template <typename F, PreConditioner preConditioner, typename UF, typename IDBCF>
 class TrustRegion : public NonlinearSolverBase<F>
-// template <typename NLO, PreConditioner preConditioner, typename UF>
-// class TrustRegion : public NonlinearSolverBase<NLO>
 {
 public:
   using Settings = TRSettings; ///< Type of the settings for the TrustRegion solver
@@ -179,20 +191,26 @@ public:
   using CorrectionType         = typename FTraits::template Range<1>; ///< Type of the correction of x += deltaX.
   using UpdateFunction         = UF;                                  ///< Type of the update function.
   using DifferentiableFunction = F;                                   ///< Type of function to minimize
+  using IDBCForceFunction      = IDBCF; ///< Type representing the force function to handle inhomogeneous Dirichlet BCs.
 
   using EnergyType   = typename FTraits::template Range<0>; ///< Type of the scalar cost
   using GradientType = typename FTraits::template Range<1>; ///< Type of the gradient vector
   using HessianType  = typename FTraits::template Range<2>; ///< Type of the Hessian matrix
-
+  using JacobianType = HessianType;
   /**
    * \brief Constructs a TrustRegion solver instance.
    * \param f Function to solve.
    * \param updateFunction Update function
+   * \param idbcForceFunction Force function to handle inhomogeneous Dirichlet BCs (default is IDBCForceDefault).
    */
-  template <typename UF2 = UF>
-  explicit TrustRegion(const F& f, UF2&& updateFunction = {})
+  template <typename UF2 = UF, typename IDBCF2 = IDBCF>
+  explicit TrustRegion(const F& f, UF2&& updateFunction = {}, IDBCF2&& idbcForceFunction = {})
       : energyFunction_{f},
-        updateFunction_{std::forward<UF2>(updateFunction)} {}
+        updateFunction_{std::forward<UF2>(updateFunction)},
+        idbcForceFunction_{std::forward<IDBCF2>(idbcForceFunction)} {
+    static_assert(std::same_as<IDBCForceFunction, utils::IDBCForceDefault>,
+                  "Trust Region Method is not implemented to handle inhomogeneous Dirichlet BCs.");
+  }
 
   /**
    * \brief Sets up the TrustRegion solver with the provided settings and checks feasibility.
@@ -209,9 +227,10 @@ public:
   /**
    * \brief Solves the nonlinear optimization problem using the TrustRegion algorithm.
    * \param x the solution.
+   * \param stepSize the step size of the control routine (defaults to 0.0)
    * \return NonLinearSolverInformation containing information about the solver result.
    */
-  [[nodiscard]] NonLinearSolverInformation solve(Domain& x) {
+  [[nodiscard]] NonLinearSolverInformation solve(Domain& x, double stepSize = 0.0) {
     using enum NonLinearSolverMessages;
 
     NonLinearSolverInformation solverInformation;
@@ -407,6 +426,7 @@ public:
       this->notify(NonLinearSolverMessages::FINISHED_SUCESSFULLY, state);
     return solverInformation;
   }
+
   /**
    * \brief Access the energy function.
    * \return Reference to the energy function.
@@ -414,10 +434,28 @@ public:
   auto& energy() { return energyFunction_; }
 
   /**
+   * \brief Access the energy function.
+   * \return Reference to the energy function.
+   */
+  const auto& energy() const { return energyFunction_; }
+
+  /**
    * \brief Access the residual.
    * \return The residual by value.
    */
-  auto residual() { return derivative(energyFunction_); }
+  auto residual() const { return derivative(energyFunction_); }
+
+  /**
+   * \brief Access the update function.
+   * \return Reference to the function.
+   */
+  const UpdateFunction& updateFunction() const { return updateFunction_; }
+
+  /**
+   * \brief Access the force function calculating internal forces due to inhomogeneous Dirichlet BCs.
+   * \return Reference to the function.
+   */
+  const IDBCForceFunction& idbcForceFunction() const { return idbcForceFunction_; }
 
 private:
   template <class T>
@@ -514,6 +552,7 @@ private:
   F energyFunction_;
 
   UpdateFunction updateFunction_;
+  IDBCForceFunction idbcForceFunction_;
   std::remove_cvref_t<CorrectionType> eta_;
   std::remove_cvref_t<CorrectionType> Heta_;
   Settings settings_;
@@ -547,13 +586,14 @@ private:
  * \return Shared pointer to the TrustRegion solver instance.
  */
 template <typename F, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
-          typename UF = utils::UpdateDefault>
-auto makeTrustRegion(const F& f, UF&& updateFunction = {}) {
-  return std::make_shared<TrustRegion<F, preConditioner, UF>>(f, updateFunction);
+          typename UF = utils::UpdateDefault, typename IDBCF = utils::IDBCForceDefault>
+auto makeTrustRegion(const F& f, UF&& updateFunction = {}, IDBCF&& idbcForceFunction = {}) {
+  return std::make_shared<TrustRegion<F, preConditioner, UF, IDBCF>>(f, updateFunction, idbcForceFunction);
 }
 
 template <typename F, PreConditioner preConditioner = PreConditioner::IncompleteCholesky,
-          typename UF2 = utils::UpdateDefault>
-TrustRegion(const F& f, UF2&& updateFunction = {}) -> TrustRegion<F, preConditioner, std::remove_cvref_t<UF2>>;
+          typename UF2 = utils::UpdateDefault, typename IDBCF2 = utils::IDBCForceDefault>
+TrustRegion(const F& f, UF2&& updateFunction = {}, IDBCF2&& idbcForceFunction = {})
+    -> TrustRegion<F, preConditioner, std::remove_cvref_t<UF2>, std::remove_cvref_t<IDBCF2>>;
 
 } // namespace Ikarus

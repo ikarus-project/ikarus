@@ -8,13 +8,53 @@
 
 #pragma once
 
+#include <type_traits>
 #include <utility>
+
+#include <dune/common/float_cmp.hh>
 
 #include <ikarus/assembler/dirichletbcenforcement.hh>
 #include <ikarus/utils/defaultfunctions.hh>
 #include <ikarus/utils/differentiablefunctionfactory.hh>
+#include <ikarus/utils/functionhelper.hh>
 
 namespace Ikarus {
+
+namespace Impl {
+  struct IDBCForceFunction
+  {
+    template <typename A>
+    auto operator()(const A& assembler) {
+      return [&]<typename D>(const D&) { return utils::obtainForcesDueToIDBC(assembler); };
+    }
+  };
+
+  template <typename CT, typename A, typename S>
+  auto updateFunctor(const A& assembler, const S& setting) {
+    return [&]<typename D, typename C>(D& x, const C& b) {
+      if constexpr (not std::is_same_v<C, utils::SyncFERequirements>) {
+        // the right-hand side is reduced
+        if (assembler->dBCOption() == DBCOption::Reduced and assembler->reducedSize() == b.size()) {
+          setting.updateFunction(x, assembler->createFullVector(b));
+        } else if (assembler->reducedSize() == x.size() and
+                   assembler->size() == b.size()) // the right-hand side is full but x is reduced
+        {
+          setting.updateFunction(x, assembler->createReducedVector(b));
+        } else
+          setting.updateFunction(x, b);
+      } else { // updates due to inhomogeneous bcs
+        if constexpr (requires { x.parameter(); }) {
+          auto& dv  = assembler->dirichletValues();
+          CT newInc = CT::Zero(dv.size());
+          dv.evaluateInhomogeneousBoundaryCondition(newInc, x.parameter());
+          for (const auto i : Dune::range(newInc.size()))
+            if (Dune::FloatCmp::ne(newInc[i], 0.0))
+              x.globalSolution()[i] = newInc[i];
+        }
+      }
+    };
+  }
+} // namespace Impl
 
 /**
  * \brief A factory class for creating nonlinear solvers.
@@ -35,7 +75,24 @@ struct NonlinearSolverFactory
   NonlinearSolverFactory(NLSSetting s)
       : settings(s) {}
 
-  NLSSetting settings;
+  /**
+   * \brief A helper function to create another NonlinearSolverFactory object after binding IDBCForceFunction to the
+   * configuration of the nonlinear solver. This then helps to handle inhomogeneous Dirichlet BCs when using a certain
+   * control routine to perform a nonlinear analysis.
+   *
+   * \tparam Assembler The type of the assembler used for creating the nonlinear solver.
+   *
+   * \param assembler The assembler to be used for creating the nonlinear solver.
+   *
+   * \return The created
+   * nonlinear solver factory.
+   */
+  template <typename Assembler>
+  auto withIDBCForceFunction(Assembler&& assembler) const {
+    auto idbcForceF  = Impl::IDBCForceFunction{}.template operator()(assembler);
+    auto newSettings = settings.rebindIDBCForceFunction(std::move(idbcForceF));
+    return NonlinearSolverFactory<std::decay_t<decltype(newSettings)>>{std::move(newSettings)};
+  }
 
   /**
    * \brief Creates a nonlinear solver using the provided assembler.
@@ -47,7 +104,8 @@ struct NonlinearSolverFactory
    * \return The created nonlinear solver.
    *
    * \note The assembler's dBCOption is checked, and the appropriate update function
-   *       is used based on whether the option is set to Reduced or not.
+   *       is used based on whether the option is set to Reduced or not. If inhomogeneous Dirichlet BCs are present,
+   *       please call withIDBCForceFunction first.
    */
   template <typename Assembler>
   requires Concepts::FlatAssembler<typename std::remove_cvref_t<Assembler>::element_type>
@@ -55,16 +113,15 @@ struct NonlinearSolverFactory
     auto f        = DifferentiableFunctionFactory::op(assembler);
     using fTraits = typename decltype(f)::Traits;
 
-    using CorrectionType = typename fTraits::template Range<1>;
+    using CorrectionType = std::remove_cvref_t<typename fTraits::template Range<1>>;
     using Domain         = typename fTraits::Domain;
-    auto updateF         = [assembler, setting = settings]<typename D, typename C>(D& x, const C& b) {
-      if (assembler->dBCOption() == DBCOption::Reduced) {
-        setting.updateFunction(x, assembler->createFullVector(b));
-      } else
-        setting.updateFunction(x, b);
-    };
+
+    auto updateF     = Impl::updateFunctor<CorrectionType>(assembler, settings);
     auto settingsNew = settings.rebindUpdateFunction(std::move(updateF));
     return createNonlinearSolver(std::move(settingsNew), std::move(f));
   }
+
+private:
+  NLSSetting settings;
 };
-}; // namespace Ikarus
+} // namespace Ikarus

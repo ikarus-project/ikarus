@@ -154,7 +154,7 @@ static auto dirichletBCTest() {
   t.check(sum(container) == 0) << "After resetting container should have only false entries";
   t.check(manual_sum(dirichletValues2) == 0) << "After resetting, all DOFs should be false";
 
-  // Inhomogenious Boundary Conditions
+  // Inhomogeneous Boundary Conditions
   auto inhomogeneousDisplacement = []<typename T>(const auto& globalCoord, const T& lambda) {
     Eigen::Vector<T, 2> localInhomogeneous;
     if (globalCoord[0] > 4 - 1e-8) {

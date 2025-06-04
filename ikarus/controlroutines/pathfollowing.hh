@@ -55,8 +55,7 @@ namespace Impl {
    */
   template <typename NLS, typename PF = ArcLength, typename ASS>
   consteval bool checkPathFollowingTemplates() {
-    return Concepts::PathFollowingStrategy<PF, std::remove_cvref_t<typename NLS::DifferentiableFunction>,
-                                           SubsidiaryArgs> and
+    return Concepts::PathFollowingStrategy<PF, std::remove_cvref_t<NLS>, SubsidiaryArgs> and
            Concepts::AdaptiveStepSizingStrategy<ASS, NonLinearSolverInformation, SubsidiaryArgs,
                                                 std::remove_cvref_t<typename NLS::DifferentiableFunction>> and
            Concepts::NonLinearSolverCheckForPathFollowing<NLS>;
