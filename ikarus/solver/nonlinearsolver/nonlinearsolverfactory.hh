@@ -47,7 +47,7 @@ namespace Impl {
           auto& dv  = assembler->dirichletValues();
           CT newInc = CT::Zero(dv.size());
           // TODO
-          // dv.evaluateInhomogeneousBoundaryCondition(newInc, x.parameter());
+          dv.evaluateInhomogeneousBoundaryCondition(newInc, x.parameter());
           for (const auto i : Dune::range(newInc.size()))
             if (Dune::FloatCmp::ne(newInc[i], 0.0))
               x.globalSolution()[i] = newInc[i];

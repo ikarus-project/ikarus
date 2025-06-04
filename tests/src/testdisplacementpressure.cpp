@@ -23,8 +23,15 @@ auto testAutoDiff(const FEType& fe, double tol = 1e-10) {
   Dune::TestSuite t("Check calculateMatrixImpl() and calculateVectorImpl() by Automatic Differentiation");
 
   auto n = fe.size();
-  Eigen::VectorXd d(n);
-  d << 0.0, 0.1, 0.2, 0.3, 0.0, 0.1, 0.4, -0.1, 1e-5;
+  Eigen::VectorXd d;
+  d.setZero(n);
+  if (n == 9)
+    d << 0.0, 0.1, 0.2, 0.3, 0.0, 0.1, 0.4, -0.1, 1e-5;
+  else {
+    d[0]  = 0.2;
+    d[1]  = 0.3;
+    d[18] = 1e-5;
+  }
   double lambda                 = 0.0;
   auto req                      = typename FEType::Requirement(d, lambda);
   const std::string feClassName = Dune::className(fe);
@@ -51,7 +58,7 @@ auto testAutoDiff(const FEType& fe, double tol = 1e-10) {
 }
 
 template <typename FEType>
-auto testEigenValues(const FEType& fe) {
+auto testEigenValuesQ1P0(const FEType& fe) {
   TestSuite t;
 
   auto n = fe.size();
@@ -106,6 +113,62 @@ auto testEigenValues(const FEType& fe) {
   return t;
 };
 
+template <typename FEType>
+auto testEigenValuesQ2P1(const FEType& fe) {
+  TestSuite t;
+
+  auto n = fe.size();
+
+  Eigen::VectorXd d;
+  d.setZero(n);
+  double lambda = 0.0;
+  auto req      = typename FEType::Requirement(d, lambda);
+
+  auto testEVs = [&](const auto& d, const auto& evsExpected, const auto& normfexpected) {
+    req.insertGlobalSolution(d);
+    Eigen::MatrixXd k;
+    k.setZero(n, n);
+
+    Eigen::VectorXd f;
+    f.setZero(n);
+
+    calculateMatrix(fe, req, Ikarus::MatrixAffordance::stiffness, k);
+    calculateVector(fe, req, Ikarus::VectorAffordance::forces, f);
+
+    auto essaK = makeIdentitySymEigenSolver<EigenValueSolverType::Eigen>(k);
+    essaK.compute();
+    auto eigenValuesComputed = essaK.eigenvalues();
+
+    checkApproxVectors(t, eigenValuesComputed, evsExpected, " Incorrect eigenvalues of K ", 1e-10);
+    checkScalars(t, f.norm(), normfexpected, " Incorrect norm of f", 1e-10);
+  };
+
+  auto expectedEigenValues0 = Eigen::Vector<double, 22>{
+      -0.0022499662832745166,  -0.0007499953170165504, -0.0007499953170165504, -0.00019269216525575703,
+      -1.2675836675755374e-13, 1.7663987885579953e-14, 1.7663987885579953e-14, 74.57121551081288,
+      95.04370854203668,       95.04370854203673,      137.4532366264664,      202.61599074588514,
+      340.8307663627087,       340.83076636270874,     715.8836689038023,      856.2954605331539,
+      984.3400447427299,       1100.4311758193091,     1177.6687024698504,     1177.6687024698533,
+      2614.645487083809,       2614.6454870838124};
+  auto expectedEigenValuesD = Eigen::Vector<double, 22>{
+      -4427.013285300488,     -0.002040646174187323,  -0.0008330950847293147, -0.00039650220441031107,
+      -3.8373673614607304e-5, 1.0528132510634611e-12, 3.646346256005411e-12,  10.396215358782568,
+      78.67635569586426,      112.67502157113005,     168.1386004850153,      283.156382121772,
+      334.1004165735087,      673.497820795596,       693.4161372086264,      1013.8903723881498,
+      1089.7042768037954,     1379.5488153262536,     2097.470724366695,      2354.0018864800427,
+      7806.442489077462,      85336.8479396152};
+
+  testEVs(d, expectedEigenValues0, 8.038873388460929e-14);
+
+  d[0]  = 0.2;
+  d[1]  = 0.3;
+  d[18] = 1e-5;
+  testEVs(d, expectedEigenValuesD, 1898.171612415919);
+
+  return t;
+};
+
+template <int pD, int pP, bool continous = true>
 auto testStuff() {
   TestSuite t("Eigenvalue Test");
 
@@ -124,9 +187,14 @@ auto testStuff() {
   auto gridView                           = grid->leafGridView();
 
   using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeBasis(
-      gridView, composite(power<2>(lagrange<1>(), FlatInterleaved{}), lagrange<0>(), BlockedLexicographic{}));
-
+  auto basis = [&]() {
+    if constexpr (continous)
+      return Ikarus::makeBasis(
+          gridView, composite(power<2>(lagrange<pD>(), FlatInterleaved{}), lagrange<pP>(), BlockedLexicographic{}));
+    else
+      return Ikarus::makeBasis(
+          gridView, composite(power<2>(lagrange<pD>(), FlatInterleaved{}), lagrangeDG<pP>(), BlockedLexicographic{}));
+  }();
   auto sk      = skills(displacementPressure(planeStrain(matDEV), planeStrain(matVOL), kappa));
   using FEType = decltype(makeFE(basis, sk));
   std::vector<FEType> fes;
@@ -144,8 +212,11 @@ auto testStuff() {
   t.check(n == nDOF);
 
   // TESTS
-  t.subTest(testEigenValues(fe));
-  t.subTest(testAutoDiff(fe));
+  if (pD == 1) {
+    t.subTest(testEigenValuesQ1P0(fe));
+    t.subTest(testAutoDiff(fe));
+  } else
+    t.subTest(testEigenValuesQ2P1(fe));
 
   return t;
 }
@@ -154,7 +225,9 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   Dune::TestSuite t;
 
-  t.subTest(testStuff());
+  // t.subTest(testStuff<1, 0>());
+  // t.subTest(testStuff<2, 1>());
+  t.subTest(testStuff<2, 1, false>());
 
   return t.exit();
 }

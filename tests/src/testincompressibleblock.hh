@@ -12,6 +12,7 @@
 #include <dune/functions/functionspacebases/basistags.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/lagrangebasis.hh>
+#include <dune/functions/functionspacebases/lagrangedgbasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 #include <dune/vtk/datacollectors/discontinuousdatacollector.hh>
 
@@ -48,7 +49,7 @@ auto makeGrid(double L, int nele) {
 }
 } // namespace Testing
 
-template <typename Skills>
+template <int pD, int pP, bool continous, typename Skills>
 auto incompressibelBlockTest(Skills&& elePre, std::pair<int, double> testResults, int nele, bool logToConsole = false,
                              bool writeVTK = false) {
   TestSuite t("Incompressible Block Test for Displacement Pressure Element " + Dune::className(elePre));
@@ -61,9 +62,14 @@ auto incompressibelBlockTest(Skills&& elePre, std::pair<int, double> testResults
   auto grid     = Testing::makeGrid<Grid>(L, nele);
   auto gridView = grid->leafGridView();
   using namespace Dune::Functions::BasisFactory;
-  auto basis = Ikarus::makeBasis(
-      gridView, composite(power<3>(lagrange<1>(), FlatInterleaved{}), lagrange<0>(), BlockedLexicographic{}));
-
+  auto basis = [&]() {
+    if constexpr (continous)
+      return Ikarus::makeBasis(
+          gridView, composite(power<3>(lagrange<pD>(), FlatInterleaved{}), lagrange<pP>(), BlockedLexicographic{}));
+    else
+      return Ikarus::makeBasis(
+          gridView, composite(power<3>(lagrange<pD>(), FlatInterleaved{}), lagrangeDG<pP>(), BlockedLexicographic{}));
+  }();
   auto vL = [](auto& globalCoord, auto& lambda) {
     Eigen::Vector<double, 3> fext{0.0, 0.0, -9 * lambda};
     return fext;
@@ -133,15 +139,13 @@ auto incompressibelBlockTest(Skills&& elePre, std::pair<int, double> testResults
 
   auto nrConfig =
       Ikarus::NewtonRaphsonConfig<decltype(linSolver)>{.parameters = {.tol = tol}, .linearSolver = linSolver};
-  NonlinearSolverFactory nrFactory(nrConfig);
-
-  auto nr = nrFactory.create(sparseFlatAssembler);
+  auto nrFactory = NonlinearSolverFactory(nrConfig);
+  auto nr        = nrFactory.create(sparseFlatAssembler);
 
   auto lc = ControlRoutineFactory::create(LoadControlConfig{3, 0.0, 1.0}, nr, sparseFlatAssembler);
 
   auto nonLinearSolverLogger = NonLinearSolverLogger();
   auto controlLogger         = ControlLogger();
-  // auto vtkWriter             = ControlSubsamplingVertexVTKWriter(basis.flat());
 
   if (logToConsole) {
     nonLinearSolverLogger.subscribeTo(lc.nonLinearSolver());
@@ -159,16 +163,15 @@ auto incompressibelBlockTest(Skills&& elePre, std::pair<int, double> testResults
 
   if (writeVTK) {
     Ikarus::Vtk::Writer writer(sparseFlatAssembler);
-    auto dxBasis = Dune::Functions::subspaceBasis(basis.flat(), Dune::Indices::_0, 0);
-    auto dyBasis = Dune::Functions::subspaceBasis(basis.flat(), Dune::Indices::_0, 1);
-    auto dzBasis = Dune::Functions::subspaceBasis(basis.flat(), Dune::Indices::_0, 2);
-    auto pBasis  = Dune::Functions::subspaceBasis(basis.flat(), Dune::Indices::_1);
-    writer.addInterpolation(d, dxBasis, "dx");
-    writer.addInterpolation(d, dyBasis, "dy");
-    writer.addInterpolation(d, dzBasis, "dz");
+    auto dBasis = Dune::Functions::subspaceBasis(basis.flat(), Dune::Indices::_0);
+    auto pBasis = Dune::Functions::subspaceBasis(basis.flat(), Dune::Indices::_1);
+
+    writer.addInterpolation(d, dBasis, "displacement");
     writer.addInterpolation(d, pBasis, "pressure");
-    writer.write("block_" + std::to_string(nele));
+
+    writer.write("block_" + std::to_string(nele) + "_" + std::to_string(pD) + "_" + std::to_string(continous));
   }
+
   double expectedLambda                            = 1.0;
   const auto [expectedIterations, expectedMaxDisp] = testResults;
 

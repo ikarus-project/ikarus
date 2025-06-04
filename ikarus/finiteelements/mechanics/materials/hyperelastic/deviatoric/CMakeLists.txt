@@ -10,6 +10,7 @@ install(
         deviatoricinvariants.hh
         arrudaboyce.hh
         gent.hh
+        nodeviatoricfunction.hh
   DESTINATION
     ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/materials/hyperelastic/deviatoric
 )

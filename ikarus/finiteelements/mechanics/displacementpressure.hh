@@ -472,15 +472,15 @@ protected:
           const auto upTerm = (bopJ.transpose() * dUdE * Np[i][0]).transpose().eval();
           K.template block<1, myDim>(iIdx, j * myDim) += upTerm * intElement;
         }
+      }
 
-        // Loop over p-p
-        for (auto i : Dune::range(pFE.size())) {
-          auto iIdx = pFE.localIndex(i);
-          for (auto j : Dune::range(pFE.size())) {
-            auto jIdx   = pFE.localIndex(j);
-            auto ppTerm = Np[i][0] * (1.0 / constitutiveDriver_.kappa()) * Np[j][0];
-            K(iIdx, jIdx) -= ppTerm * intElement;
-          }
+      // Loop over p-p
+      for (auto i : Dune::range(pFE.size())) {
+        auto iIdx = pFE.localIndex(i);
+        for (auto j : Dune::range(pFE.size())) {
+          auto jIdx   = pFE.localIndex(j);
+          auto ppTerm = Np[i][0] * (1.0 / constitutiveDriver_.kappa()) * Np[j][0];
+          K(iIdx, jIdx) -= ppTerm * intElement;
         }
       }
     }
