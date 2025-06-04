@@ -52,6 +52,7 @@ set(programSourceFiles
     testconversions.cpp
     testinhomogeneousdbc.cpp
     testdisplacementpressure.cpp
+    testincompressibleblock.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS

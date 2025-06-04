@@ -111,7 +111,7 @@ struct Deviatoric
       for (const auto k : dimensionRange())
         L(i, i, k, k) = 1.0 / (lambda(i) * lambda(k)) * dS(i, k);
 
-    Eigen::ArrayXd lambdaSquared = lambda.array().square();
+    auto lambdaSquared = lambda.array().square();
     for (const auto i : dimensionRange())
       for (const auto k : dimensionRange())
         if (i != k) {

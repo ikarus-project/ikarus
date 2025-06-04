@@ -4,7 +4,7 @@
 /**
  * \file displacementpressure.hh
  * \brief Definition of the DisplacementPressure class for finite element mechanics computations.
- * \ingroup  mechanics
+ * \ingroup mechanics
  */
 
 #pragma once
@@ -32,85 +32,76 @@
 
 namespace Ikarus {
 
-namespace FEHelper {
+namespace Impl {
 
-  // treePath should leed to final node, i.e. scalar basis. not checked with provided dx
-  template <typename Traits, typename Vector, typename ST>
-  auto localSolutionBlockVectorScalar(
-      const Vector& x, const typename Traits::LocalView& localView, auto&& treePath,
-      const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) {
-    constexpr int worldDim = Traits::worlddim;
-    const auto& fe         = localView.tree().child(treePath).finiteElement();
-    Dune::BlockVector<Dune::RealTuple<ST, 1>> localX(fe.size());
-    if (dx) {
-      for (auto i = 0U; i < localX.size(); ++i)
-        localX[i][0] =
-            dx.value().get()[i * worldDim] + x[localView.index(localView.tree().child(treePath).localIndex(i))[0]];
-    } else {
-      for (auto i = 0U; i < localX.size(); ++i)
-        localX[i][0] = x[localView.index(localView.tree().child(treePath).localIndex(i))[0]];
+  /**
+   * \brief Constitutive driver for the displacement pressure element using a split between a volumetric and deviatoric
+   * function.
+   *
+   * \tparam DEV a Ikarus::Material representing the deviatoric part of the material
+   * \tparam VOL a Ikarus::Material representing the volumetric part of the material
+   */
+  template <Concepts::Material DEV, Concepts::Material VOL>
+  struct DPConstitutiveDriver
+  {
+    static constexpr auto strainType = StrainTags::greenLagrangian;
+
+    auto Uhat(const auto& Estrain) const { return vol_.template storedEnergy<strainType>(Estrain); }
+
+    auto storedEnergy(const auto& Estrain, auto p) {
+      auto Wdev = dev_.template storedEnergy<strainType>(Estrain);
+      auto uhat = Uhat(Estrain);
+      return Wdev + (kappa_ / 2) * Dune::power(uhat, 2);
     }
 
-    return localX;
-  }
-
-  template <typename Traits, typename Vector, typename ST>
-  auto localSolutionBlockVectorWithTreePath(
-      const Vector& x, const typename Traits::LocalView& localView, auto&& treePath,
-      const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) {
-    constexpr int worldDim = Traits::worlddim;
-    const auto& fe         = localView.tree().child(treePath).child(0).finiteElement();
-    Dune::BlockVector<Dune::RealTuple<ST, worldDim>> localX(fe.size());
-    if (dx) {
-      for (auto i = 0U; i < localX.size(); ++i)
-        for (auto j = 0U; j < worldDim; ++j)
-          localX[i][j] = dx.value().get()[i * worldDim + j] +
-                         x[localView.index(localView.tree().child(treePath).child(j).localIndex(i))[0]];
-    } else {
-      for (auto i = 0U; i < localX.size(); ++i)
-        for (auto j = 0U; j < worldDim; ++j)
-          localX[i][j] = x[localView.index(localView.tree().child(treePath).child(j).localIndex(i))[0]];
+    auto firstDerivatives(const auto& Estrain, auto p) const {
+      const auto Sdev = dev_.template stresses<strainType, true>(Estrain);
+      const auto dUdE = vol_.template stresses<strainType, true>(Estrain);
+      const auto S    = (Sdev + p * dUdE).eval();
+      return std::make_tuple(dUdE, S);
     }
 
-    return localX;
-  }
+    auto secondDerivative(const auto& Estrain, auto p) const {
+      const auto Cdev   = dev_.template tangentModuli<strainType, true>(Estrain);
+      const auto d2UdE2 = vol_.template tangentModuli<strainType, true>(Estrain);
+      const auto C      = (Cdev + p * d2UdE2).eval();
+      return C;
+    }
 
-} // namespace FEHelper
+    double kappa() const { return kappa_; }
 
-template <typename DEV, typename VOL>
-struct ConstitutiveDriver
-{
-  static constexpr auto strainType = StrainTags::greenLagrangian;
-  auto operator()(const auto& Estrain, double p) const {
-    const auto Sdev = dev.template stresses<strainType, true>(Estrain);
-    const auto Cdev = dev.template tangentModuli<strainType, true>(Estrain);
+    DEV deviatoricMaterial() const { return dev_; }
+    VOL volumetricMaterial() const { return vol_; }
 
-    const auto Uhat   = vol.template storedEnergy<strainType>(Estrain);
-    const auto dUdE   = vol.template stresses<strainType, true>(Estrain);
-    const auto d2UdE2 = vol.template tangentModuli<strainType, true>(Estrain);
+    DPConstitutiveDriver(const DEV& dev, const VOL& vol, double kappa)
+        : dev_(dev),
+          vol_(vol),
+          kappa_(kappa) {}
 
-    const auto S = (Sdev + p * dUdE).eval();
-    const auto C = (Cdev + p * d2UdE2).eval();
+    /**
+     * \brief Rebinds the material driver to a different scalar type.
+     * \tparam STO The target scalar type.
+     * \return ConstitutiveDriver<ScalarTypeOther> The rebound ConstitutiveDriver.
+     */
+    template <typename STO>
+    auto rebind() const {
+      auto reboundDEV = dev_.template rebind<STO>();
+      auto reboundVOL = vol_.template rebind<STO>();
+      return DPConstitutiveDriver<decltype(reboundDEV), decltype(reboundVOL)>(reboundDEV, reboundVOL, kappa_);
+    }
 
-    return std::make_tuple(Uhat, dUdE, S, C, kappa);
-  }
+  private:
+    DEV dev_;
+    VOL vol_;
+    double kappa_;
+  };
 
-  ConstitutiveDriver(const DEV& dev, const VOL& vol, double kappa)
-      : dev(dev),
-        vol(vol),
-        kappa(kappa) {}
-
-private:
-  DEV dev;
-  VOL vol;
-  double kappa;
-};
-
+} // namespace Impl
 template <typename PreFE, typename FE, typename PRE>
 class DisplacementPressure;
 
 /**
- * \brief A PreFE struct for non-linear elastic elements.
+ * \brief A PreFE struct for displacement-pressure elements.
  * \tparam MAT Type of the material.
  */
 template <Concepts::Material MATDEV, Concepts::Material MATVOL>
@@ -127,13 +118,13 @@ struct DisplacementPressurePre
 };
 
 /**
- * \brief DisplacementPressure class represents a non-linear elastic finite element.
+ * \brief DisplacementPressure class represents a displacement-pressure finite element.
  *
  * \ingroup mechanics
  *
  * \tparam PreFE The type of the total pre finite element.
  * \tparam FE The type of the finite element.
- * \tparam PRE The type of the non-linear elastic pre finite element.
+ * \tparam PRE The type of the displacement-pressure pre finite element.
  */
 template <typename PreFE, typename FE, typename PRE>
 class DisplacementPressure : public ResultTypeBase<ResultTypes::PK2Stress, ResultTypes::PK2StressFull>
@@ -149,9 +140,9 @@ public:
   using Element     = typename Traits::Element;
   using Pre         = PRE;
 
-  using LocalBasisType_U =
+  using LocalBasisTypeU =
       decltype(std::declval<LocalView>().tree().child(Dune::Indices::_0).child(0).finiteElement().localBasis());
-  using LocalBasisType_P =
+  using LocalBasisTypeP =
       decltype(std::declval<LocalView>().tree().child(Dune::Indices::_1).finiteElement().localBasis());
 
   template <typename ST>
@@ -223,18 +214,19 @@ public:
   }
 
   /**
-   * \brief Get the displacement function for the given Requirement.
+   * \brief Get the pressure function for the given Requirement.
    *
-   * \tparam ScalarType The scalar type for the displacement function.
+   * \tparam ScalarType The scalar type for the pressure function.
    * \param par The Requirement object.
    * \param dx Optional displacement vector.
-   * \return A StandardLocalFunction representing the displacement function.
+   * \return A StandardLocalFunction representing the pressure function.
    */
   template <typename ScalarType = double>
   auto pressureFunction(const Requirement& par, const VectorXOptRef<ScalarType>& dx = std::nullopt) const {
     const auto& d = par.globalSolution();
     auto pressure =
         Ikarus::FEHelper::localSolutionBlockVectorScalar<Traits>(d, underlying().localView(), Dune::Indices::_1, dx);
+
     Dune::StandardLocalFunction pFunction(localBasisP_, pressure, geo_);
     return pFunction;
   }
@@ -252,82 +244,45 @@ public:
     return Dune::greenLagrangeStrains(displacementFunction(par, dx));
   }
 
-  /**
-   * \brief Get the internal energy for the given strain.
-   *
-   * \tparam ScalarType The scalar type for the material and strain.
-   * \tparam strainDim The dimension of the strain vector.
-   * \param strain The strain vector.
-   * \return The internal energy calculated using the material's storedEnergy function.
-   */
-  template <typename ScalarType, int strainDim>
-  auto internalEnergy(const Eigen::Vector<ScalarType, strainDim>& strain) const {
-    return material<ScalarType>().template storedEnergy<strainType>(strain);
-  }
-
-  // /**
-  //  * \brief Get the stress for the given strain.
-  //  *
-  //  * \tparam ScalarType The scalar type for the material and strain.
-  //  * \tparam strainDim The dimension of the strain vector.
-  //  * \tparam voigt A boolean indicating whether to use the Voigt notation for stress.
-  //  * \param strain The strain vector.
-  //  * \return The stress vector calculated using the material's stresses function.
-  //  */
-  // template <typename ScalarType, int strainDim, bool voigt = true>
-  // auto stress(const Eigen::Vector<ScalarType, strainDim>& strain) const {
-  //   return material<ScalarType>().template stresses<strainType, voigt>(strain);
-  // }
-
-  /**
-   * \brief Get the material tangent for the given strain for the given Requirement.
-   *
-   * \tparam ScalarType The scalar type for the material and strain.
-   * \tparam strainDim The dimension of the strain vector.
-   * \tparam voigt Flag indicating whether to use Voigt notation.
-   * \param strain The strain vector.
-   * \return The material tangent calculated using the material's tangentModuli function.
-   */
-  template <typename ScalarType, int strainDim, bool voigt = true>
-  auto materialTangent(const Eigen::Vector<ScalarType, strainDim>& strain) const {
-    return material<ScalarType>().template tangentModuli<strainType, voigt>(strain);
-  }
-
   const Geometry& geometry() const { return *geo_; }
   [[nodiscard]] size_t numberOfNodes() const { return numberOfNodes_; }
   [[nodiscard]] int order() const { return order_; }
-  const Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType_U>>& localBasis() const { return localBasisU_; }
-  const Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType_P>>& localBasisP() const { return localBasisP_; }
+  const Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisTypeU>>& localBasis() const { return localBasisU_; }
+  const Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisTypeP>>& localBasisP() const { return localBasisP_; }
 
-  // template <typename ScalarType = double>
-  // decltype(auto) material() const {
-  //   if constexpr (Concepts::AutodiffScalar<ScalarType>)
-  //     return mat_.template rebind<ScalarType>();
-  //   else
-  //     return mat_;
-  // }
+  template <typename ScalarType = double>
+  decltype(auto) constitutiveDriver() const {
+    if constexpr (Concepts::AutodiffScalar<ScalarType>)
+      return constitutiveDriver_.template rebind<ScalarType>();
+    else
+      return constitutiveDriver_;
+  }
 
 public:
   /**
-   * \brief Get a lambda function that evaluates the requested result type for a given strain (in Voigt notation).
+   * \brief Get a lambda function that evaluates the requested result type for a given strain (in Voigt notation)
+   * and pressure.
    * \tparam RT The type representing the requested result.
    * \return A lambda function that evaluates the requested result type for a given strain (in Voigt notation).
    */
   template <template <typename, int, int> class RT>
   requires(supportsResultType<RT>())
   auto resultFunction() const {
-    // return [&](const Eigen::Vector<double, strainDim>& strainInVoigt) {
-    //   if constexpr (isSameResultType<RT, ResultTypes::PK2Stress> or isSameResultType<RT, ResultTypes::PK2StressFull>)
-    //   {
-    //     decltype(auto) mat = [&]() {
-    //       if constexpr (isSameResultType<RT, ResultTypes::PK2StressFull> and Material::isReduced)
-    //         return mat_.underlying();
-    //       else
-    //         return mat_;
-    //     }();
-    //     return RTWrapperType<RT>{mat.template stresses<strainType>(enlargeIfReduced<Material>(strainInVoigt))};
-    //   }
-    // };
+    return [&](const Eigen::Vector<double, strainDim>& strainInVoigt, double p) {
+      if constexpr (isSameResultType<RT, ResultTypes::PK2Stress> or isSameResultType<RT, ResultTypes::PK2StressFull>) {
+        auto [dev, vol] = [&]() {
+          if constexpr (isSameResultType<RT, ResultTypes::PK2StressFull> and PRE::MaterialDEV::isReduced)
+            return std::make_pair(constitutiveDriver_.deviatoricMaterial().underlying(),
+                                  constitutiveDriver_.volumetricMaterial().underlying());
+          else
+            return std::make_pair(constitutiveDriver_.deviatoricMaterial(), constitutiveDriver_.volumetricMaterial());
+        }();
+
+        return RTWrapperType<RT>{
+            dev.template stresses<strainType>(enlargeIfReduced<typename PRE::MaterialDEV>(strainInVoigt)) +
+            p * vol.template stresses<strainType>(enlargeIfReduced<typename PRE::MaterialVOL>(strainInVoigt))};
+      }
+    };
   }
 
   /**
@@ -345,16 +300,17 @@ public:
                        Dune::PriorityTag<1>) const {
     using namespace Dune::DerivativeDirections;
 
-    // if constexpr (FE::isMixed())
-    //   return RTWrapperType<RT>{};
-    // if constexpr (isSameResultType<RT, ResultTypes::PK2Stress> or isSameResultType<RT, ResultTypes::PK2StressFull>) {
-    //   const auto uFunction = displacementFunction(req);
-    //   const auto rFunction = resultFunction<RT>();
-    //   const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
-    //   const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
+    if constexpr (isSameResultType<RT, ResultTypes::PK2Stress> or isSameResultType<RT, ResultTypes::PK2StressFull>) {
+      const auto uFunction = displacementFunction(req);
+      const auto pFunction = pressureFunction(req);
 
-    // return rFunction(toVoigt(E));
-    // }
+      const auto rFunction = resultFunction<RT>();
+      const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
+      const auto p         = pFunction.evaluate(local, Dune::on(gridElement)).eval();
+      const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
+
+      return rFunction(toVoigt(E), p[0]);
+    }
   }
 
 private:
@@ -362,9 +318,9 @@ private:
   const auto& underlying() const { return static_cast<const FE&>(*this); }
   auto& underlying() { return static_cast<FE&>(*this); }
   std::shared_ptr<const Geometry> geo_;
-  Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType_U>> localBasisU_;
-  Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisType_P>> localBasisP_;
-  ConstitutiveDriver<typename PRE::MaterialDEV, typename PRE::MaterialVOL> constitutiveDriver_;
+  Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisTypeU>> localBasisU_;
+  Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisTypeP>> localBasisP_;
+  Impl::DPConstitutiveDriver<typename PRE::MaterialDEV, typename PRE::MaterialVOL> constitutiveDriver_;
   size_t numberOfNodes_{0};
   int order_{};
 
@@ -403,7 +359,6 @@ public:
                                        const VectorXOptRef<ST>& dx = std::nullopt) const {
     return
         [&](const auto& C, const BopType<ST>& bopI, const BopType<ST>& bopJ, const int I, const int J, const auto& gp) {
-          // const auto C            = materialTangent(strain);
           const double intElement = geo_->integrationElement(gp.position()) * gp.weight();
           K.template block<myDim, myDim>(I * myDim, J * myDim) += (bopI.transpose() * C * bopJ) * intElement;
         };
@@ -442,11 +397,15 @@ public:
     return [&]() -> ST {
       using namespace Dune::DerivativeDirections;
       using namespace Dune;
-      ST energy      = 0.0;
-      const auto eps = strainFunction(par, dx);
+      ST energy            = 0.0;
+      const auto eps       = strainFunction(par, dx);
+      const auto pFunction = pressureFunction(par, dx);
       for (const auto& [gpIndex, gp] : eps.viewOverIntegrationPoints()) {
         const auto EVoigt = eps.evaluate(gpIndex, on(gridElement));
-        energy += internalEnergy(EVoigt) * geo_->integrationElement(gp.position()) * gp.weight();
+        const auto p      = pFunction.evaluate(gpIndex, on(gridElement)).eval();
+
+        auto e = constitutiveDriver<ST>().storedEnergy(EVoigt, p[0]);
+        energy += e * geo_->integrationElement(gp.position()) * gp.weight();
       }
       return energy;
     };
@@ -466,7 +425,6 @@ protected:
                            const VectorXOptRef<ScalarType>& dx = std::nullopt) const {
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
-    // const auto uFunction = displacementFunction(par, dx);
     const auto pFunction = pressureFunction(par, dx);
 
     auto pFE         = underlying().localView().tree().child(Dune::Indices::_1);
@@ -480,7 +438,10 @@ protected:
       const auto EVoigt = (eps.evaluate(gpIndex, on(gridElement))).eval();
       const auto p      = pFunction.evaluate(gpIndex, on(gridElement)).eval();
       plocalBasis.evaluateFunction(gp.position(), Np);
-      auto [Uhat, dUdE, S, C, kappa] = constitutiveDriver_(EVoigt, p[0]);
+      const auto intElement = geo_->integrationElement(gp.position()) * gp.weight();
+
+      auto [dUdE, S] = constitutiveDriver<ScalarType>().firstDerivatives(EVoigt, p[0]);
+      auto C         = constitutiveDriver<ScalarType>().secondDerivative(EVoigt, p[0]);
 
       // Loop over u-u
       for (size_t i = 0; i < numberOfNodes_; ++i) {
@@ -499,27 +460,27 @@ protected:
         for (auto j : Dune::range(pFE.size())) {
           auto jIdx         = pFE.localIndex(j);
           const auto upTerm = (bopI.transpose() * dUdE * Np[j][0]).eval();
-          K.template block<myDim, 1>(i * myDim, jIdx) += upTerm * geo_->integrationElement(gp.position()) * gp.weight();
+          K.template block<myDim, 1>(i * myDim, jIdx) += upTerm * intElement;
         }
       }
 
-      // Loop over p-u (this is redundant -> symmetrize lower)
+      // Loop over p-u
       for (auto i : Dune::range(pFE.size())) {
         auto iIdx = pFE.localIndex(i);
         for (size_t j = 0; j < numberOfNodes_; ++j) {
           const auto bopJ   = eps.evaluateDerivative(gpIndex, wrt(coeff(j)), on(gridElement));
           const auto upTerm = (bopJ.transpose() * dUdE * Np[i][0]).transpose().eval();
-          K.template block<1, myDim>(iIdx, j * myDim) += upTerm * geo_->integrationElement(gp.position()) * gp.weight();
+          K.template block<1, myDim>(iIdx, j * myDim) += upTerm * intElement;
         }
-      }
 
-      // Loop over p-p
-      for (auto i : Dune::range(pFE.size())) {
-        auto iIdx = pFE.localIndex(i);
-        for (auto j : Dune::range(pFE.size())) {
-          auto jIdx   = pFE.localIndex(j);
-          auto ppTerm = Np[i][0] * (1.0 / kappa) * Np[j][0];
-          K(iIdx, jIdx) -= ppTerm * geo_->integrationElement(gp.position()) * gp.weight();
+        // Loop over p-p
+        for (auto i : Dune::range(pFE.size())) {
+          auto iIdx = pFE.localIndex(i);
+          for (auto j : Dune::range(pFE.size())) {
+            auto jIdx   = pFE.localIndex(j);
+            auto ppTerm = Np[i][0] * (1.0 / constitutiveDriver_.kappa()) * Np[j][0];
+            K(iIdx, jIdx) -= ppTerm * intElement;
+          }
         }
       }
     }
@@ -528,8 +489,6 @@ protected:
   template <typename ScalarType>
   auto calculateScalarImpl(const Requirement& par, ScalarAffordance affordance,
                            const VectorXOptRef<ScalarType>& dx = std::nullopt) const -> ScalarType {
-    if constexpr (FE::isMixed())
-      return ScalarType{0.0};
     return energyFunction(par, dx)();
   }
 
@@ -552,7 +511,9 @@ protected:
       const auto EVoigt = (eps.evaluate(gpIndex, on(gridElement))).eval();
       const auto p      = pFunction.evaluate(gpIndex, on(gridElement)).eval();
       plocalBasis.evaluateFunction(gp.position(), Np);
-      auto [Uhat, dUdE, S, C, kappa] = constitutiveDriver_(EVoigt, p[0]);
+
+      auto [dUdE, S] = constitutiveDriver<ScalarType>().firstDerivatives(EVoigt, p[0]);
+      auto Uhat      = constitutiveDriver<ScalarType>().Uhat(EVoigt);
 
       // Loop over u
       for (size_t i = 0; i < numberOfNodes_; ++i) {
@@ -563,7 +524,7 @@ protected:
       // Loop over p
       for (auto i : Dune::range(pFE.size())) {
         auto iIdx  = pFE.localIndex(i);
-        auto pTerm = Np[i][0] * (Uhat - p[0] / kappa);
+        auto pTerm = Np[i][0] * (Uhat - p[0] / constitutiveDriver_.kappa());
         force(iIdx) += pTerm * geo_->integrationElement(gp.position()) * gp.weight();
       }
     }
@@ -571,10 +532,10 @@ protected:
 };
 
 /**
- * \brief A helper function to create a non-linear elastic pre finite element.
+ * \brief A helper function to create a displacement-pressure pre finite element.
  * \tparam MAT Type of the material.
- * \param mat Material parameters for the non-linear elastic element.
- * \return A non-linear elastic pre finite element.
+ * \param mat Material parameters for the displacement-pressure element.
+ * \return A displacement-pressure pre finite element.
  */
 template <Concepts::Material MaterialDEV, Concepts::Material MaterialVOL>
 auto displacementPressure(const MaterialDEV& materialDev, const MaterialVOL& materialVol, double kappa) {
