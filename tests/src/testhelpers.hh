@@ -59,8 +59,8 @@ bool isApproxSame(const Derived& val, const OtherDerived& other, double prec, bo
     return isApproxSameImpl(val, other, prec);
 }
 
-template <typename TestSuiteType, typename MatrixType>
-void checkApproxMatrices(TestSuiteType& t, const MatrixType& mat1, const MatrixType& mat2,
+template <typename TestSuiteType, typename MatrixType1, typename MatrixType2>
+void checkApproxMatrices(TestSuiteType& t, const MatrixType1& mat1, const MatrixType2& mat2,
                          const std::string& messageIfFailed = "", double tol = 1e-10) {
   t.check(isApproxSame(mat1, mat2, tol)) << messageIfFailed << " mat1 is\n"
                                          << mat1 << "\n mat2 is\n"
@@ -68,8 +68,8 @@ void checkApproxMatrices(TestSuiteType& t, const MatrixType& mat1, const MatrixT
                                          << (mat1 - mat2);
 }
 
-template <typename TestSuiteType, typename VectorType>
-void checkApproxVectors(TestSuiteType& t, const VectorType& vec1, const VectorType& vec2,
+template <typename TestSuiteType, typename VectorType1, typename VectorType2>
+void checkApproxVectors(TestSuiteType& t, const VectorType1& vec1, const VectorType2& vec2,
                         const std::string& messageIfFailed = "", double tol = 1e-10) {
   t.check(isApproxSame(vec1, vec2, tol)) << messageIfFailed << " vec1 is\n"
                                          << vec1.transpose() << "\n vec2 is\n"

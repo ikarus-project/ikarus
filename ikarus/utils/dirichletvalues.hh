@@ -19,6 +19,7 @@
 #include <dune/common/float_cmp.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
+#include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
@@ -54,12 +55,28 @@ struct DeriveSizeType<std::vector<bool>>
   using SizeType = std::vector<bool>::size_type;
 };
 
+namespace Impl {
+  // TODO move into traits
+  template <class PreBasis>
+  struct PreBasisInfo
+  {
+    static constexpr bool isComposite = false;
+  };
+
+  template <class IMS, class... SPB>
+  struct PreBasisInfo<Dune::Functions::CompositePreBasis<IMS, SPB...>>
+  {
+    static constexpr bool isComposite = true;
+    static constexpr size_t size      = sizeof...(SPB);
+  };
+} // namespace Impl
+
 /**
  * \brief Class for handling Dirichlet boundary conditions in Ikarus.
  * \ingroup  utils
- * \details The DirichletValues class provides functionalities for fixing degrees of freedom and storing inhomogeneous
- * Dirichlet boundary conditions. It supports fixing degrees of freedom using various callback functions and
- * stores functions for inhomogeneous Dirichlet boundary conditions.
+ * \details The DirichletValues class provides functionalities for fixing degrees of freedom and storing
+ * inhomogeneous Dirichlet boundary conditions. It supports fixing degrees of freedom using various callback
+ * functions and stores functions for inhomogeneous Dirichlet boundary conditions.
  *
  * \tparam B Type of the finite element basis
  * \tparam FC Type for storing Dirichlet flags (default is std::vector<bool>)
@@ -228,10 +245,21 @@ public:
     inhomogeneousBoundaryVectorDummy.setZero(this->size());
     xIh.resizeLike(inhomogeneousBoundaryVectorDummy);
     xIh.setZero();
-    for (auto& f : dirichletFunctions_) {
-      interpolate(basis_, inhomogeneousBoundaryVectorDummy,
-                  [&](const auto& globalCoord) { return f.value(globalCoord, lambda); });
-      xIh += inhomogeneousBoundaryVectorDummy;
+
+    auto runInterpolate = [&](const auto& basis) {
+      for (auto& f : dirichletFunctions_) {
+        interpolate(basis, inhomogeneousBoundaryVectorDummy,
+                    [&](const auto& globalCoord) { return f.value(globalCoord, lambda); });
+        xIh += inhomogeneousBoundaryVectorDummy;
+      }
+    };
+
+    if constexpr (Impl::PreBasisInfo<typename Basis::PreBasis>::isComposite) {
+      // If composite, we assume that the first basis is a powerbasis of size worlddim
+      auto subB = subspaceBasis(basis_, Dune::Indices::_0);
+      runInterpolate(subB);
+    } else {
+      runInterpolate(basis_);
     }
   }
 
@@ -249,10 +277,21 @@ public:
     inhomogeneousBoundaryVectorDummy.setZero(this->size());
     xIh.resizeLike(inhomogeneousBoundaryVectorDummy);
     xIh.setZero();
-    for (auto& f : dirichletFunctions_) {
-      interpolate(basis_, inhomogeneousBoundaryVectorDummy,
-                  [&](const auto& globalCoord) { return f.derivative(globalCoord, lambda); });
-      xIh += inhomogeneousBoundaryVectorDummy;
+
+    auto runInterpolate = [&](const auto& basis) {
+      for (auto& f : dirichletFunctions_) {
+        interpolate(basis, inhomogeneousBoundaryVectorDummy,
+                    [&](const auto& globalCoord) { return f.derivative(globalCoord, lambda); });
+        xIh += inhomogeneousBoundaryVectorDummy;
+      }
+    };
+
+    if constexpr (Impl::PreBasisInfo<typename Basis::PreBasis>::isComposite) {
+      // If composite, we assume that the first basis is a powerbasis of size worlddim
+      auto subB = subspaceBasis(basis_, Dune::Indices::_0);
+      runInterpolate(subB);
+    } else {
+      runInterpolate(basis_);
     }
   }
 
