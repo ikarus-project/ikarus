@@ -25,6 +25,8 @@
 
 #include <Eigen/Core>
 
+#include <autodiff/forward/dual.hpp>
+#include <autodiff/forward/dual/dual.hpp>
 #include <autodiff/forward/real/real.hpp>
 
 #include <ikarus/utils/concepts.hh>
@@ -71,6 +73,7 @@ public:
   using Basis                         = std::remove_cvref_t<B>;
   using FlagsType                     = FC;
   static constexpr int worldDimension = Basis::GridView::dimensionworld;
+  static constexpr int numChildren    = Basis::PreBasis::children();
   using BackendType                   = decltype(Dune::Functions::istlVectorBackend(std::declval<FlagsType&>()));
   using SizeType                      = typename DeriveSizeType<FlagsType>::SizeType;
   explicit DirichletValues(const B& basis)
@@ -195,9 +198,15 @@ public:
   template <typename F>
   void storeInhomogeneousBoundaryCondition(F&& f, double lambda = 1.0) {
     auto derivativeLambda = [&](const auto& globalCoord, const double& lambda) {
+      // Eigen::Vector<double, numChildren> deriv;
       autodiff::real lambdaDual = lambda;
       lambdaDual[1]             = 1; // Setting the derivative in lambda direction to 1
       return derivative(f(globalCoord, lambdaDual));
+      // for (int i = 0; i < numChildren; ++i) {
+      //   deriv[i] = autodiff::derivative([&](const auto& lambda_) { return f(globalCoord, lambda_)[i]; },
+      //                                   autodiff::wrt(lambdaDual), autodiff::at(lambdaDual));
+      // }
+      // return deriv;
     };
     dirichletFunctions_.push_back({f, derivativeLambda});
     setInhomogeneousBoundaryConditionFlag(lambda);
@@ -262,8 +271,8 @@ private:
   BackendType dirichletFlagsBackend_;
   struct DirichletFunctions
   {
-    using Signature = std::function<Eigen::Vector<double, worldDimension>(
-        const Dune::FieldVector<double, worldDimension>&, const double&)>;
+    using Signature = std::function<Eigen::Vector<double, numChildren>(const Dune::FieldVector<double, worldDimension>&,
+                                                                       const double&)>;
     Signature value;
     Signature derivative;
   };

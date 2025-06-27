@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 #include <config.h>
 
+#include "testcommon.hh"
+#include "testhelpers.hh"
+
 #include <vector>
 
 #include <dune/common/float_cmp.hh>
@@ -262,6 +265,49 @@ static auto dirichletBCTest() {
            "result. Index: i="
         << i;
 
+  return t;
+}
+
+static auto dirichletBCTestWithMoreChildren() {
+  TestSuite t("DirichletValueTest with number of children in the power basis greater than gridDim");
+  using Grid = Dune::YaspGrid<2>;
+
+  auto grid     = createGrid<Grids::Yasp>(2, 2); // gridDim = 2 (here)
+  auto gridView = grid->leafGridView();
+
+  constexpr int numChildren = 5;
+
+  using namespace Dune::Functions::BasisFactory;
+  auto basis = Ikarus::makeBasis(gridView, power<numChildren>(lagrange<1>(), FlatInterleaved{}));
+
+  auto flatBasis = basis.flat();
+
+  Ikarus::DirichletValues dirichletValues(flatBasis);
+
+  // Inhomogeneous Boundary Conditions
+  auto inhomogeneousDisplacement = [numChildren]<typename T>(const auto& globalCoord, const T& lambda) {
+    Eigen::Vector<T, numChildren> localInhomogeneous;
+    if (Dune::FloatCmp::eq(globalCoord[0], 1.0)) {
+      for (const auto i : Dune::range(numChildren))
+        localInhomogeneous[i] = 4 * lambda;
+    } else
+      localInhomogeneous.setZero();
+    return localInhomogeneous;
+  };
+
+  dirichletValues.storeInhomogeneousBoundaryCondition(inhomogeneousDisplacement);
+  Eigen::VectorXd disps, dispDerivs;
+  dirichletValues.evaluateInhomogeneousBoundaryCondition(disps, 2);
+  dirichletValues.evaluateInhomogeneousBoundaryConditionDerivative(dispDerivs, 2);
+
+  auto lambdaCheck = [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+    auto globalIndex0 = static_cast<Eigen::Index>(localView.index(static_cast<size_t>(localIndex))[0]);
+    if (Dune::FloatCmp::eq(intersection.geometry().center()[0], 1.0)) {
+      checkScalars(t, disps[globalIndex0], 8.0, "Incorrect displacement.");
+      checkScalars(t, dispDerivs[globalIndex0], 4.0, "Incorrect displacement derivative.");
+    }
+  };
+  Dune::Functions::forEachBoundaryDOF(flatBasis, lambdaCheck);
   return t;
 }
 
