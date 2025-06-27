@@ -272,7 +272,7 @@ static auto dirichletBCTestWithMoreChildren() {
   TestSuite t("DirichletValueTest with number of children in the power basis greater than gridDim");
   using Grid = Dune::YaspGrid<2>;
 
-  auto grid     = createGrid<Grids::Yasp>(2, 2); // gridDim = 2 (here)
+  auto grid     = createGrid<Grids::Yasp>(2, 6); // gridDim = 2 (here)
   auto gridView = grid->leafGridView();
 
   constexpr int numChildren = 5;
@@ -280,31 +280,38 @@ static auto dirichletBCTestWithMoreChildren() {
   using namespace Dune::Functions::BasisFactory;
   auto basis = Ikarus::makeBasis(gridView, power<numChildren>(lagrange<1>(), FlatInterleaved{}));
 
-  auto flatBasis = basis.flat();
+  auto flatBasis  = basis.flat();
+  const auto nDOF = flatBasis.size();
 
   Ikarus::DirichletValues dirichletValues(flatBasis);
 
   // Inhomogeneous Boundary Conditions
   auto inhomogeneousDisplacement = [numChildren]<typename T>(const auto& globalCoord, const T& lambda) {
     Eigen::Vector<T, numChildren> localInhomogeneous;
-    if (Dune::FloatCmp::eq(globalCoord[0], 1.0)) {
-      for (const auto i : Dune::range(numChildren))
+    localInhomogeneous.setZero();
+    if (Dune::FloatCmp::eq(globalCoord[0], 1.0))
+      for (const auto i : Dune::range(numChildren - 1))
         localInhomogeneous[i] = 4 * lambda;
-    } else
-      localInhomogeneous.setZero();
     return localInhomogeneous;
   };
 
   dirichletValues.storeInhomogeneousBoundaryCondition(inhomogeneousDisplacement);
   Eigen::VectorXd disps, dispDerivs;
+  disps.setZero(nDOF);
+  dispDerivs.setZero(nDOF);
   dirichletValues.evaluateInhomogeneousBoundaryCondition(disps, 2);
   dirichletValues.evaluateInhomogeneousBoundaryConditionDerivative(dispDerivs, 2);
 
+  t.check(not disps.isZero(), "disps is zero");
+  t.check(not dispDerivs.isZero(), "dispDerivs is zero");
+
   auto lambdaCheck = [&](auto&& localIndex, auto&& localView, auto&& intersection) {
     auto globalIndex0 = static_cast<Eigen::Index>(localView.index(static_cast<size_t>(localIndex))[0]);
-    if (Dune::FloatCmp::eq(intersection.geometry().center()[0], 1.0)) {
-      checkScalars(t, disps[globalIndex0], 8.0, "Incorrect displacement.");
-      checkScalars(t, dispDerivs[globalIndex0], 4.0, "Incorrect displacement derivative.");
+    if (Dune::FloatCmp::eq(intersection.geometry().center()[0], 1.0) and
+        ((globalIndex0 % numChildren) != (numChildren - 1))) {
+      checkScalars(t, disps[globalIndex0], 8.0, " Incorrect displacement for index = " + std::to_string(globalIndex0));
+      checkScalars(t, dispDerivs[globalIndex0], 4.0,
+                   " Incorrect displacement derivative for index = " + std::to_string(globalIndex0));
     }
   };
   Dune::Functions::forEachBoundaryDOF(flatBasis, lambdaCheck);
@@ -316,5 +323,6 @@ int main(int argc, char** argv) {
   TestSuite t;
 
   t.subTest(dirichletBCTest());
+  t.subTest(dirichletBCTestWithMoreChildren());
   return t.exit();
 }

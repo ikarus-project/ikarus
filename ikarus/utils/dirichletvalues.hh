@@ -198,15 +198,9 @@ public:
   template <typename F>
   void storeInhomogeneousBoundaryCondition(F&& f, double lambda = 1.0) {
     auto derivativeLambda = [&](const auto& globalCoord, const double& lambda) {
-      // Eigen::Vector<double, numChildren> deriv;
       autodiff::real lambdaDual = lambda;
       lambdaDual[1]             = 1; // Setting the derivative in lambda direction to 1
       return derivative(f(globalCoord, lambdaDual));
-      // for (int i = 0; i < numChildren; ++i) {
-      //   deriv[i] = autodiff::derivative([&](const auto& lambda_) { return f(globalCoord, lambda_)[i]; },
-      //                                   autodiff::wrt(lambdaDual), autodiff::at(lambdaDual));
-      // }
-      // return deriv;
     };
     dirichletFunctions_.push_back({f, derivativeLambda});
     setInhomogeneousBoundaryConditionFlag(lambda);
