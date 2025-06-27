@@ -25,8 +25,6 @@
 
 #include <Eigen/Core>
 
-#include <autodiff/forward/dual.hpp>
-#include <autodiff/forward/dual/dual.hpp>
 #include <autodiff/forward/real/real.hpp>
 
 #include <ikarus/utils/concepts.hh>
