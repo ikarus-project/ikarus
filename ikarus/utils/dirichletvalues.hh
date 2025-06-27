@@ -71,6 +71,7 @@ public:
   using Basis                         = std::remove_cvref_t<B>;
   using FlagsType                     = FC;
   static constexpr int worldDimension = Basis::GridView::dimensionworld;
+  static constexpr int numChildren    = Basis::PreBasis::children();
   using BackendType                   = decltype(Dune::Functions::istlVectorBackend(std::declval<FlagsType&>()));
   using SizeType                      = typename DeriveSizeType<FlagsType>::SizeType;
   explicit DirichletValues(const B& basis)
@@ -262,8 +263,8 @@ private:
   BackendType dirichletFlagsBackend_;
   struct DirichletFunctions
   {
-    using Signature = std::function<Eigen::Vector<double, worldDimension>(
-        const Dune::FieldVector<double, worldDimension>&, const double&)>;
+    using Signature = std::function<Eigen::Vector<double, numChildren>(const Dune::FieldVector<double, worldDimension>&,
+                                                                       const double&)>;
     Signature value;
     Signature derivative;
   };
