@@ -269,7 +269,7 @@ static auto dirichletBCTest() {
 }
 
 static auto dirichletBCTestWithMoreChildren() {
-  TestSuite t("DirichletValueTest with number of children in the power basis greater than gridDim");
+  TestSuite t("DirichletValueTest with number of children in the power basis greater than worldDimension");
   using Grid = Dune::YaspGrid<2>;
 
   auto grid     = createGrid<Grids::Yasp>(2, 6); // gridDim = 2 (here)
