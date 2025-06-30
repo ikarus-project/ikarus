@@ -54,6 +54,33 @@ struct DeriveSizeType<std::vector<bool>>
   using SizeType = std::vector<bool>::size_type;
 };
 
+namespace Impl {
+  template <typename Tree>
+  struct PreBasisInfo
+  {
+  };
+
+  template <typename Tree>
+  requires(Tree::isLeaf)
+  struct PreBasisInfo<Tree>
+  {
+    static constexpr int size = 0;
+  };
+
+  template <typename Tree>
+  requires(Tree::isPower)
+  struct PreBasisInfo<Tree>
+  {
+    static constexpr int size = Tree::degree();
+  };
+  template <typename Tree>
+  requires(Tree::isComposite)
+  struct PreBasisInfo<Tree>
+  {
+    static constexpr int size = Tree::degree();
+  };
+} // namespace Impl
+
 /**
  * \brief Class for handling Dirichlet boundary conditions in Ikarus.
  * \ingroup  utils
@@ -68,12 +95,10 @@ template <typename B, typename FC = std::vector<bool>>
 class DirichletValues
 {
 public:
-  using Basis                         = std::remove_cvref_t<B>;
-  using FlagsType                     = FC;
-  static constexpr int worldDimension = Basis::GridView::dimensionworld;
-  static constexpr int numChildren    = Basis::PreBasis::children();
-  using BackendType                   = decltype(Dune::Functions::istlVectorBackend(std::declval<FlagsType&>()));
-  using SizeType                      = typename DeriveSizeType<FlagsType>::SizeType;
+  using Basis       = std::remove_cvref_t<B>;
+  using FlagsType   = FC;
+  using BackendType = decltype(Dune::Functions::istlVectorBackend(std::declval<FlagsType&>()));
+  using SizeType    = typename DeriveSizeType<FlagsType>::SizeType;
   explicit DirichletValues(const B& basis)
       : basis_{basis},
         dirichletFlagsBackend_{dirichletFlags_} {
@@ -263,6 +288,10 @@ private:
   BackendType dirichletFlagsBackend_;
   struct DirichletFunctions
   {
+    static constexpr int worldDimension = Basis::GridView::dimensionworld;
+    using LocalView                     = Basis::LocalView;
+    using Tree                          = LocalView::Tree;
+    static constexpr int numChildren    = Impl::PreBasisInfo<Tree>::size();
     using Signature = std::function<Eigen::Vector<double, numChildren>(const Dune::FieldVector<double, worldDimension>&,
                                                                        const double&)>;
     Signature value;
