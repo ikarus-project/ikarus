@@ -269,21 +269,21 @@ static auto dirichletBCTest() {
 }
 
 template <typename PB>
-static auto dirichletBCTestWithMoreChildren(const PB& preBasis) {
-  TestSuite t("DirichletValueTest with number of children in the power basis greater than worldDimension");
+static auto dirichletBCTestWithPreBasis(const PB& preBasis) {
+  TestSuite t("DirichletValueTest with preBasis = " + Dune::className<PB>());
   using Grid = Dune::YaspGrid<2>;
 
   auto grid     = createGrid<Grids::Yasp>(2, 6); // gridDim = 2 (here)
   auto gridView = grid->leafGridView();
 
-  auto basis      = Ikarus::makeBasis(gridView, preBasis);
-  using Basis     = std::remove_cvref_t<decltype(basis)>;
-  auto flatBasis  = basis.flat();
-  const auto nDOF = flatBasis.size();
+  auto basis     = Ikarus::makeBasis(gridView, preBasis);
+  using Basis    = std::remove_cvref_t<decltype(basis)>;
+  auto flatBasis = basis.flat();
 
   Ikarus::DirichletValues dirichletValues(flatBasis);
 
   if constexpr (not(Basis::FlatBasis::LocalView::Tree::isLeaf or Basis::FlatBasis::LocalView::Tree::isComposite)) {
+    const auto nDOF           = flatBasis.size();
     constexpr int numChildren = Basis::FlatBasis::PreBasis::children();
 
     // Inhomogeneous Boundary Conditions
@@ -331,8 +331,8 @@ int main(int argc, char** argv) {
   auto pb3 = composite(power<2>(lagrange<1>(), FlatInterleaved{}), lagrange<0>(), FlatInterleaved{});
 
   t.subTest(dirichletBCTest());
-  t.subTest(dirichletBCTestWithMoreChildren(pb1));
-  t.subTest(dirichletBCTestWithMoreChildren(pb2));
-  t.subTest(dirichletBCTestWithMoreChildren(pb3));
+  t.subTest(dirichletBCTestWithPreBasis(pb1));
+  t.subTest(dirichletBCTestWithPreBasis(pb2));
+  t.subTest(dirichletBCTestWithPreBasis(pb3));
   return t.exit();
 }

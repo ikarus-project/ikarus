@@ -17,6 +17,7 @@
 #include <vector>
 
 #include <dune/common/float_cmp.hh>
+#include <dune/common/indices.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
@@ -65,6 +66,7 @@ namespace Impl {
   struct PreBasisInfo<Tree>
   {
     static constexpr int size = 0;
+    using NodalSolutionType   = double;
   };
 
   template <typename Tree>
@@ -72,12 +74,7 @@ namespace Impl {
   struct PreBasisInfo<Tree>
   {
     static constexpr int size = Tree::degree();
-  };
-  template <typename Tree>
-  requires(Tree::isComposite)
-  struct PreBasisInfo<Tree>
-  {
-    static constexpr int size = Tree::degree();
+    using NodalSolutionType   = Eigen::Vector<double, size>;
   };
 } // namespace Impl
 
@@ -95,15 +92,28 @@ template <typename B, typename FC = std::vector<bool>>
 class DirichletValues
 {
 public:
-  using Basis       = std::remove_cvref_t<B>;
-  using FlagsType   = FC;
-  using BackendType = decltype(Dune::Functions::istlVectorBackend(std::declval<FlagsType&>()));
-  using SizeType    = typename DeriveSizeType<FlagsType>::SizeType;
+  using Basis                         = std::remove_cvref_t<B>;
+  using FlagsType                     = FC;
+  using BackendType                   = decltype(Dune::Functions::istlVectorBackend(std::declval<FlagsType&>()));
+  using SizeType                      = typename DeriveSizeType<FlagsType>::SizeType;
+  static constexpr int worldDimension = Basis::GridView::dimensionworld;
+  using LocalView                     = Basis::LocalView;
+  using Tree                          = LocalView::Tree;
+  static constexpr bool isLeaf        = Tree::isLeaf;
+  static constexpr bool isPower       = Tree::isPower;
+  static constexpr bool isComposite   = Tree::isComposite;
   explicit DirichletValues(const B& basis)
       : basis_{basis},
         dirichletFlagsBackend_{dirichletFlags_} {
     dirichletFlagsBackend_.resize(basis_);
     std::fill(dirichletFlags_.begin(), dirichletFlags_.end(), false);
+    if constexpr (isComposite) {
+      Dune::Hybrid::forEach(
+          Dune::Hybrid::integralRange(std::tuple_size<typename Basis::PreBasis::SubPreBases>{}), [&](const auto i) {
+            static_assert(not Tree::template Child<i>::isComposite,
+                          "DirichletValues is not implemented to handle a composite basis within a composite basis.");
+          });
+    }
   }
 
   /**
@@ -218,7 +228,7 @@ public:
    * \param lambda The load factor used to apply perturbations caused by inhomogeneous Dirichlet boundary conditions.
    *               This also updates the corresponding entries in dirichletFlags_ to indicate they are constrained.
    */
-  template <typename F>
+  template <typename F, std::size_t childIndexForCompositeBasis = Dune::Indices::_0>
   void storeInhomogeneousBoundaryCondition(F&& f, double lambda = 1.0) {
     auto derivativeLambda = [&](const auto& globalCoord, const double& lambda) {
       autodiff::real lambdaDual = lambda;
@@ -249,16 +259,23 @@ public:
    * \param xIh The vector where the interpolated result should be stored
    * \param lambda The load factor
    */
+  template <std::size_t childIndexForCompositeBasis = Dune::Indices::_0>
   void evaluateInhomogeneousBoundaryCondition(Eigen::VectorXd& xIh, const double& lambda) const {
     Eigen::VectorXd inhomogeneousBoundaryVectorDummy;
     inhomogeneousBoundaryVectorDummy.setZero(this->size());
     xIh.resizeLike(inhomogeneousBoundaryVectorDummy);
     xIh.setZero();
-    for (auto& f : dirichletFunctions_) {
-      interpolate(basis_, inhomogeneousBoundaryVectorDummy,
-                  [&](const auto& globalCoord) { return f.value(globalCoord, lambda); });
-      xIh += inhomogeneousBoundaryVectorDummy;
-    }
+    auto runInterpolate = [&](const auto& basis) {
+      for (auto& f : dirichletFunctions_) {
+        interpolate(basis, inhomogeneousBoundaryVectorDummy,
+                    [&](const auto& globalCoord) { return f.value(globalCoord, lambda); });
+        xIh += inhomogeneousBoundaryVectorDummy;
+      }
+    };
+    if constexpr (isComposite)
+      runInterpolate(subspaceBasis(basis_, childIndexForCompositeBasis));
+    else
+      runInterpolate(basis_);
   }
 
   /**
@@ -270,16 +287,24 @@ public:
    * \param xIh The vector where the interpolated result should be stored
    * \param lambda The load factor
    */
+  template <std::size_t childIndexForCompositeBasis = Dune::Indices::_0>
   void evaluateInhomogeneousBoundaryConditionDerivative(Eigen::VectorXd& xIh, const double& lambda) const {
     Eigen::VectorXd inhomogeneousBoundaryVectorDummy;
     inhomogeneousBoundaryVectorDummy.setZero(this->size());
     xIh.resizeLike(inhomogeneousBoundaryVectorDummy);
     xIh.setZero();
-    for (auto& f : dirichletFunctions_) {
-      interpolate(basis_, inhomogeneousBoundaryVectorDummy,
-                  [&](const auto& globalCoord) { return f.derivative(globalCoord, lambda); });
-      xIh += inhomogeneousBoundaryVectorDummy;
-    }
+    auto runInterpolate = [&](const auto& basis) {
+      for (auto& f : dirichletFunctions_) {
+        interpolate(basis, inhomogeneousBoundaryVectorDummy,
+                    [&](const auto& globalCoord) { return f.derivative(globalCoord, lambda); });
+        xIh += inhomogeneousBoundaryVectorDummy;
+      }
+    };
+
+    if constexpr (isComposite)
+      runInterpolate(subspaceBasis(basis_, childIndexForCompositeBasis));
+    else
+      runInterpolate(basis_);
   }
 
 private:
@@ -288,12 +313,8 @@ private:
   BackendType dirichletFlagsBackend_;
   struct DirichletFunctions
   {
-    static constexpr int worldDimension = Basis::GridView::dimensionworld;
-    using LocalView                     = Basis::LocalView;
-    using Tree                          = LocalView::Tree;
-    static constexpr int numChildren    = Impl::PreBasisInfo<Tree>::size();
-    using Signature = std::function<Eigen::Vector<double, numChildren>(const Dune::FieldVector<double, worldDimension>&,
-                                                                       const double&)>;
+    using Signature = std::function<typename Impl::PreBasisInfo<Tree>::NodalSolutionType(
+        const Dune::FieldVector<double, worldDimension>&, const double&)>;
     Signature value;
     Signature derivative;
   };
