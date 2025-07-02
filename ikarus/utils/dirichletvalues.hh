@@ -95,7 +95,9 @@ namespace Impl {
  * \ingroup  utils
  * \details The DirichletValues class provides functionalities for fixing degrees of freedom and storing inhomogeneous
  * Dirichlet boundary conditions. It supports fixing degrees of freedom using various callback functions and
- * stores functions for inhomogeneous Dirichlet boundary conditions.
+ * stores functions for inhomogeneous Dirichlet boundary conditions. While handling inhomogeneous boundary conditions,
+ * it is assumed that within a compositeBasis, no other compositeBasis exists. Furthermore, it is only possible to
+ * enforce inhomogeneous boundary conditions on the first child of a composite basis.
  *
  * \tparam B Type of the finite element basis
  * \tparam FC Type for storing Dirichlet flags (default is std::vector<bool>)

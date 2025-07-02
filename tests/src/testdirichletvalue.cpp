@@ -281,44 +281,66 @@ static auto dirichletBCTestWithPreBasis(const PB& preBasis) {
   auto flatBasis = basis.flat();
 
   Ikarus::DirichletValues dirichletValues(flatBasis);
-  using DVType = std::remove_cvref_t<decltype(dirichletValues)>;
-
+  using DVType                      = std::remove_cvref_t<decltype(dirichletValues)>;
   const auto nDOF                   = flatBasis.size();
   constexpr std::size_t numChildren = DVType::numberOfChildrenAtNode;
 
-  if constexpr (not DVType::Tree::isLeaf) {
-    // Inhomogeneous Boundary Conditions
-    auto inhomogeneousDisplacement = [numChildren]<typename T>(const auto& globalCoord, const T& lambda) {
-      Eigen::Vector<T, numChildren> localInhomogeneous;
-      localInhomogeneous.setZero();
-      if (Dune::FloatCmp::eq(globalCoord[0], 1.0))
-        for (const auto i : Dune::range(numChildren - 1))
-          localInhomogeneous[i] = 4 * lambda;
-      return localInhomogeneous;
-    };
+  // Inhomogeneous Boundary Conditions
+  auto inhomogeneousDisplacement = []() {
+    if constexpr (not DVType::Tree::isLeaf) {
+      return []<typename T>(const auto& globalCoord, const T& lambda) {
+        Eigen::Vector<T, numChildren> localInhomogeneous;
+        localInhomogeneous.setZero();
+        if (Dune::FloatCmp::eq(globalCoord[0], 1.0))
+          for (const auto i : Dune::range(numChildren - 1))
+            localInhomogeneous[i] = 4 * lambda;
+        return localInhomogeneous;
+      };
+    } else {
+      return []<typename T>(const auto& globalCoord, const T& lambda) {
+        T localInhomogeneous;
+        if (Dune::FloatCmp::eq(globalCoord[0], 1.0))
+          localInhomogeneous = (4 * lambda);
+        return localInhomogeneous;
+      };
+    }
+  }();
 
-    dirichletValues.storeInhomogeneousBoundaryCondition(inhomogeneousDisplacement);
-    Eigen::VectorXd disps, dispDerivs;
-    disps.setZero(nDOF);
-    dispDerivs.setZero(nDOF);
-    dirichletValues.evaluateInhomogeneousBoundaryCondition(disps, 2);
-    dirichletValues.evaluateInhomogeneousBoundaryConditionDerivative(dispDerivs, 2);
+  dirichletValues.storeInhomogeneousBoundaryCondition(inhomogeneousDisplacement);
+  Eigen::VectorXd disps, dispDerivs;
+  disps.setZero(nDOF);
+  dispDerivs.setZero(nDOF);
+  dirichletValues.evaluateInhomogeneousBoundaryCondition(disps, 2);
+  dirichletValues.evaluateInhomogeneousBoundaryConditionDerivative(dispDerivs, 2);
 
-    t.check(not disps.isZero(), "disps is zero");
-    t.check(not dispDerivs.isZero(), "dispDerivs is zero");
+  t.check(not disps.isZero(), "disps is zero");
+  t.check(not dispDerivs.isZero(), "dispDerivs is zero");
 
-    auto lambdaCheck = [&](auto&& localIndex, auto&& localView, auto&& intersection) {
-      auto globalIndex0 = static_cast<Eigen::Index>(localView.index(static_cast<size_t>(localIndex))[0]);
-      if (Dune::FloatCmp::eq(intersection.geometry().center()[0], 1.0) and
-          ((globalIndex0 % numChildren) != (numChildren - 1))) {
-        checkScalars(t, disps[globalIndex0], 8.0,
-                     " Incorrect displacement for index = " + std::to_string(globalIndex0));
-        checkScalars(t, dispDerivs[globalIndex0], 4.0,
-                     " Incorrect displacement derivative for index = " + std::to_string(globalIndex0));
-      }
-    };
-    Dune::Functions::forEachBoundaryDOF(flatBasis, lambdaCheck);
-  }
+  auto lambdaCheck = [&]() {
+    if constexpr (not DVType::Tree::isLeaf) {
+      return [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+        auto globalIndex0 = static_cast<Eigen::Index>(localView.index(static_cast<size_t>(localIndex))[0]);
+        if (Dune::FloatCmp::eq(intersection.geometry().center()[0], 1.0) and
+            ((globalIndex0 % numChildren) != (numChildren - 1))) {
+          checkScalars(t, disps[globalIndex0], 8.0,
+                       " Incorrect displacement for index = " + std::to_string(globalIndex0));
+          checkScalars(t, dispDerivs[globalIndex0], 4.0,
+                       " Incorrect displacement derivative for index = " + std::to_string(globalIndex0));
+        }
+      };
+    } else {
+      return [&](auto&& localIndex, auto&& localView, auto&& intersection) {
+        auto globalIndex0 = static_cast<Eigen::Index>(localView.index(static_cast<size_t>(localIndex))[0]);
+        if (Dune::FloatCmp::eq(intersection.geometry().center()[0], 1.0)) {
+          checkScalars(t, disps[globalIndex0], 8.0,
+                       " Incorrect displacement for index = " + std::to_string(globalIndex0));
+          checkScalars(t, dispDerivs[globalIndex0], 4.0,
+                       " Incorrect displacement derivative for index = " + std::to_string(globalIndex0));
+        }
+      };
+    }
+  }();
+  Dune::Functions::forEachBoundaryDOF(flatBasis, lambdaCheck);
   return t;
 }
 
@@ -329,7 +351,7 @@ int main(int argc, char** argv) {
   using namespace Dune::Functions::BasisFactory;
   auto pb1 = lagrange<1>();
   auto pb2 = power<5>(lagrange<1>(), FlatInterleaved{});
-  auto pb3 = composite(power<2>(lagrange<1>(), FlatInterleaved{}), lagrange<0>(), FlatInterleaved{});
+  auto pb3 = composite(power<2>(lagrange<1>(), FlatInterleaved{}), lagrange<0>(), BlockedLexicographic{});
 
   t.subTest(dirichletBCTest());
   t.subTest(dirichletBCTestWithPreBasis(pb1));
