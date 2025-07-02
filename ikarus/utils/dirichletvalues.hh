@@ -17,6 +17,7 @@
 #include <vector>
 
 #include <dune/common/float_cmp.hh>
+#include <dune/common/hybridutilities.hh>
 #include <dune/common/indices.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
@@ -278,17 +279,14 @@ public:
     inhomogeneousBoundaryVectorDummy.setZero(this->size());
     xIh.resizeLike(inhomogeneousBoundaryVectorDummy);
     xIh.setZero();
-    auto runInterpolate = [&](const auto& basis) {
+    auto runInterpolateImpl = [&](const auto& basis) {
       for (auto& f : dirichletFunctions_) {
         interpolate(basis, inhomogeneousBoundaryVectorDummy,
                     [&](const auto& globalCoord) { return f.value(globalCoord, lambda); });
         xIh += inhomogeneousBoundaryVectorDummy;
       }
     };
-    if constexpr (Tree::isComposite)
-      runInterpolate(subspaceBasis(basis_, Dune::Indices::_0));
-    else
-      runInterpolate(basis_);
+    runInterpolate(runInterpolateImpl);
   }
 
   /**
@@ -305,18 +303,14 @@ public:
     inhomogeneousBoundaryVectorDummy.setZero(this->size());
     xIh.resizeLike(inhomogeneousBoundaryVectorDummy);
     xIh.setZero();
-    auto runInterpolate = [&](const auto& basis) {
+    auto runInterpolateImpl = [&](const auto& basis) {
       for (auto& f : dirichletFunctions_) {
         interpolate(basis, inhomogeneousBoundaryVectorDummy,
                     [&](const auto& globalCoord) { return f.derivative(globalCoord, lambda); });
         xIh += inhomogeneousBoundaryVectorDummy;
       }
     };
-
-    if constexpr (Tree::isComposite)
-      runInterpolate(subspaceBasis(basis_, Dune::Indices::_0));
-    else
-      runInterpolate(basis_);
+    runInterpolate(runInterpolateImpl);
   }
 
 private:
@@ -338,6 +332,14 @@ private:
     for (const std::size_t i : Dune::range(this->size()))
       if (Dune::FloatCmp::ne(inhomogeneousBoundaryVectorDummy[i], 0.0))
         this->setSingleDOF(i, true);
+  }
+
+  template <typename F>
+  void runInterpolate(F&& f) const {
+    if constexpr (Tree::isComposite)
+      f(subspaceBasis(basis_, Dune::Indices::_0));
+    else
+      f(basis_);
   }
 };
 
