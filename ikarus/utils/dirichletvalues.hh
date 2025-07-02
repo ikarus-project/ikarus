@@ -17,6 +17,8 @@
 #include <vector>
 
 #include <dune/common/float_cmp.hh>
+#include <dune/common/hybridutilities.hh>
+#include <dune/common/indices.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
@@ -54,12 +56,49 @@ struct DeriveSizeType<std::vector<bool>>
   using SizeType = std::vector<bool>::size_type;
 };
 
+namespace Impl {
+  template <typename Tree>
+  struct PreBasisInfo
+  {
+  };
+
+  template <typename Tree>
+  requires(Tree::isLeaf)
+  struct PreBasisInfo<Tree>
+  {
+    static constexpr std::size_t size = 0;
+    using NodalSolutionType           = double;
+  };
+
+  template <typename Tree>
+  requires(Tree::isPower)
+  struct PreBasisInfo<Tree>
+  {
+    static constexpr std::size_t size = Tree::degree();
+    using NodalSolutionType           = Eigen::Vector<double, size>;
+  };
+
+  template <typename Tree>
+  requires(Tree::isComposite)
+  struct PreBasisInfo<Tree>
+  {
+    using ChildTreeType = Tree::template Child<0>::Type;
+    static_assert(not ChildTreeType::isComposite,
+                  "DirichletValues is not implemented to handle a composite basis within a composite basis.");
+
+    static constexpr std::size_t size = PreBasisInfo<ChildTreeType>::size;
+    using NodalSolutionType           = PreBasisInfo<ChildTreeType>::NodalSolutionType;
+  };
+} // namespace Impl
+
 /**
  * \brief Class for handling Dirichlet boundary conditions in Ikarus.
  * \ingroup  utils
  * \details The DirichletValues class provides functionalities for fixing degrees of freedom and storing inhomogeneous
  * Dirichlet boundary conditions. It supports fixing degrees of freedom using various callback functions and
- * stores functions for inhomogeneous Dirichlet boundary conditions.
+ * stores functions for inhomogeneous Dirichlet boundary conditions. While handling inhomogeneous boundary conditions,
+ * it is assumed that within a compositeBasis, no other compositeBasis exists. Furthermore, it is only possible to
+ * enforce inhomogeneous boundary conditions on the first child of a composite basis.
  *
  * \tparam B Type of the finite element basis
  * \tparam FC Type for storing Dirichlet flags (default is std::vector<bool>)
@@ -70,14 +109,26 @@ class DirichletValues
 public:
   using Basis                         = std::remove_cvref_t<B>;
   using FlagsType                     = FC;
-  static constexpr int worldDimension = Basis::GridView::dimensionworld;
   using BackendType                   = decltype(Dune::Functions::istlVectorBackend(std::declval<FlagsType&>()));
   using SizeType                      = typename DeriveSizeType<FlagsType>::SizeType;
+  static constexpr int worldDimension = Basis::GridView::dimensionworld;
+  using LocalView                     = Basis::LocalView;
+  using Tree                          = LocalView::Tree;
+  using NodalSolutionType             = typename Impl::PreBasisInfo<Tree>::NodalSolutionType;
+  static constexpr std::size_t numberOfChildrenAtNode = Impl::PreBasisInfo<Tree>::size;
   explicit DirichletValues(const B& basis)
       : basis_{basis},
         dirichletFlagsBackend_{dirichletFlags_} {
     dirichletFlagsBackend_.resize(basis_);
     std::fill(dirichletFlags_.begin(), dirichletFlags_.end(), false);
+    if constexpr (Tree::isComposite) {
+      Dune::Hybrid::forEach(
+          Dune::Hybrid::integralRange(Dune::index_constant<std::tuple_size_v<typename Basis::PreBasis::SubPreBases>>()),
+          [&](const auto i) {
+            static_assert(not Tree::template Child<i>::Type::isComposite,
+                          "DirichletValues is not implemented to handle a composite basis within a composite basis.");
+          });
+    }
   }
 
   /**
@@ -228,11 +279,14 @@ public:
     inhomogeneousBoundaryVectorDummy.setZero(this->size());
     xIh.resizeLike(inhomogeneousBoundaryVectorDummy);
     xIh.setZero();
-    for (auto& f : dirichletFunctions_) {
-      interpolate(basis_, inhomogeneousBoundaryVectorDummy,
-                  [&](const auto& globalCoord) { return f.value(globalCoord, lambda); });
-      xIh += inhomogeneousBoundaryVectorDummy;
-    }
+    auto runInterpolateImpl = [&](const auto& basis) {
+      for (auto& f : dirichletFunctions_) {
+        interpolate(basis, inhomogeneousBoundaryVectorDummy,
+                    [&](const auto& globalCoord) { return f.value(globalCoord, lambda); });
+        xIh += inhomogeneousBoundaryVectorDummy;
+      }
+    };
+    runInterpolate(runInterpolateImpl);
   }
 
   /**
@@ -249,11 +303,14 @@ public:
     inhomogeneousBoundaryVectorDummy.setZero(this->size());
     xIh.resizeLike(inhomogeneousBoundaryVectorDummy);
     xIh.setZero();
-    for (auto& f : dirichletFunctions_) {
-      interpolate(basis_, inhomogeneousBoundaryVectorDummy,
-                  [&](const auto& globalCoord) { return f.derivative(globalCoord, lambda); });
-      xIh += inhomogeneousBoundaryVectorDummy;
-    }
+    auto runInterpolateImpl = [&](const auto& basis) {
+      for (auto& f : dirichletFunctions_) {
+        interpolate(basis, inhomogeneousBoundaryVectorDummy,
+                    [&](const auto& globalCoord) { return f.derivative(globalCoord, lambda); });
+        xIh += inhomogeneousBoundaryVectorDummy;
+      }
+    };
+    runInterpolate(runInterpolateImpl);
   }
 
 private:
@@ -262,8 +319,7 @@ private:
   BackendType dirichletFlagsBackend_;
   struct DirichletFunctions
   {
-    using Signature = std::function<Eigen::Vector<double, worldDimension>(
-        const Dune::FieldVector<double, worldDimension>&, const double&)>;
+    using Signature = std::function<NodalSolutionType(const Dune::FieldVector<double, worldDimension>&, const double&)>;
     Signature value;
     Signature derivative;
   };
@@ -276,6 +332,14 @@ private:
     for (const std::size_t i : Dune::range(this->size()))
       if (Dune::FloatCmp::ne(inhomogeneousBoundaryVectorDummy[i], 0.0))
         this->setSingleDOF(i, true);
+  }
+
+  template <typename F>
+  void runInterpolate(F&& f) const {
+    if constexpr (Tree::isComposite)
+      f(subspaceBasis(basis_, Dune::Indices::_0));
+    else
+      f(basis_);
   }
 };
 
