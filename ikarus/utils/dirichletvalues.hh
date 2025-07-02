@@ -65,16 +65,28 @@ namespace Impl {
   requires(Tree::isLeaf)
   struct PreBasisInfo<Tree>
   {
-    static constexpr int size = 0;
-    using NodalSolutionType   = double;
+    static constexpr std::size_t size = 0;
+    using NodalSolutionType           = double;
   };
 
   template <typename Tree>
   requires(Tree::isPower)
   struct PreBasisInfo<Tree>
   {
-    static constexpr int size = Tree::degree();
-    using NodalSolutionType   = Eigen::Vector<double, size>;
+    static constexpr std::size_t size = Tree::degree();
+    using NodalSolutionType           = Eigen::Vector<double, size>;
+  };
+
+  template <typename Tree>
+  requires(Tree::isComposite)
+  struct PreBasisInfo<Tree>
+  {
+    using ChildTreeType = Tree::template Child<0>::Type;
+    static_assert(not ChildTreeType::isComposite,
+                  "DirichletValues is not implemented to handle a composite basis within a composite basis.");
+
+    static constexpr std::size_t size = PreBasisInfo<ChildTreeType>::size;
+    using NodalSolutionType           = PreBasisInfo<ChildTreeType>::NodalSolutionType;
   };
 } // namespace Impl
 
@@ -99,18 +111,18 @@ public:
   static constexpr int worldDimension = Basis::GridView::dimensionworld;
   using LocalView                     = Basis::LocalView;
   using Tree                          = LocalView::Tree;
-  static constexpr bool isLeaf        = Tree::isLeaf;
-  static constexpr bool isPower       = Tree::isPower;
-  static constexpr bool isComposite   = Tree::isComposite;
+  using NodalSolutionType             = typename Impl::PreBasisInfo<Tree>::NodalSolutionType;
+  static constexpr std::size_t numberOfChildrenAtNode = Impl::PreBasisInfo<Tree>::size;
   explicit DirichletValues(const B& basis)
       : basis_{basis},
         dirichletFlagsBackend_{dirichletFlags_} {
     dirichletFlagsBackend_.resize(basis_);
     std::fill(dirichletFlags_.begin(), dirichletFlags_.end(), false);
-    if constexpr (isComposite) {
+    if constexpr (Tree::isComposite) {
       Dune::Hybrid::forEach(
-          Dune::Hybrid::integralRange(std::tuple_size<typename Basis::PreBasis::SubPreBases>{}), [&](const auto i) {
-            static_assert(not Tree::template Child<i>::isComposite,
+          Dune::Hybrid::integralRange(Dune::index_constant<std::tuple_size_v<typename Basis::PreBasis::SubPreBases>>()),
+          [&](const auto i) {
+            static_assert(not Tree::template Child<i>::Type::isComposite,
                           "DirichletValues is not implemented to handle a composite basis within a composite basis.");
           });
     }
@@ -228,7 +240,7 @@ public:
    * \param lambda The load factor used to apply perturbations caused by inhomogeneous Dirichlet boundary conditions.
    *               This also updates the corresponding entries in dirichletFlags_ to indicate they are constrained.
    */
-  template <typename F, std::size_t childIndexForCompositeBasis = Dune::Indices::_0>
+  template <typename F>
   void storeInhomogeneousBoundaryCondition(F&& f, double lambda = 1.0) {
     auto derivativeLambda = [&](const auto& globalCoord, const double& lambda) {
       autodiff::real lambdaDual = lambda;
@@ -259,7 +271,6 @@ public:
    * \param xIh The vector where the interpolated result should be stored
    * \param lambda The load factor
    */
-  template <std::size_t childIndexForCompositeBasis = Dune::Indices::_0>
   void evaluateInhomogeneousBoundaryCondition(Eigen::VectorXd& xIh, const double& lambda) const {
     Eigen::VectorXd inhomogeneousBoundaryVectorDummy;
     inhomogeneousBoundaryVectorDummy.setZero(this->size());
@@ -272,8 +283,8 @@ public:
         xIh += inhomogeneousBoundaryVectorDummy;
       }
     };
-    if constexpr (isComposite)
-      runInterpolate(subspaceBasis(basis_, childIndexForCompositeBasis));
+    if constexpr (Tree::isComposite)
+      runInterpolate(subspaceBasis(basis_, Dune::Indices::_0));
     else
       runInterpolate(basis_);
   }
@@ -287,7 +298,6 @@ public:
    * \param xIh The vector where the interpolated result should be stored
    * \param lambda The load factor
    */
-  template <std::size_t childIndexForCompositeBasis = Dune::Indices::_0>
   void evaluateInhomogeneousBoundaryConditionDerivative(Eigen::VectorXd& xIh, const double& lambda) const {
     Eigen::VectorXd inhomogeneousBoundaryVectorDummy;
     inhomogeneousBoundaryVectorDummy.setZero(this->size());
@@ -301,8 +311,8 @@ public:
       }
     };
 
-    if constexpr (isComposite)
-      runInterpolate(subspaceBasis(basis_, childIndexForCompositeBasis));
+    if constexpr (Tree::isComposite)
+      runInterpolate(subspaceBasis(basis_, Dune::Indices::_0));
     else
       runInterpolate(basis_);
   }
@@ -313,8 +323,7 @@ private:
   BackendType dirichletFlagsBackend_;
   struct DirichletFunctions
   {
-    using Signature = std::function<typename Impl::PreBasisInfo<Tree>::NodalSolutionType(
-        const Dune::FieldVector<double, worldDimension>&, const double&)>;
+    using Signature = std::function<NodalSolutionType(const Dune::FieldVector<double, worldDimension>&, const double&)>;
     Signature value;
     Signature derivative;
   };

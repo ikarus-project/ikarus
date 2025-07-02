@@ -276,16 +276,17 @@ static auto dirichletBCTestWithPreBasis(const PB& preBasis) {
   auto grid     = createGrid<Grids::Yasp>(2, 6); // gridDim = 2 (here)
   auto gridView = grid->leafGridView();
 
+  using namespace Dune::Functions::BasisFactory;
   auto basis     = Ikarus::makeBasis(gridView, preBasis);
-  using Basis    = std::remove_cvref_t<decltype(basis)>;
   auto flatBasis = basis.flat();
 
   Ikarus::DirichletValues dirichletValues(flatBasis);
+  using DVType = std::remove_cvref_t<decltype(dirichletValues)>;
 
-  if constexpr (not(Basis::FlatBasis::LocalView::Tree::isLeaf or Basis::FlatBasis::LocalView::Tree::isComposite)) {
-    const auto nDOF           = flatBasis.size();
-    constexpr int numChildren = Basis::FlatBasis::PreBasis::children();
+  const auto nDOF                   = flatBasis.size();
+  constexpr std::size_t numChildren = DVType::numberOfChildrenAtNode;
 
+  if constexpr (not DVType::Tree::isLeaf) {
     // Inhomogeneous Boundary Conditions
     auto inhomogeneousDisplacement = [numChildren]<typename T>(const auto& globalCoord, const T& lambda) {
       Eigen::Vector<T, numChildren> localInhomogeneous;
