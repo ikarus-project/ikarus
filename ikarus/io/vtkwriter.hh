@@ -10,13 +10,9 @@
 
 #pragma once
 
+#include "vtkcontainertypes.hh"
 #include "vtkdatatag.hh"
 
-#include <array>
-#include <tuple>
-
-#include "dune/functions/functionspacebases/powerbasis.hh"
-#include "dune/functions/functionspacebases/subspacebasis.hh"
 #include <dune/common/fvector.hh>
 #include <dune/functions/gridfunctions/discreteglobalbasisfunction.hh>
 #include <dune/grid/yaspgrid.hh>
@@ -28,44 +24,7 @@
 
 namespace Ikarus::Vtk {
 
-namespace Impl {
-  template <typename Container>
-  constexpr auto sizeOfContainer = []() {
-    if constexpr (requires { std::tuple_size<Container>::value; })
-      return std::tuple_size<Container>::value;
-    else
-      return 1ul;
-  }();
-
-  template <class PreBasis>
-  struct ResultContainerPre
-  {
-    using type = double;
-  };
-
-  template <class Basis>
-  struct ResultContainer
-  {
-    using type = ResultContainerPre<typename Basis::PreBasis>::type;
-  };
-
-  template <class RB, class PP>
-  struct ResultContainer<Dune::Functions::SubspaceBasis<RB, PP>>
-  {
-    using type = double;
-  };
-
-  template <class Basis>
-  using ResultContainer_t = typename ResultContainer<Basis>::type;
-
-  // specialization for power basis
-  template <class IMS, class SPB, std::size_t size>
-  struct ResultContainerPre<Dune::Functions::PowerPreBasis<IMS, SPB, size>>
-  {
-    using type = std::array<typename ResultContainerPre<SPB>::type, size>;
-  };
-
-} // namespace Impl
+namespace Impl {} // namespace Impl
 
 /**
  * \struct Writer

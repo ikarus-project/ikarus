@@ -14,9 +14,11 @@
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/deviatoric/gent.hh>
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/deviatoric/interface.hh>
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/deviatoric/invariantbased.hh>
+#include <ikarus/finiteelements/mechanics/materials/hyperelastic/deviatoric/nodeviatoricfunction.hh>
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/deviatoric/ogden.hh>
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/interface.hh>
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/neohooke.hh>
+#include <ikarus/finiteelements/mechanics/materials/hyperelastic/volumetric/penaltyvolumetricfunctions.hh>
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/volumetric/volumetricfunctions.hh>
 #include <ikarus/finiteelements/mechanics/materials/tags.hh>
 
@@ -174,4 +176,11 @@ inline auto makeGent(const GentMatParameters& matPar, double K = 0.0,
 
   return Hyperelastic(dev, vol);
 }
+
+auto makeMaterialLawFromPenaltyFunction(const Concepts::VolumetricFunction auto& pvf) {
+  auto noDev = Deviatoric(NoDev{});
+  auto vol   = Volumetric(1.0, pvf);
+  return Hyperelastic(noDev, vol);
+}
+
 } // namespace Ikarus::Materials

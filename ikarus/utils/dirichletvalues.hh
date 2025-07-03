@@ -21,6 +21,7 @@
 #include <dune/common/indices.hh>
 #include <dune/functions/backends/istlvectorbackend.hh>
 #include <dune/functions/functionspacebases/boundarydofs.hh>
+#include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/flatmultiindex.hh>
 #include <dune/functions/functionspacebases/interpolate.hh>
 #include <dune/functions/functionspacebases/subspacebasis.hh>
