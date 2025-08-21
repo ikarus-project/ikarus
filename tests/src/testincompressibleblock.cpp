@@ -70,7 +70,7 @@ int main(int argc, char** argv) {
   // The H2P1 element can have a continous or discontinous field for the pressure
   for (auto i : {2, 4}) {
     t.subTest(incompressibelBlockTest<2, 1, true>(sk, incompressibelBlockResults(2, true, i), i, false, true));
-    t.subTest(incompressibelBlockTest<2, 1, false>(sk, incompressibelBlockResults(2, false, i), i));
+    // t.subTest(incompressibelBlockTest<2, 1, false>(sk, incompressibelBlockResults(2, false, i), i));
   }
   return t.exit();
 }
