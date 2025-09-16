@@ -19,18 +19,20 @@ using namespace Ikarus;
 using Dune::TestSuite;
 
 template <typename FEType>
-auto testAutoDiff(const FEType& fe, double tol = 1e-10) {
+auto testAutoDiff(const FEType& fe, bool deformed, double tol = 1e-10) {
   Dune::TestSuite t("Check calculateMatrixImpl() and calculateVectorImpl() by Automatic Differentiation");
 
   auto n = fe.size();
   Eigen::VectorXd d;
   d.setZero(n);
-  if (n == 9)
-    d << 0.0, 0.1, 0.2, 0.3, 0.0, 0.1, 0.4, -0.1, 1e-5;
-  else {
-    d[0]  = 0.2;
-    d[1]  = 0.3;
-    d[18] = 1e-5;
+  if (deformed) {
+    if (n == 9)
+      d << 0.0, 0.1, 0.2, 0.3, 0.0, 0.1, 0.4, -0.1, 1e-5;
+    else {
+      d[0]  = 0.2;
+      d[1]  = 0.3;
+      d[18] = 1e-5;
+    }
   }
   double lambda                 = 0.0;
   auto req                      = typename FEType::Requirement(d, lambda);
@@ -160,17 +162,13 @@ auto testEigenValuesQ2P1(const FEType& fe) {
 
   testEVs(d, expectedEigenValues0, 8.038873388460929e-14);
 
-  // d[0]  = 0.2;
-  // d[1]  = 0.3;
-  // d[18] = 1e-5;
-  // testEVs(d, expectedEigenValuesD, 1898.171612415919);
-
   return t;
 };
 
 template <int pD, int pP, bool continous = true>
 auto testStuff() {
-  TestSuite t("Eigenvalue Test");
+  TestSuite t("Eigenvalue up Element");
+  spdlog::info("Testing " + t.name() + " with pD = " + std::to_string(pD) + " and pP = " + std::to_string(pP));
 
   // SETUP
   auto matParameter = toLamesFirstParameterAndShearModulus({.emodul = 1000.0, .nu = 0.49});
@@ -214,7 +212,8 @@ auto testStuff() {
   // TESTS
   if (pD == 1) {
     t.subTest(testEigenValuesQ1P0(fe));
-    t.subTest(testAutoDiff(fe));
+    t.subTest(testAutoDiff(fe, true));
+    t.subTest(testAutoDiff(fe, false));
   } else
     t.subTest(testEigenValuesQ2P1(fe));
 
@@ -223,7 +222,8 @@ auto testStuff() {
 
 template <int pD, int pP, bool continous = true>
 auto testAssembler() {
-  TestSuite t("Eigenvalue Test");
+  TestSuite t("Assembler Test");
+  spdlog::info("Testing " + t.name() + " with pD = " + std::to_string(pD) + " and pP = " + std::to_string(pP));
 
   // SETUP
   auto matParameter = toLamesFirstParameterAndShearModulus({.emodul = 1000.0, .nu = 0.49});
@@ -267,13 +267,11 @@ auto testAssembler() {
 
   sparseFlatAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics, DBCOption::Full);
 
-  auto K = sparseFlatAssembler->matrix();
+  auto K = sparseFlatAssembler->matrix().toDense();
 
-  auto essaK = makeIdentitySymEigenSolver<EigenValueSolverType::Spectra>(K);
+  auto essaK = makeIdentitySymEigenSolver<EigenValueSolverType::Eigen>(K);
   essaK.compute();
   auto eigenValuesComputed = essaK.eigenvalues();
-
-  std::cout << "N: " << K.rows() << std::endl;
 
   auto expectedEigenValues0 = Eigen::Vector<double, 66>{
       -0.0005624956097084438,  -0.0004951385262628075,  -0.0004951385262461518,  -0.00042785067620338313,
@@ -304,9 +302,9 @@ auto testAssembler() {
   auto reqD = typename FEType::Requirement(d, lambda);
   sparseFlatAssembler->bind(reqD, Ikarus::AffordanceCollections::elastoStatics, DBCOption::Full);
 
-  K = sparseFlatAssembler->matrix();
+  K = sparseFlatAssembler->matrix().toDense();
 
-  auto essaKD = makeIdentitySymEigenSolver<EigenValueSolverType::Spectra>(K);
+  auto essaKD = makeIdentitySymEigenSolver<EigenValueSolverType::Eigen>(K);
   essaKD.compute();
   auto eigenValuesComputedD = essaKD.eigenvalues();
 
@@ -336,7 +334,8 @@ auto testAssembler() {
 
 template <int pD, int pP, bool continous = true>
 auto testAssemblerConti() {
-  TestSuite t("Eigenvalue Test");
+  TestSuite t("Assembler Test");
+  spdlog::info("Testing " + t.name() + " with pD = " + std::to_string(pD) + " and pP = " + std::to_string(pP));
 
   // SETUP
   auto matParameter = toLamesFirstParameterAndShearModulus({.emodul = 1000.0, .nu = 0.49});
@@ -380,13 +379,11 @@ auto testAssemblerConti() {
 
   sparseFlatAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics, DBCOption::Full);
 
-  auto K = sparseFlatAssembler->matrix();
+  auto K = sparseFlatAssembler->matrix().toDense();
 
-  auto essaK = makeIdentitySymEigenSolver<EigenValueSolverType::Spectra>(K);
+  auto essaK = makeIdentitySymEigenSolver<EigenValueSolverType::Eigen>(K);
   essaK.compute();
   auto eigenValuesComputed = essaK.eigenvalues();
-
-  std::cout << "N: " << K.rows() << std::endl;
 
   auto expectedEigenValues0 = Eigen::Vector<double, 59>{
       -0.0013117301430375363, -0.0005860444513958874, -0.000586044451308379,   -0.00035684818922466485,
@@ -409,15 +406,13 @@ auto testAssemblerConti() {
 
   // "Slightly deformed" state
   d[0] = 0.3; // First d dof (first element)
-  // d[50] = 0.1; // first p dof (first element)
-  // d[51] = 0.3; // First p dof (second element, shared with first element)
 
   auto reqD = typename FEType::Requirement(d, lambda);
   sparseFlatAssembler->bind(reqD, Ikarus::AffordanceCollections::elastoStatics, DBCOption::Full);
 
-  K = sparseFlatAssembler->matrix();
+  K = sparseFlatAssembler->matrix().toDense();
 
-  auto essaKD = makeIdentitySymEigenSolver<EigenValueSolverType::Spectra>(K);
+  auto essaKD = makeIdentitySymEigenSolver<EigenValueSolverType::Eigen>(K);
   essaKD.compute();
   auto eigenValuesComputedD = essaKD.eigenvalues();
 
