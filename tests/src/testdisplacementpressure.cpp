@@ -3,6 +3,7 @@
 
 #include <config.h>
 
+#include "checkfebyautodiff.hh"
 #include "testcantileverbeam.hh"
 
 #include <dune/common/test/testsuite.hh>
@@ -17,47 +18,6 @@
 
 using namespace Ikarus;
 using Dune::TestSuite;
-
-template <typename FEType>
-auto testAutoDiff(const FEType& fe, bool deformed, double tol = 1e-10) {
-  Dune::TestSuite t("Check calculateMatrixImpl() and calculateVectorImpl() by Automatic Differentiation");
-
-  auto n = fe.size();
-  Eigen::VectorXd d;
-  d.setZero(n);
-  if (deformed) {
-    if (n == 9)
-      d << 0.0, 0.1, 0.2, 0.3, 0.0, 0.1, 0.4, -0.1, 1e-5;
-    else {
-      d[0]  = 0.2;
-      d[1]  = 0.3;
-      d[18] = 1e-5;
-    }
-  }
-  double lambda                 = 0.0;
-  auto req                      = typename FEType::Requirement(d, lambda);
-  const std::string feClassName = Dune::className(fe);
-
-  using AutoDiffBasedFE = Ikarus::AutoDiffFE<FEType, true>;
-  AutoDiffBasedFE feAutoDiff(fe);
-
-  Eigen::MatrixXd K, KAutoDiff;
-  K.setZero(n, n);
-  KAutoDiff.setZero(n, n);
-
-  Eigen::VectorXd R, RAutoDiff;
-  R.setZero(n);
-  RAutoDiff.setZero(n);
-
-  calculateMatrix(fe, req, Ikarus::MatrixAffordance::stiffness, K);
-  calculateMatrix(feAutoDiff, req, Ikarus::MatrixAffordance::stiffness, KAutoDiff);
-
-  checkApproxMatrices(t, K, KAutoDiff, testLocation() + "\nIncorrect stiffness matrices." + feClassName, tol);
-  checkSymmetricMatrix(t, K, tol, "K");
-  checkSymmetricMatrix(t, KAutoDiff, tol, "KAutoDiff");
-
-  return t;
-}
 
 template <typename FEType>
 auto testEigenValuesQ1P0(const FEType& fe) {
@@ -165,8 +125,8 @@ auto testEigenValuesQ2P1(const FEType& fe) {
   return t;
 };
 
-template <int pD, int pP, bool continous = true>
-auto testStuff() {
+template <int pD, int pP, bool continuous = true>
+auto testSingleElement() {
   TestSuite t("Eigenvalue up Element");
   spdlog::info("Testing " + t.name() + " with pD = " + std::to_string(pD) + " and pP = " + std::to_string(pP));
 
@@ -186,7 +146,7 @@ auto testStuff() {
 
   using namespace Dune::Functions::BasisFactory;
   auto basis = [&]() {
-    if constexpr (continous)
+    if constexpr (continuous)
       return Ikarus::makeBasis(
           gridView, composite(power<2>(lagrange<pD>(), FlatInterleaved{}), lagrange<pP>(), BlockedLexicographic{}));
     else
@@ -209,18 +169,31 @@ auto testStuff() {
 
   t.check(n == nDOF);
 
+  Eigen::VectorXd d;
+  d.setZero(n);
+
   // TESTS
   if (pD == 1) {
     t.subTest(testEigenValuesQ1P0(fe));
-    t.subTest(testAutoDiff(fe, true));
-    t.subTest(testAutoDiff(fe, false));
-  } else
+
+    // AD Test
+    checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d);
+    d << 0.0, 0.1, 0.2, 0.3, 0.0, 0.1, 0.4, -0.1, 1e-5;
+    checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d);
+  } else {
     t.subTest(testEigenValuesQ2P1(fe));
 
+    // AD Test
+    checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d);
+    d[0]  = 0.2;
+    d[1]  = 0.3;
+    d[18] = 1e-5;
+    checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d);
+  }
   return t;
 }
 
-template <int pD, int pP, bool continous = true>
+template <int pD, int pP, bool continuous = true>
 auto testAssembler() {
   TestSuite t("Assembler Test");
   spdlog::info("Testing " + t.name() + " with pD = " + std::to_string(pD) + " and pP = " + std::to_string(pP));
@@ -241,7 +214,7 @@ auto testAssembler() {
 
   using namespace Dune::Functions::BasisFactory;
   auto basis = [&]() {
-    if constexpr (continous)
+    if constexpr (continuous)
       return Ikarus::makeBasis(
           gridView, composite(power<2>(lagrange<pD>(), FlatInterleaved{}), lagrange<pP>(), BlockedLexicographic{}));
     else
@@ -332,7 +305,7 @@ auto testAssembler() {
   return t;
 }
 
-template <int pD, int pP, bool continous = true>
+template <int pD, int pP, bool continuous = true>
 auto testAssemblerConti() {
   TestSuite t("Assembler Test");
   spdlog::info("Testing " + t.name() + " with pD = " + std::to_string(pD) + " and pP = " + std::to_string(pP));
@@ -353,7 +326,7 @@ auto testAssemblerConti() {
 
   using namespace Dune::Functions::BasisFactory;
   auto basis = [&]() {
-    if constexpr (continous)
+    if constexpr (continuous)
       return Ikarus::makeBasis(
           gridView, composite(power<2>(lagrange<pD>(), FlatInterleaved{}), lagrange<pP>(), BlockedLexicographic{}));
     else
@@ -442,9 +415,9 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   Dune::TestSuite t;
 
-  t.subTest(testStuff<1, 0>());
-  t.subTest(testStuff<2, 1>());
-  t.subTest(testStuff<2, 1, false>());
+  t.subTest(testSingleElement<1, 0>());
+  t.subTest(testSingleElement<2, 1>());
+  t.subTest(testSingleElement<2, 1, false>());
   t.subTest(testAssembler<2, 1, false>());
   t.subTest(testAssemblerConti<2, 1, true>());
 

@@ -49,7 +49,7 @@ auto makeGrid(double L, int nele) {
 }
 } // namespace Testing
 
-template <int pD, int pP, bool continous, typename Skills>
+template <int pD, int pP, bool continuous, typename Skills>
 auto incompressibelBlockTest(Skills&& elePre, std::pair<int, double> testResults, int nele, bool logToConsole = false,
                              bool writeVTK = false) {
   TestSuite t("Incompressible Block Test for Displacement Pressure Element " + Dune::className(elePre));
@@ -63,7 +63,7 @@ auto incompressibelBlockTest(Skills&& elePre, std::pair<int, double> testResults
   auto gridView = grid->leafGridView();
   using namespace Dune::Functions::BasisFactory;
   auto basis = [&]() {
-    if constexpr (continous)
+    if constexpr (continuous)
       return Ikarus::makeBasis(
           gridView, composite(power<3>(lagrange<pD>(), FlatInterleaved{}), lagrange<pP>(), BlockedLexicographic{}));
     else
@@ -169,7 +169,7 @@ auto incompressibelBlockTest(Skills&& elePre, std::pair<int, double> testResults
     writer.addInterpolation(d, dBasis, "displacement");
     writer.addInterpolation(d, pBasis, "pressure");
 
-    writer.write("block_" + std::to_string(nele) + "_" + std::to_string(pD) + "_" + std::to_string(continous));
+    writer.write("block_" + std::to_string(nele) + "_" + std::to_string(pD) + "_" + std::to_string(continuous));
   }
 
   double expectedLambda                            = 1.0;

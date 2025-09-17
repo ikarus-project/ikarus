@@ -18,7 +18,7 @@
 using namespace Ikarus;
 using Dune::TestSuite;
 
-auto incompressibelBlockResults(int pD, bool continous, int nele) {
+auto incompressibelBlockResults(int pD, bool continuous, int nele) {
   if (pD == 1) {
     if (nele == 2)
       return std::make_pair(17, 45.08467250483267);
@@ -29,7 +29,7 @@ auto incompressibelBlockResults(int pD, bool continous, int nele) {
     else
       DUNE_THROW(Dune::NotImplemented, "No TestResult for the given nele");
   } else if (pD == 2) {
-    if (continous) {
+    if (continuous) {
       if (nele == 2)
         return std::make_pair(19, 39.97523916033919);
       else if (nele == 4)
@@ -67,10 +67,10 @@ int main(int argc, char** argv) {
   for (auto i : {2, 4, 8})
     t.subTest(incompressibelBlockTest<1, 0, false>(sk, incompressibelBlockResults(1, false, i), i, false, true));
 
-  // The H2P1 element can have a continous or discontinous field for the pressure
+  // The H2P1 element can have a continuous or discontinuous field for the pressure
   for (auto i : {2, 4}) {
     t.subTest(incompressibelBlockTest<2, 1, true>(sk, incompressibelBlockResults(2, true, i), i, false, true));
-    // t.subTest(incompressibelBlockTest<2, 1, false>(sk, incompressibelBlockResults(2, false, i), i));
+    t.subTest(incompressibelBlockTest<2, 1, false>(sk, incompressibelBlockResults(2, false, i), i));
   }
   return t.exit();
 }
