@@ -48,20 +48,20 @@ namespace Impl {
 
     auto Uhat(const auto& Estrain) const { return vol_.template storedEnergy<strainType>(Estrain); }
 
-    auto storedEnergy(const auto& Estrain, auto p) {
+    auto storedEnergy(const auto& Estrain, const auto& p) {
       auto Wdev = dev_.template storedEnergy<strainType>(Estrain);
       auto uhat = Uhat(Estrain);
-      return Wdev + (kappa_ / 2) * Dune::power(uhat, 2);
+      return Wdev + p * uhat - (1.0 / (2.0 * kappa_)) * Dune::power(p, 2);
     }
 
-    auto firstDerivatives(const auto& Estrain, auto p) const {
+    auto firstDerivatives(const auto& Estrain, const auto& p) const {
       const auto Sdev = dev_.template stresses<strainType, true>(Estrain);
       const auto dUdE = vol_.template stresses<strainType, true>(Estrain);
       const auto S    = (Sdev + p * dUdE).eval();
       return std::make_tuple(dUdE, S);
     }
 
-    auto secondDerivative(const auto& Estrain, auto p) const {
+    auto secondDerivative(const auto& Estrain, const auto& p) const {
       const auto Cdev   = dev_.template tangentModuli<strainType, true>(Estrain);
       const auto d2UdE2 = vol_.template tangentModuli<strainType, true>(Estrain);
       const auto C      = (Cdev + p * d2UdE2).eval();
