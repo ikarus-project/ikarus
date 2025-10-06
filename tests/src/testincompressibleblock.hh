@@ -53,6 +53,9 @@ template <int pD, int pP, bool continuous, typename Skills>
 auto incompressibelBlockTest(Skills&& elePre, std::pair<int, double> testResults, int nele, bool logToConsole = false,
                              bool writeVTK = false) {
   TestSuite t("Incompressible Block Test for Displacement Pressure Element " + Dune::className(elePre));
+  
+  spdlog::info("Simulating Incompressible Block Test with pD = " + std::to_string(pD) +
+               " and pP = " + std::to_string(pP));
 
   constexpr double tol  = 1e-10;
   constexpr int gridDim = 3;

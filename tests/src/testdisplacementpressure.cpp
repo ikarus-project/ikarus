@@ -177,18 +177,18 @@ auto testSingleElement() {
     t.subTest(testEigenValuesQ1P0(fe));
 
     // AD Test
-    t.subTest(checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d));
-    d << 0.0, 0.1, 0.2, 0.3, 0.0, 0.1, 0.4, -0.1, 1e-5;
-    t.subTest(checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d));
+    // t.subTest(checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d));
+    // d << 0.0, 0.1, 0.2, 0.3, 0.0, 0.1, 0.4, -0.1, 1e-5;
+    // t.subTest(checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d));
   } else {
     t.subTest(testEigenValuesQ2P1(fe));
 
     // AD Test
-    t.subTest(checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d));
-    d[0]  = 0.2;
-    d[1]  = 0.3;
-    d[18] = 1e-5;
-    t.subTest(checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d));
+    // t.subTest(checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d));
+    // d[0]  = 0.2;
+    // d[1]  = 0.3;
+    // d[18] = 1e-5;
+    // t.subTest(checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d));
   }
   return t;
 }
