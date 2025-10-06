@@ -423,6 +423,10 @@ protected:
   void calculateMatrixImpl(const Requirement& par, const MatrixAffordance& affordance,
                            typename Traits::template MatrixType<> K,
                            const VectorXOptRef<ScalarType>& dx = std::nullopt) const {
+    if constexpr (Concepts::AutodiffScalar<ScalarType>) {
+      DUNE_THROW(Dune::NotImplemented,
+                 "DisplacementPressure element does not support matrix calculations for autodiff scalars");
+    }
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto pFunction = pressureFunction(par, dx);
@@ -489,13 +493,22 @@ protected:
   template <typename ScalarType>
   auto calculateScalarImpl(const Requirement& par, ScalarAffordance affordance,
                            const VectorXOptRef<ScalarType>& dx = std::nullopt) const -> ScalarType {
-    return energyFunction(par, dx)();
+    if constexpr (not Concepts::AutodiffScalar<ScalarType>) {
+      return energyFunction(par, dx)();
+    } else {
+      DUNE_THROW(Dune::NotImplemented,
+                 "DisplacementPressure element does not support scalar calculations for autodiff scalars");
+    }
   }
 
   template <typename ScalarType>
   void calculateVectorImpl(const Requirement& par, VectorAffordance affordance,
                            typename Traits::template VectorType<ScalarType> force,
                            const VectorXOptRef<ScalarType>& dx = std::nullopt) const {
+    if constexpr (Concepts::AutodiffScalar<ScalarType>) {
+      DUNE_THROW(Dune::NotImplemented,
+                 "DisplacementPressure element does not support vector calculations for autodiff scalars");
+    }
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
     const auto eps       = strainFunction(par, dx);

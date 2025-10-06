@@ -151,7 +151,9 @@ auto testSingleElement() {
           gridView, composite(power<2>(lagrange<pD>(), FlatInterleaved{}), lagrange<pP>(), BlockedLexicographic{}));
     else
       return Ikarus::makeBasis(
-          gridView, composite(power<2>(lagrange<pD>(), FlatInterleaved{}), lagrangeDG<pP>(), BlockedLexicographic{}));
+          gridView,
+          composite(power<2>(lagrange<pD>(), FlatInterleaved{}), lagrangeDG<pP>(),
+                    BlockedLexicographic{})); // for a single element, lagrange and lagrangeDG should be the same
   }();
   auto sk      = skills(displacementPressure(planeStrain(matDEV), planeStrain(matVOL), kappa));
   using FEType = decltype(makeFE(basis, sk));
@@ -175,20 +177,8 @@ auto testSingleElement() {
   // TESTS
   if (pD == 1) {
     t.subTest(testEigenValuesQ1P0(fe));
-
-    // AD Test
-    // t.subTest(checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d));
-    // d << 0.0, 0.1, 0.2, 0.3, 0.0, 0.1, 0.4, -0.1, 1e-5;
-    // t.subTest(checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d));
   } else {
     t.subTest(testEigenValuesQ2P1(fe));
-
-    // AD Test
-    // t.subTest(checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d));
-    // d[0]  = 0.2;
-    // d[1]  = 0.3;
-    // d[18] = 1e-5;
-    // t.subTest(checkFESByAutoDiffImpl(gridView, basis, sk, AffordanceCollections::elastoStatics, d));
   }
   return t;
 }
