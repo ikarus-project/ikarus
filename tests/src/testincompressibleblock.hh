@@ -53,7 +53,7 @@ template <int pD, int pP, bool continuous, typename Skills>
 auto incompressibelBlockTest(Skills&& elePre, std::pair<int, double> testResults, int nele, bool logToConsole = false,
                              bool writeVTK = false) {
   TestSuite t("Incompressible Block Test for Displacement Pressure Element " + Dune::className(elePre));
-  
+
   spdlog::info("Simulating Incompressible Block Test with pD = " + std::to_string(pD) +
                " and pP = " + std::to_string(pP));
 
@@ -135,7 +135,7 @@ auto incompressibelBlockTest(Skills&& elePre, std::pair<int, double> testResults
 
   sparseFlatAssembler->bind(req, Ikarus::AffordanceCollections::elastoStatics, DBCOption::Full);
 
-  auto linSolver = LinearSolver(SolverTypeTag::sd_UmfPackLU);
+  auto linSolver = LinearSolver(SolverTypeTag::sd_SparseQR);
   AffordanceCollection elastoStaticsNoScalar(VectorAffordance::forces, MatrixAffordance::stiffness);
   auto nonOp =
       DifferentiableFunctionFactory::op(sparseFlatAssembler, elastoStaticsNoScalar, sparseFlatAssembler->dBCOption());
