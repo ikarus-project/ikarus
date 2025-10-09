@@ -424,8 +424,8 @@ protected:
                            typename Traits::template MatrixType<> K,
                            const VectorXOptRef<ScalarType>& dx = std::nullopt) const {
     if constexpr (Concepts::AutodiffScalar<ScalarType>) {
-      DUNE_THROW(Dune::NotImplemented,
-                 "DisplacementPressure element does not support matrix calculations for autodiff scalars");
+      static_assert(Dune::AlwaysFalse<ScalarType>::value,
+                    "DisplacementPressure element does not support matrix calculations for autodiff scalars");
     }
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
@@ -496,8 +496,8 @@ protected:
     if constexpr (not Concepts::AutodiffScalar<ScalarType>) {
       return energyFunction(par, dx)();
     } else {
-      DUNE_THROW(Dune::NotImplemented,
-                 "DisplacementPressure element does not support scalar calculations for autodiff scalars");
+      static_assert(Dune::AlwaysFalse<ScalarType>::value,
+                    "DisplacementPressure element does not support scalar calculations for autodiff scalars");
     }
   }
 
@@ -506,8 +506,8 @@ protected:
                            typename Traits::template VectorType<ScalarType> force,
                            const VectorXOptRef<ScalarType>& dx = std::nullopt) const {
     if constexpr (Concepts::AutodiffScalar<ScalarType>) {
-      DUNE_THROW(Dune::NotImplemented,
-                 "DisplacementPressure element does not support vector calculations for autodiff scalars");
+      static_assert(Dune::AlwaysFalse<ScalarType>::value,
+                    "DisplacementPressure element does not support vector calculations for autodiff scalars");
     }
     using namespace Dune::DerivativeDirections;
     using namespace Dune;
