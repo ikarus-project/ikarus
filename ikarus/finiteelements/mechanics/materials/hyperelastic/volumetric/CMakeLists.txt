@@ -3,7 +3,7 @@
 
 # install headers
 install(
-  FILES interface.hh volumetricfunctions.hh penaltyvolumetricfunctions.hh
+  FILES interface.hh volumetricfunctions.hh
   DESTINATION
     ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements/mechanics/materials/hyperelastic/volumetric
 )

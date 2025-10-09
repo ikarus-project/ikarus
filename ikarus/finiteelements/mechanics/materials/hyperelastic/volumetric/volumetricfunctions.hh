@@ -354,6 +354,31 @@ struct VF11
   [[nodiscard]] constexpr static std::string name() noexcept { return "Function 11"; }
 };
 
+/**
+ * \brief Volumetric function No. 12. Mainly used in combination with the displacement-pressure element.
+ * \details \f[ U(J) = J - 1 \f]
+ * \ingroup materials
+ */
+struct VF12
+{
+  template <typename ST>
+  ST storedEnergyImpl(const ST& J) const {
+    return J - 1;
+  };
+
+  template <typename ST>
+  ST firstDerivativeImpl(const ST& /* J */) const {
+    return 1;
+  }
+
+  template <typename ST>
+  ST secondDerivativeImpl(const ST& /* J */) const {
+    return 0.0;
+  };
+
+  [[nodiscard]] constexpr static std::string name() noexcept { return "Function 12"; }
+};
+
 using NoVolumetricPart = Volumetric<VF0>;
 
 } // namespace Ikarus::Materials

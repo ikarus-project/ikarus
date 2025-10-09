@@ -218,7 +218,7 @@ auto testSingleElement() {
   auto matParameter = toLamesFirstParameterAndShearModulus({.emodul = 1000.0, .nu = 0.49});
   auto kappa        = convertLameConstants(matParameter).toBulkModulus();
   auto matDEV       = Materials::makeOgden<1, Ikarus::PrincipalStretchTags::deviatoric>({matParameter.mu}, {2.0});
-  auto matVOL       = Materials::makeMaterialLawFromPenaltyFunction(Materials::PVF1());
+  auto matVOL       = Materials::makePureVolumetric(Materials::VF12());
   auto grid         = createGrid<Grids::Yasp>(1, 1);
   auto gridView     = grid->leafGridView();
 
@@ -271,7 +271,7 @@ auto testAssembler() {
   auto matParameter = toLamesFirstParameterAndShearModulus({.emodul = 1000.0, .nu = 0.49});
   auto kappa        = convertLameConstants(matParameter).toBulkModulus();
   auto matDEV       = Materials::makeOgden<1, Ikarus::PrincipalStretchTags::deviatoric>({matParameter.mu}, {2.0});
-  auto matVOL       = Materials::makeMaterialLawFromPenaltyFunction(Materials::PVF1());
+  auto matVOL       = Materials::makePureVolumetric(Materials::VF12());
   auto grid         = createGrid<Grids::Yasp>(2, 2);
   auto gridView     = grid->leafGridView();
 

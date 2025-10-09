@@ -18,7 +18,6 @@
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/deviatoric/ogden.hh>
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/interface.hh>
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/neohooke.hh>
-#include <ikarus/finiteelements/mechanics/materials/hyperelastic/volumetric/penaltyvolumetricfunctions.hh>
 #include <ikarus/finiteelements/mechanics/materials/hyperelastic/volumetric/volumetricfunctions.hh>
 #include <ikarus/finiteelements/mechanics/materials/tags.hh>
 
@@ -54,7 +53,7 @@ inline auto makeBlatzKo(double mu) {
  *
  * \return A hyperelastic material model.
  */
-template <int n, PrincipalStretchTags tag, typename VolumetricFunction = VF0>
+template <int n, PrincipalStretchTags tag, Concepts::VolumetricFunction VolumetricFunction = VF0>
 inline auto makeOgden(const typename Ogden<n, tag>::MaterialParameters& mu,
                       const typename Ogden<n, tag>::MaterialExponents alpha, double K = 0.0,
                       const VolumetricFunction& vf = VolumetricFunction{}) {
@@ -79,7 +78,7 @@ inline auto makeOgden(const typename Ogden<n, tag>::MaterialParameters& mu,
  *
  * \return A hyperelastic material model.
  */
-template <int n, typename VolumetricFunction = VF0>
+template <int n, Concepts::VolumetricFunction VolumetricFunction = VF0>
 inline auto makeInvariantBased(const typename InvariantBased<n>::MaterialParameters& mu,
                                const typename InvariantBased<n>::Exponents pex,
                                const typename InvariantBased<n>::Exponents qex, double K = 0.0,
@@ -103,7 +102,7 @@ inline auto makeInvariantBased(const typename InvariantBased<n>::MaterialParamet
  *
  * \return A hyperelastic material model.
  */
-template <typename VolumetricFunction = VF0>
+template <Concepts::VolumetricFunction VolumetricFunction = VF0>
 inline auto makeMooneyRivlin(const typename InvariantBased<2>::MaterialParameters& mu, double K = 0.0,
                              const VolumetricFunction& vf = VolumetricFunction{}) {
   typename InvariantBased<2>::Exponents pex = {1, 0};
@@ -124,7 +123,7 @@ inline auto makeMooneyRivlin(const typename InvariantBased<2>::MaterialParameter
  *
  * \return A hyperelastic material model.
  */
-template <typename VolumetricFunction = VF0>
+template <Concepts::VolumetricFunction VolumetricFunction = VF0>
 inline auto makeYeoh(const typename InvariantBased<3>::MaterialParameters& mu, double K = 0.0,
                      const VolumetricFunction& vf = VolumetricFunction{}) {
   typename InvariantBased<3>::Exponents pex = {1, 2, 3};
@@ -145,7 +144,7 @@ inline auto makeYeoh(const typename InvariantBased<3>::MaterialParameters& mu, d
  *
  * \return A hyperelastic material model.
  */
-template <typename VolumetricFunction = VF0>
+template <Concepts::VolumetricFunction VolumetricFunction = VF0>
 inline auto makeArrudaBoyce(const ArrudaBoyceMatParameters& matPar, double K = 0.0,
                             const VolumetricFunction& vf = VolumetricFunction{}) {
   auto abPre = ArrudaBoyce(matPar);
@@ -167,7 +166,7 @@ inline auto makeArrudaBoyce(const ArrudaBoyceMatParameters& matPar, double K = 0
  *
  * \return A hyperelastic material model.
  */
-template <typename VolumetricFunction = VF0>
+template <Concepts::VolumetricFunction VolumetricFunction = VF0>
 inline auto makeGent(const GentMatParameters& matPar, double K = 0.0,
                      const VolumetricFunction& vf = VolumetricFunction{}) {
   auto gentPre = Gent(matPar);
@@ -177,9 +176,14 @@ inline auto makeGent(const GentMatParameters& matPar, double K = 0.0,
   return Hyperelastic(dev, vol);
 }
 
-auto makeMaterialLawFromPenaltyFunction(const Concepts::VolumetricFunction auto& pvf) {
+/**
+ * \brief A helper function to create a hyperelastic material model with pure volumetric functionality, i.e., no
+ * deviatoric part.
+ * \param vf The volumetric function.
+ */
+auto makePureVolumetric(const Concepts::VolumetricFunction auto& vf) {
   auto noDev = Deviatoric(NoDev{});
-  auto vol   = Volumetric(1.0, pvf);
+  auto vol   = Volumetric(1.0, vf);
   return Hyperelastic(noDev, vol);
 }
 

@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
   auto kappa    = lambda + 2 * mu / 3;
 
   auto matDEV = Materials::makeOgden<1, Ikarus::PrincipalStretchTags::deviatoric>({mu}, {2.0});
-  auto matVOL = Materials::makeMaterialLawFromPenaltyFunction(Materials::PVF1());
+  auto matVOL = Materials::makePureVolumetric(Materials::VF12());
 
   using namespace Dune::Functions::BasisFactory;
 
