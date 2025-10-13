@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
 /**
- * \file BlatzKo.hh
- * \brief Implementation of the BlatzKo material model.
+ * \file nodeviatoricfunction.hh
+ * \brief Implementation of the NoDev material model.
  * \ingroup  materials
  */
 
@@ -42,12 +42,12 @@ struct NoDevT
   [[nodiscard]] constexpr static std::string name() noexcept { return "None"; }
 
   /**
-   * \brief Returns the material parameters stored in the material
+   * \brief Returns the material parameters stored in the material (returns zero)
    */
   MaterialParameters materialParametersImpl() const { return 0.0; }
 
   /**
-   * \brief Computes the stored energy in the BlatzKo material model.
+   * \brief Computes the stored energy (returns zero).
    *
    * \param lambda principal stretches
    * \tparam ST the scalartype of the principal stretches
@@ -59,7 +59,8 @@ struct NoDevT
   }
 
   /**
-   * \brief Computes the first derivative of the stored energy function w.r.t. the total principal stretches.
+   * \brief Computes the first derivative of the stored energy function w.r.t. the total principal stretches (returns
+   * zero vector).
    *
    * \param lambda principal stretches
    * \return ScalarType
@@ -70,7 +71,8 @@ struct NoDevT
   }
 
   /**
-   * \brief Computes the second derivatives of the stored energy function w.r.t. the total principal stretches.
+   * \brief Computes the second derivatives of the stored energy function w.r.t. the total principal stretches (returns
+   * zero matrix).
    *
    * \param lambda principal stretches
    * \tparam ST the scalartype of the principal stretches
@@ -84,7 +86,7 @@ struct NoDevT
   /**
    * \brief Rebinds the material to a different scalar type.
    * \tparam STO The target scalar type.
-   * \return NoDevT<ScalarTypeOther> The rebound BlatzKo material.
+   * \return NoDevT<ScalarTypeOther> The rebound NoDev material.
    */
   template <typename STO>
   auto rebind() const {

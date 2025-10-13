@@ -221,8 +221,8 @@ public:
   template <typename ScalarType = double>
   auto displacementFunction(const Requirement& par, const VectorXOptRef<ScalarType>& dx = std::nullopt) const {
     const auto& d = par.globalSolution();
-    auto disp     = Ikarus::FEHelper::localSolutionBlockVectorWithTreePath<Traits>(d, underlying().localView(),
-                                                                                   Dune::Indices::_0, dx);
+    auto disp =
+        Ikarus::FEHelper::localSolutionBlockVectorComposite<Traits>(d, underlying().localView(), Dune::Indices::_0, dx);
     Dune::StandardLocalFunction uFunction(localBasisU_, disp, geo_);
     return uFunction;
   }

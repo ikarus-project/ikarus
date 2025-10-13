@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: 2021-2025 The Ikarus Developers ikarus@ibb.uni-stuttgart.de
 // SPDX-License-Identifier: LGPL-3.0-or-later
 
+/**
+ * \file vtkcontainertypes.hh
+ * \brief Implementation of container types for the vtk writer.
+ * \ingroup io
+ *
+ */
+
 #pragma once
 #include <array>
 #include <tuple>

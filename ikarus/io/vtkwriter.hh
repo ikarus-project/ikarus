@@ -24,8 +24,6 @@
 
 namespace Ikarus::Vtk {
 
-namespace Impl {} // namespace Impl
-
 /**
  * \struct Writer
  * \brief Manages writing results using VTK, based on assembler and data collector.

@@ -12,7 +12,7 @@
 
 namespace Ikarus::FEHelper {
 /**
- * \brief Gets the local solution Dune block vector
+ * \brief Gets the local solution Dune block vector for a power basis.
  *
  * \tparam Traits Type of the FE traits.
  * \tparam ST Scalar type for the local solution vector.
@@ -45,6 +45,19 @@ auto localSolutionBlockVector(
   return localX;
 }
 
+/**
+ * \brief Gets the local solution Dune block vector for a scalar (or leaf) node of a power basis.
+ *
+ * \tparam Traits Type of the FE traits.
+ * \tparam ST Scalar type for the local solution vector.
+ * \tparam Vector Global solution vector
+ *
+ * \param x The global solution vector.
+ * \param localView Local view of the element.
+ * \param dx Optional global solution vector.
+ *
+ * \return A Dune block vector representing the solution quantities at each node.
+ * */
 template <typename Traits, typename Vector, typename ST>
 auto localSolutionBlockVectorScalar(
     const Vector& x, const typename Traits::LocalView& localView, auto&& treePath,
@@ -65,8 +78,21 @@ auto localSolutionBlockVectorScalar(
   return localX;
 }
 
+/**
+ * \brief Gets the local solution Dune block vector for a particular power node child of a composite basis.
+ *
+ * \tparam Traits Type of the FE traits.
+ * \tparam ST Scalar type for the local solution vector.
+ * \tparam Vector Global solution vector
+ *
+ * \param x The global solution vector.
+ * \param localView Local view of the element.
+ * \param dx Optional global solution vector.
+ *
+ * \return A Dune block vector representing the solution quantities at each node.
+ * */
 template <typename Traits, typename Vector, typename ST>
-auto localSolutionBlockVectorWithTreePath(
+auto localSolutionBlockVectorComposite(
     const Vector& x, const typename Traits::LocalView& localView, auto&& treePath,
     const std::optional<std::reference_wrapper<const Eigen::VectorX<ST>>>& dx = std::nullopt) {
   constexpr int worldDim = Traits::worlddim;
