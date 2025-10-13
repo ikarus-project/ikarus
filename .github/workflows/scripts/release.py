@@ -89,6 +89,11 @@ def update_all_versions(version_override=None):
             f"VERSION {old_version_number}",
             f"VERSION {new_version_number}",
         )
+        inplace_change(
+            "README.md",
+            f"/badge/Release/{old_version_number}/purple",
+            f"/badge/Release/{new_version_number}/purple",
+        )
 
     changeLine(
         "setup.py",

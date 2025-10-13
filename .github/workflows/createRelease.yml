@@ -163,6 +163,7 @@ jobs:
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.ORGANIZATION_TOKEN }}"
+          automatic_release_tag: v${{ github.event.inputs.releaseTag }}
           draft: true
           prerelease: true
           title: ${{ github.event.inputs.releaseTag }}
