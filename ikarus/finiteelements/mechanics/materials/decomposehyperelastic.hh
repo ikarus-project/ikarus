@@ -40,7 +40,7 @@ namespace Materials {
    * \tparam MAT Type of the material.
    * \param mat The underlying material model.
    * \return A tuple containing the deviatoric material model, volumetric material model, deviatoric material parameters
-   * and volumetric material paramters.
+   * and volumetric material parameters.
    */
   template <Concepts::Material MAT>
   requires(MAT::isHyperelastic)
