@@ -98,8 +98,8 @@ jobs:
           zip -9r  docs-v$NEWVERSION.zip    ./documentation-v$NEWVERSION
       - name: Install docker in Docker container
         run: |
-          apt-get update
-          apt-get install ca-certificates curl gnupg
+          apt-get update -y
+          apt-get install -y ca-certificates curl gnupg
           install -m 0755 -d /etc/apt/keyrings
           curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
           chmod a+r /etc/apt/keyrings/docker.gpg
@@ -108,7 +108,7 @@ jobs:
           "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian \
           $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
           tee /etc/apt/sources.list.d/docker.list > /dev/null
-          apt-get update
+          apt-get update -y
           apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
       - name: Free up disk space before Docker image saving
         run: |
@@ -127,12 +127,13 @@ jobs:
             docker push ikarusproject/$IMAGE:v$NEWVERSION
 
             if [[ "$IMAGE" == "ikarus" ]]; then
-              docker save ikarusproject/$IMAGE:v$NEWVERSION > ikarus-docker-v$NEWVERSION.tar
-              gzip -c9 ikarus-docker-v$NEWVERSION.tar > ikarus-docker-v$NEWVERSION.tar.gz
+              echo "Saving and compressing image: $IMAGE"
+              docker save ikarusproject/$IMAGE:v$NEWVERSION | gzip -c9 > ikarus-docker-v$NEWVERSION.tar.gz
             fi
 
             docker image rm ikarusproject/$IMAGE:latest || true
             docker image rm ikarusproject/$IMAGE:v$NEWVERSION || true
+            docker system prune -af --volumes || true
             echo "Done with $IMAGE"
           done
 
@@ -163,6 +164,7 @@ jobs:
       - uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.ORGANIZATION_TOKEN }}"
+          automatic_release_tag: v${{ github.event.inputs.releaseTag }}
           draft: true
           prerelease: true
           title: ${{ github.event.inputs.releaseTag }}
