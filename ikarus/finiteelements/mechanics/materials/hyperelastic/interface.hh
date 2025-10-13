@@ -45,6 +45,9 @@ struct Hyperelastic : public Material<Hyperelastic<DEV, VOL>>
   using StressMatrix       = StrainMatrix;
   using MaterialTensor     = Eigen::TensorFixedSize<ScalarType, Eigen::Sizes<dim, dim, dim, dim>>;
 
+  using DeviatoricType = DEV;
+  using VolumetricType = VOL;
+
   using MaterialParametersDEV = typename DEV::MaterialParameters;
   using MaterialParametersVOL = typename VOL::MaterialParameter;
   using MaterialParameters =

@@ -180,10 +180,11 @@ inline auto makeGent(const GentMatParameters& matPar, double K = 0.0,
  * \brief A helper function to create a hyperelastic material model with pure volumetric functionality, i.e., no
  * deviatoric part.
  * \param vf The volumetric function.
+ * \param K Bulk modulus (or) Lamé's first parameter.
  */
-auto makePureVolumetric(const Concepts::VolumetricFunction auto& vf) {
+auto makePureVolumetric(const Concepts::VolumetricFunction auto& vf, double K) {
   auto noDev = Deviatoric(NoDev{});
-  auto vol   = Volumetric(1.0, vf);
+  auto vol   = Volumetric(K, vf);
   return Hyperelastic(noDev, vol);
 }
 

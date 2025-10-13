@@ -59,6 +59,37 @@ template <typename MAT, typename S>
 concept CorrectStrainSize = hasCorrectSize<MAT, S>();
 
 /**
+ * \brief A helper struct to access the underling material model if reduced (or vanished).
+ * \tparam MAT Type of the material model.
+ */
+template <typename MAT, bool isReduced = MAT::isReduced>
+struct UnderlyingMaterial;
+
+template <typename MAT>
+struct UnderlyingMaterial<MAT, true>
+{
+  using type = MAT::Underlying;
+  static auto material(const MAT& mat) { return mat.underlying(); }
+};
+
+template <typename MAT>
+struct UnderlyingMaterial<MAT, false>
+{
+  using type = MAT;
+  static auto material(const MAT& mat) { return mat; }
+};
+
+/// \brief Type alias for the underlying material model.
+template <typename MAT>
+using UnderlyingMaterial_t = typename UnderlyingMaterial<MAT>::type;
+
+/// \brief Helper function to access the underlying material model.
+template <typename MAT>
+auto underlyingMaterial(const MAT& mat) {
+  return UnderlyingMaterial<MAT>::material(mat);
+}
+
+/**
  * \brief Interface classf or materials.
  * \ingroup materials
  *    \details Consider a hyper elastic material with the free Helmholtz energy
@@ -82,13 +113,31 @@ struct Material
 {
   using MaterialImpl = MI; ///< Type of material implementation
 
+  static constexpr bool isStrainVanished =
+      traits::isSpecializationNonTypeAndTypes<VanishingStrain, MaterialImpl>::value;
+  static constexpr bool isStressVanished =
+      traits::isSpecializationNonTypeAndTypes<VanishingStress, MaterialImpl>::value;
+
   /**
    * \brief Static constant for determining if the material has vanishing stress or strain components (is reduced).
    */
-  static constexpr bool isReduced = traits::isSpecializationNonTypeAndTypes<VanishingStress, MaterialImpl>::value or
-                                    traits::isSpecializationNonTypeAndTypes<VanishingStrain, MaterialImpl>::value;
+  static constexpr bool isReduced = isStrainVanished or isStressVanished;
 
   static constexpr bool isLinear = MI::strainTag == StrainTags::linear;
+
+  static constexpr bool isHyperelastic = [] {
+    if constexpr (isReduced) {
+      return requires {
+        typename MI::Underlying::DeviatoricType;
+        typename MI::Underlying::VolumetricType;
+      };
+    } else {
+      return requires {
+        typename MI::DeviatoricType;
+        typename MI::VolumetricType;
+      };
+    }
+  }();
 
   /**
    * \brief Const accessor to the underlying material (CRTP).

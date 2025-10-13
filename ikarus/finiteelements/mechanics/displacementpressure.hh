@@ -22,6 +22,7 @@
   #include <ikarus/finiteelements/fehelper.hh>
   #include <ikarus/finiteelements/ferequirements.hh>
   #include <ikarus/finiteelements/mechanics/loads.hh>
+  #include <ikarus/finiteelements/mechanics/materials/decomposehyperelastic.hh>
   #include <ikarus/finiteelements/mechanics/materials/hyperelastic/interface.hh>
   #include <ikarus/finiteelements/mechanics/materials/tags.hh>
   #include <ikarus/finiteelements/mechanics/strainenhancements/easfunctions.hh>
@@ -104,14 +105,11 @@ class DisplacementPressure;
  * \brief A PreFE struct for displacement-pressure elements.
  * \tparam MAT Type of the material.
  */
-template <Concepts::Material MATDEV, Concepts::Material MATVOL>
+template <Concepts::Material MAT>
 struct DisplacementPressurePre
 {
-  using MaterialDEV = MATDEV;
-  using MaterialVOL = MATVOL;
-  MaterialDEV materialDev;
-  MaterialVOL materialVol;
-  double kappa;
+  using Material = MAT;
+  MAT material;
 
   template <typename PreFE, typename FE>
   using Skill = DisplacementPressure<PreFE, FE, DisplacementPressurePre>;
@@ -165,12 +163,28 @@ public:
   template <typename ST = double>
   using KgType = Eigen::Matrix<ST, myDim, myDim>;
 
+  using MaterialType = typename Pre::Material;
+
+  template <typename MAT>
+  using DecomposedDevType = typename Materials::DecomposedMaterialTypes<MaterialType>::DevType;
+
+  template <typename MAT>
+  using DecomposedVolType = typename Materials::DecomposedMaterialTypes<MaterialType>::VolType;
+
+  using DPConstitutiveDriverType =
+      Impl::DPConstitutiveDriver<DecomposedDevType<MaterialType>, DecomposedVolType<MaterialType>>;
+
   /**
    * \brief Constructor for the DisplacementPressure class.
    * \param pre The pre fe
    */
   explicit DisplacementPressure(const Pre& pre)
-      : constitutiveDriver_{pre.materialDev, pre.materialVol, pre.kappa} {}
+      : constitutiveDriver_([](const auto& mat) {
+          auto [dev, vol, devParams, volParams] = Materials::decomposeHyperelasticAndGetMaterialParameters(mat);
+          return DPConstitutiveDriverType(dev, vol, volParams);
+        }(pre.material)) {
+    static_assert(Pre::Material::isHyperelastic, "DisplacementPressure is only implemented for the hyperelastic case.");
+  }
 
 protected:
   /**
@@ -271,7 +285,7 @@ public:
     return [&](const Eigen::Vector<double, strainDim>& strainInVoigt, double p) {
       if constexpr (isSameResultType<RT, ResultTypes::PK2Stress> or isSameResultType<RT, ResultTypes::PK2StressFull>) {
         auto [dev, vol] = [&]() {
-          if constexpr (isSameResultType<RT, ResultTypes::PK2StressFull> and PRE::MaterialDEV::isReduced)
+          if constexpr (isSameResultType<RT, ResultTypes::PK2StressFull> and PRE::Material::isReduced)
             return std::make_pair(constitutiveDriver_.deviatoricMaterial().underlying(),
                                   constitutiveDriver_.volumetricMaterial().underlying());
           else
@@ -279,8 +293,8 @@ public:
         }();
 
         return RTWrapperType<RT>{
-            dev.template stresses<strainType>(enlargeIfReduced<typename PRE::MaterialDEV>(strainInVoigt)) +
-            p * vol.template stresses<strainType>(enlargeIfReduced<typename PRE::MaterialVOL>(strainInVoigt))};
+            dev.template stresses<strainType>(enlargeIfReduced<typename PRE::Material>(strainInVoigt)) +
+            p * vol.template stresses<strainType>(enlargeIfReduced<typename PRE::Material>(strainInVoigt))};
       }
     };
   }
@@ -320,7 +334,7 @@ private:
   std::shared_ptr<const Geometry> geo_;
   Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisTypeU>> localBasisU_;
   Dune::CachedLocalBasis<std::remove_cvref_t<LocalBasisTypeP>> localBasisP_;
-  Impl::DPConstitutiveDriver<typename PRE::MaterialDEV, typename PRE::MaterialVOL> constitutiveDriver_;
+  DPConstitutiveDriverType constitutiveDriver_;
   size_t numberOfNodes_{0};
   int order_{};
 
@@ -547,12 +561,12 @@ protected:
 /**
  * \brief A helper function to create a displacement-pressure pre finite element.
  * \tparam MAT Type of the material.
- * \param mat Material parameters for the displacement-pressure element.
+ * \param mat The material model.
  * \return A displacement-pressure pre finite element.
  */
-template <Concepts::Material MaterialDEV, Concepts::Material MaterialVOL>
-auto displacementPressure(const MaterialDEV& materialDev, const MaterialVOL& materialVol, double kappa) {
-  DisplacementPressurePre<MaterialDEV, MaterialVOL> pre(materialDev, materialVol, kappa);
+template <Concepts::Material MAT>
+auto displacementPressure(const MAT& mat) {
+  DisplacementPressurePre<MAT> pre(mat);
   return pre;
 }
 

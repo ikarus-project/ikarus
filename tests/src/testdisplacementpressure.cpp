@@ -217,8 +217,9 @@ auto testSingleElement() {
   // SETUP
   auto matParameter = toLamesFirstParameterAndShearModulus({.emodul = 1000.0, .nu = 0.49});
   auto kappa        = convertLameConstants(matParameter).toBulkModulus();
-  auto matDEV       = Materials::makeOgden<1, Ikarus::PrincipalStretchTags::deviatoric>({matParameter.mu}, {2.0});
-  auto matVOL       = Materials::makePureVolumetric(Materials::VF12());
+  auto mat          = Materials::makeOgden<1, Ikarus::PrincipalStretchTags::deviatoric>({matParameter.mu}, {2.0}, kappa,
+                                                                                        Materials::VF12());
+  auto reducedMat   = planeStrain(mat);
   auto grid         = createGrid<Grids::Yasp>(1, 1);
   auto gridView     = grid->leafGridView();
 
@@ -233,7 +234,7 @@ auto testSingleElement() {
           composite(power<2>(lagrange<pD>(), FlatInterleaved{}), lagrangeDG<pP>(),
                     BlockedLexicographic{})); // for a single element, lagrange and lagrangeDG should be the same
   }();
-  auto sk      = skills(displacementPressure(planeStrain(matDEV), planeStrain(matVOL), kappa));
+  auto sk      = skills(displacementPressure(reducedMat));
   using FEType = decltype(makeFE(basis, sk));
   std::vector<FEType> fes;
 
@@ -270,8 +271,9 @@ auto testAssembler() {
   // SETUP
   auto matParameter = toLamesFirstParameterAndShearModulus({.emodul = 1000.0, .nu = 0.49});
   auto kappa        = convertLameConstants(matParameter).toBulkModulus();
-  auto matDEV       = Materials::makeOgden<1, Ikarus::PrincipalStretchTags::deviatoric>({matParameter.mu}, {2.0});
-  auto matVOL       = Materials::makePureVolumetric(Materials::VF12());
+  auto mat          = Materials::makeOgden<1, Ikarus::PrincipalStretchTags::deviatoric>({matParameter.mu}, {2.0}, kappa,
+                                                                                        Materials::VF12());
+  auto reducedMat   = planeStrain(mat);
   auto grid         = createGrid<Grids::Yasp>(2, 2);
   auto gridView     = grid->leafGridView();
 
@@ -284,7 +286,7 @@ auto testAssembler() {
       return Ikarus::makeBasis(
           gridView, composite(power<2>(lagrange<pD>(), FlatInterleaved{}), lagrangeDG<pP>(), BlockedLexicographic{}));
   }();
-  auto sk      = skills(displacementPressure(planeStrain(matDEV), planeStrain(matVOL), kappa));
+  auto sk      = skills(displacementPressure(reducedMat));
   using FEType = decltype(makeFE(basis, sk));
   std::vector<FEType> fes;
 

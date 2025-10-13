@@ -57,12 +57,11 @@ int main(int argc, char** argv) {
   double lambda = 499.92568;
   auto kappa    = lambda + 2 * mu / 3;
 
-  auto matDEV = Materials::makeOgden<1, Ikarus::PrincipalStretchTags::deviatoric>({mu}, {2.0});
-  auto matVOL = Materials::makePureVolumetric(Materials::VF12());
+  auto mat = Materials::makeOgden<1, Ikarus::PrincipalStretchTags::deviatoric>({mu}, {2.0}, kappa, Materials::VF12());
 
   using namespace Dune::Functions::BasisFactory;
 
-  auto sk = displacementPressure(matDEV, matVOL, kappa);
+  auto sk = displacementPressure(mat);
 
   for (auto i : {2, 4, 8})
     t.subTest(incompressibelBlockTest<1, 0, false>(sk, incompressibelBlockResults(1, false, i), i));
