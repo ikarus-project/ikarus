@@ -90,8 +90,11 @@ auto testFile(const std::string& fileName, Dune::Vtk::DataTypes precision, bool 
       auto corner       = refEle.geometry<2>(c).center();
       auto stressInFile = localStressFunction(corner);
       for (const auto j : Dune::range(3)) {
-        t.check(Dune::FloatCmp::eq(stressInFile[j], results[i], epsilon))
-            << "Result read in is " << stressInFile[j] << " but should be " << results[i];
+        if (not(std::abs(results[i]) < 1e-15 and
+                std::abs(stressInFile[j]) < 1e-15)) // skip test if they are zero. Sometimes, clang complains if one
+                                                    // value is like 1e-17 and the other is 1e-16.
+          t.check(Dune::FloatCmp::eq(stressInFile[j], results[i], epsilon))
+              << "Result read in is " << stressInFile[j] << " but should be " << results[i];
         ++i;
       }
     }

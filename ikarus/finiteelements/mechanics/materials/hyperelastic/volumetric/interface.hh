@@ -51,6 +51,11 @@ struct Volumetric
         volumetricFunction_{std::forward<VFF>(vf)} {}
 
   /**
+   * \brief Returns a const-reference to the underlying volumetric function.
+   */
+  const VolumetricFunction& volumetricFunction() const { return volumetricFunction_; }
+
+  /**
    * \brief Returns the material parameters stored in the deviatoric part of the material.
    */
   const MaterialParameter materialParameter() const { return matPar_; }

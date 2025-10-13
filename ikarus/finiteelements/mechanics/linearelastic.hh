@@ -409,7 +409,7 @@ protected:
 /**
  * \brief A helper function to create a linear elastic pre finite element.
  * \tparam MAT Type of the material.
- * \param mat Material parameters for the non-linear elastic element.
+ * \param mat The material model.
  * \return A linear elastic pre finite element.
  */
 template <Concepts::GeometricallyLinearMaterial MAT>

@@ -173,12 +173,11 @@ private:
  * \tparam matrixIndexPair The array of MatrixIndexPair representing fixed strain components.
  * \tparam MaterialImpl The underlying material model.
  * \param mat The underlying material model.
- * \param p_tol Tolerance for stress reduction.
- * \return VanishingStress The created VanishingStress material.
+ * \return VanishingStrain The created VanishingStrain material.
  */
-template <MatrixIndexPair... stressIndexPair, typename MaterialImpl>
+template <MatrixIndexPair... strainIndexPair, typename MaterialImpl>
 auto makeVanishingStrain(MaterialImpl mat) {
-  return VanishingStrain<std::to_array({stressIndexPair...}), MaterialImpl>(mat);
+  return VanishingStrain<std::to_array({strainIndexPair...}), MaterialImpl>(mat);
 }
 
 /**
