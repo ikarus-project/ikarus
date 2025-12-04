@@ -7,6 +7,7 @@ install(
         linearelasticity.hh
         strainconversions.hh
         stressconversions.hh
+        materialconversions.hh
         svk.hh
         tags.hh
         vanishingstress.hh
