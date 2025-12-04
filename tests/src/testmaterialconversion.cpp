@@ -16,19 +16,11 @@
 using Dune::TestSuite;
 using namespace Ikarus;
 
-inline auto testMatrix1() {
+inline auto testMatrix() {
   return Eigen::Matrix3d{
       {0.600872, -0.179083,     0},
       {0.345678,  0.859121, -4e-5},
       { 0.00015,         0,     1}
-  };
-}
-
-inline auto testMatrix2() {
-  return Eigen::Matrix3d{
-      {1.15,    0, 0},
-      {   0, 0.75, 0},
-      {   0,    0, 1}
   };
 }
 
@@ -55,7 +47,7 @@ auto checkPK1AndPK2StressTensors() {
 
   std::vector<double> epsilons, errors;
 
-  const Eigen::Matrix<double, 3, 3> F = testMatrix1();
+  const Eigen::Matrix<double, 3, 3> F = testMatrix();
   Eigen::Matrix<double, 3, 3> deltaF;
   deltaF.setRandom();
 
@@ -114,7 +106,7 @@ auto checkTwoPointMaterialTensorSymmetry() {
 
   constexpr double tol = 5e-14;
 
-  auto F              = testMatrix1();
+  auto F              = testMatrix();
   auto pk2Stress      = nh.template stresses<deformationGradient, false>(F);
   auto materialTensor = nh.template tangentModuli<deformationGradient, false>(F);
   constexpr int dim   = 3;
@@ -130,6 +122,12 @@ auto checkTwoPointMaterialTensorSymmetry() {
           if (std::abs(A(i, J, k, L) - A(k, L, i, J)) > tol) { // due to floating-point issues
             checkScalars(t, A(i, J, k, L), A(k, L, i, J), " Incorrect entry for two-point tensor at " + indexName, tol);
           }
+          checkScalars(t, materialTensor(i, J, k, L), materialTensor(J, i, k, L),
+                       " Incorrect entry for material tensor at " + indexName, tol);
+          checkScalars(t, materialTensor(i, J, k, L), materialTensor(i, J, L, k),
+                       " Incorrect entry for material tensor at " + indexName, tol);
+          checkScalars(t, materialTensor(i, J, k, L), materialTensor(k, L, i, J),
+                       " Incorrect entry for material tensor at " + indexName, tol);
         }
 
   return t;
@@ -174,13 +172,148 @@ auto checkTwoPointMaterialTensorWithZeroStrains() {
   return t;
 }
 
+auto checkTwoPointMaterialTensorForUniaxialTensile2D(double lambda1, double lambda2, double lambda3) {
+  using StrainTags::deformationGradient;
+
+  TestSuite t("Check Two-Point Material Tensor Implementation for uniaxial tensile test (2D)");
+  spdlog::info("Testing " + t.name() + " with lambda1 = " + std::to_string(lambda1) +
+               " and lambda2 = " + std::to_string(lambda2));
+
+  const auto matPar = toLamesFirstParameterAndShearModulus(testMatPar());
+  const auto nh     = Materials::NeoHooke(matPar);
+  const auto lambda = matPar.lambda;
+  const auto mu     = matPar.mu;
+
+  // unaxial test for 2D case
+  Eigen::Matrix<double, 3, 3> F;
+  F.setZero();
+  F(0, 0) = lambda1;
+  F(1, 1) = lambda2;
+  F(2, 2) = lambda3;
+
+  constexpr double tol = 1e-15;
+  constexpr int dim    = 3;
+
+  const auto pk2Stress = nh.template stresses<deformationGradient, false>(F);
+  const auto C         = nh.template tangentModuli<deformationGradient, false>(F);
+  const auto A = transformTangentModuli<TangentModuliTags::Material, TangentModuliTags::TwoPoint>(C, pk2Stress, F);
+
+  // A vector of index pairs vector the entries in tensors A or C are non-zero
+  using Index4  = std::tuple<std::size_t, std::size_t, std::size_t, std::size_t>;
+  auto contains = [&](const std::vector<Index4>& v, const Index4& t) -> bool {
+    return std::find(v.begin(), v.end(), t) != v.end();
+  };
+  std::vector<Index4> idxPairs;
+  idxPairs.push_back({0, 0, 0, 0});
+  idxPairs.push_back({0, 0, 1, 1});
+  idxPairs.push_back({0, 0, 2, 2});
+  idxPairs.push_back({0, 1, 0, 1});
+  idxPairs.push_back({0, 1, 1, 0});
+  idxPairs.push_back({0, 2, 0, 2});
+  idxPairs.push_back({0, 2, 2, 0});
+  idxPairs.push_back({1, 0, 0, 1});
+  idxPairs.push_back({1, 0, 1, 0});
+  idxPairs.push_back({1, 1, 0, 0});
+  idxPairs.push_back({1, 1, 1, 1});
+  idxPairs.push_back({1, 1, 2, 2});
+  idxPairs.push_back({1, 2, 1, 2});
+  idxPairs.push_back({1, 2, 2, 1});
+  idxPairs.push_back({2, 0, 0, 2});
+  idxPairs.push_back({2, 0, 2, 0});
+  idxPairs.push_back({2, 1, 1, 2});
+  idxPairs.push_back({2, 1, 2, 1});
+  idxPairs.push_back({2, 2, 0, 0});
+  idxPairs.push_back({2, 2, 1, 1});
+  idxPairs.push_back({2, 2, 2, 2});
+
+  const std::size_t numExpectedValues = idxPairs.size();
+
+  std::vector<double> expectedAs, expectedCs;
+  expectedAs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu + lambda + mu * lambda1 * lambda1) /
+                       (lambda1 * lambda1));
+  expectedAs.push_back((lambda) / (lambda1 * lambda2));
+  expectedAs.push_back((lambda) / (lambda1 * lambda3));
+  expectedAs.push_back(mu);
+  expectedAs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda2));
+  expectedAs.push_back(mu);
+  expectedAs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda2));
+  expectedAs.push_back(mu);
+  expectedAs.push_back((lambda) / (lambda1 * lambda2));
+  expectedAs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu + lambda + mu * lambda2 * lambda2) /
+                       (lambda2 * lambda2));
+  expectedAs.push_back((lambda) / (lambda2 * lambda3));
+  expectedAs.push_back(mu);
+  expectedAs.push_back(mu);
+  expectedAs.push_back(mu);
+  expectedAs.push_back((lambda) / (lambda1 * lambda3));
+  expectedAs.push_back((lambda) / (lambda2 * lambda3));
+  expectedAs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu + lambda + mu * lambda3 * lambda3) /
+                       (lambda3 * lambda3));
+  expectedAs.push_back(0.0);
+  expectedAs.push_back(0.0);
+  expectedAs.push_back(0.0);
+  expectedAs.push_back(0.0);
+
+  expectedCs.push_back((-2.0 * lambda * log(lambda1 * lambda2 * lambda3) + 2.0 * mu + lambda) /
+                       (lambda1 * lambda1 * lambda1 * lambda1));
+  expectedCs.push_back(lambda / (lambda1 * lambda1 * lambda2 * lambda2));
+  expectedCs.push_back(lambda / (lambda1 * lambda1 * lambda3 * lambda3));
+  expectedCs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda1 * lambda2 * lambda2));
+  expectedCs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda1 * lambda2 * lambda2));
+  expectedCs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda1 * lambda3 * lambda3));
+  expectedCs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda1 * lambda3 * lambda3));
+  expectedCs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda1 * lambda2 * lambda2));
+  expectedCs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda1 * lambda2 * lambda2));
+  expectedCs.push_back(lambda / (lambda1 * lambda1 * lambda2 * lambda2));
+  expectedCs.push_back((-2.0 * lambda * log(lambda1 * lambda2 * lambda3) + 2.0 * mu + lambda) /
+                       (lambda2 * lambda2 * lambda2 * lambda2));
+  expectedCs.push_back(lambda / (lambda3 * lambda3 * lambda2 * lambda2));
+  expectedCs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda3 * lambda3 * lambda2 * lambda2));
+  expectedCs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda3 * lambda3 * lambda2 * lambda2));
+  expectedCs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda1 * lambda3 * lambda3));
+  expectedCs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda1 * lambda3 * lambda3));
+  expectedCs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda3 * lambda3 * lambda2 * lambda2));
+  expectedCs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda3 * lambda3 * lambda2 * lambda2));
+  expectedCs.push_back(lambda / (lambda1 * lambda1 * lambda3 * lambda3));
+  expectedCs.push_back(lambda / (lambda3 * lambda3 * lambda2 * lambda2));
+  expectedCs.push_back((-2.0 * lambda * log(lambda1 * lambda2 * lambda3) + 2.0 * mu + lambda) /
+                       (lambda3 * lambda3 * lambda3 * lambda3));
+
+  checkScalars(t, expectedAs.size(), numExpectedValues, " Incorrect size of expectedAs");
+  checkScalars(t, expectedCs.size(), numExpectedValues, " Incorrect size of expectedCs");
+
+  int counter = 0;
+  for (const auto i : Dune::range(dim))
+    for (const auto j : Dune::range(dim))
+      for (const auto k : Dune::range(dim))
+        for (const auto l : Dune::range(dim)) {
+          Index4 currentPair           = {i, j, k, l};
+          const std::string& indexName = "i = " + std::to_string(i) + ", j = " + std::to_string(j) +
+                                         ", k = " + std::to_string(k) + ", l = " + std::to_string(l);
+          if (contains(idxPairs, currentPair)) {
+            checkScalars(t, A(i, j, k, l), expectedAs[counter], " Incorrect entry for two-point tensor at " + indexName,
+                         tol);
+            checkScalars(t, C(i, j, k, l), expectedCs[counter], " Incorrect entry for material tensor at " + indexName,
+                         tol);
+            counter++;
+          } else {
+            checkScalars(t, A(i, j, k, l), 0.0, " Incorrect entry for two-point tensor at " + indexName, tol);
+            checkScalars(t, C(i, j, k, l), 0.0, " Incorrect entry for material tensor at " + indexName, tol);
+          }
+        }
+
+  return t;
+}
+
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  checkPK1AndPK2StressTensors();
-  checkTwoPointMaterialTensorSymmetry();
-  checkTwoPointMaterialTensorWithZeroStrains();
+  t.subTest(checkPK1AndPK2StressTensors());
+  t.subTest(checkTwoPointMaterialTensorSymmetry());
+  t.subTest(checkTwoPointMaterialTensorWithZeroStrains());
+  t.subTest(checkTwoPointMaterialTensorForUniaxialTensile2D(1.15, 0.75, 1.39));
+  // t.subTest(checkTwoPointMaterialTensorForUniaxialTensile2D(0.63, 1.95, 1.0));
 
   return t.exit();
 }
