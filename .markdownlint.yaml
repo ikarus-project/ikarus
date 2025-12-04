@@ -32,5 +32,8 @@ MD046: false
 # MD059/descriptive-link-text - Link text should be descriptive
 MD059: false
 
+# MD060/table-column-style : Table column style
+MD060: false
+
 MD007:
   indent: 4
