@@ -9,6 +9,8 @@
 
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/mechanics/materials/materialconversions.hh>
+#include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
+#include <ikarus/finiteelements/mechanics/materials/stressconversions.hh>
 #include <ikarus/utils/init.hh>
 
 using Dune::TestSuite;
@@ -36,44 +38,128 @@ auto testMatPar() {
   return YoungsModulusAndPoissonsRatio{.emodul = Emod, .nu = nu};
 }
 
-// Check if the implementation of using functions from Eigen library is correct with regard to explicit implementation
-auto checkTwoPointMaterialTensor() {
+auto checkPK1AndPK2StressTensors() {
   using StrainTags::deformationGradient;
 
-  TestSuite t("Check Two-Point Material Tensor Implementation");
+  TestSuite t("Check Two-Point Material Tensor: PK1 and PK2 tensor for SVK");
   spdlog::info("Testing " + t.name());
 
   auto matPar = testMatPar();
-  auto mu     = convertLameConstants(matPar).toShearModulus();
-  auto Lambda = convertLameConstants(matPar).toLamesFirstParameter();
-  auto K      = convertLameConstants(matPar).toBulkModulus();
+  auto svk    = Materials::StVenantKirchhoff(toLamesFirstParameterAndShearModulus(matPar));
 
-  std::array<double, 1> mu_og    = {mu};
-  std::array<double, 1> alpha_og = {2.0};
+  double epsilon                           = 1e-2;
+  constexpr double scalingFactor           = 1e-2;
+  constexpr double convergenceRateExpected = scalingFactor * scalingFactor;
+  constexpr double tol                     = 1e-3;
+  constexpr int numIncrements              = 5;
 
-  auto nh = Materials::NeoHooke(toLamesFirstParameterAndShearModulus(matPar));
+  std::vector<double> epsilons, errors;
 
-  constexpr double tol = 1e-15;
+  const Eigen::Matrix<double, 3, 3> F = testMatrix1();
+  Eigen::Matrix<double, 3, 3> deltaF;
+  deltaF.setRandom();
+
+  for (const auto counter : Dune::range(numIncrements)) {
+    deltaF *= epsilon;
+    const auto FPerturbed          = (F + deltaF).eval();
+    const auto pk2Stress_exact     = svk.template stresses<deformationGradient, false>(F);
+    const auto pk1Stress_exact     = transformStress<StressTags::PK2, StressTags::PK1>(pk2Stress_exact, F);
+    const auto pk2Stress_perturbed = svk.template stresses<deformationGradient, false>(FPerturbed);
+    const auto pk1Stress_perturbed = transformStress<StressTags::PK2, StressTags::PK1>(pk2Stress_perturbed, FPerturbed);
+    const auto Cm                  = svk.template tangentModuli<deformationGradient, false>(F);
+    const auto E                   = transformStrain<StrainTags::deformationGradient, StrainTags::greenLagrangian>(F);
+    constexpr int dim              = 3;
+    const auto A =
+        transformTangentModuli<TangentModuliTags::Material, TangentModuliTags::TwoPoint>(Cm, pk2Stress_exact, F);
+
+    Eigen::Matrix<double, 3, 3> pk1StressLin, pk2Stress;
+    pk1StressLin.setZero();
+    pk2Stress.setZero();
+
+    for (const auto i : Dune::range(dim))
+      for (const auto j : Dune::range(dim))
+        for (const auto k : Dune::range(dim))
+          for (const auto l : Dune::range(dim)) { // only works for SVK
+            pk1StressLin(i, j) += A(i, j, k, l) * deltaF(k, l);
+            pk2Stress(i, j) += Cm(i, j, k, l) * E(k, l);
+          }
+
+    Eigen::Matrix<double, 3, 3> pk1Error = pk1Stress_perturbed - pk1Stress_exact - pk1StressLin;
+    double relErr                        = pk1Error.norm() / pk1Stress_perturbed.norm();
+
+    std::cout << std::scientific << std::setprecision(8) << "epsilon " << epsilon << ", relErr " << relErr << std::endl;
+    epsilons.push_back(epsilon);
+    errors.push_back(relErr);
+    checkApproxMatrices(t, pk2Stress_exact, pk2Stress, testLocation() + " Incorrect PK2 stress.", tol);
+    epsilon = epsilon * 1e-2;
+  }
+
+  for (std::size_t i = 1; i < numIncrements; ++i) {
+    t.check(Dune::FloatCmp::le(errors[i] / errors[i - 1], convergenceRateExpected + tol))
+        << std::setprecision(16) << "Incorrect Scalar. Expected:\t" << convergenceRateExpected << " Actual:\t"
+        << errors[i] / errors[i - 1] << ". The used tolerance was " << tol << " Incorrect error rate.";
+  }
+
+  return t;
+}
+
+auto checkTwoPointMaterialTensorSymmetry() {
+  using StrainTags::deformationGradient;
+
+  TestSuite t("Check Two-Point Material Tensor Implementation for Symmetry");
+  spdlog::info("Testing " + t.name());
+
+  auto matPar = testMatPar();
+  auto nh     = Materials::NeoHooke(toLamesFirstParameterAndShearModulus(matPar));
+
+  constexpr double tol = 5e-14;
 
   auto F              = testMatrix1();
   auto pk2Stress      = nh.template stresses<deformationGradient, false>(F);
   auto materialTensor = nh.template tangentModuli<deformationGradient, false>(F);
+  constexpr int dim   = 3;
+  const auto A =
+      transformTangentModuli<TangentModuliTags::Material, TangentModuliTags::TwoPoint>(materialTensor, pk2Stress, F);
 
-  constexpr int dim                    = 3;
-  const Eigen::Matrix<double, 3, 3> Id = Eigen::Matrix<double, 3, 3>::Identity();
-  Eigen::TensorFixedSize<double, Eigen::Sizes<dim, dim, dim, dim>> A_exp;
-  A_exp.setZero();
+  for (const auto i : Dune::range(dim))
+    for (const auto J : Dune::range(dim))
+      for (const auto k : Dune::range(dim))
+        for (const auto L : Dune::range(dim)) { // See Proposition 4.4 in Marsden and Hughes 1983 book
+          const std::string& indexName = "i = " + std::to_string(i) + ", J = " + std::to_string(J) +
+                                         ", k = " + std::to_string(k) + ", L = " + std::to_string(L);
+          if (std::abs(A(i, J, k, L) - A(k, L, i, J)) > tol) { // due to floating-point issues
+            checkScalars(t, A(i, J, k, L), A(k, L, i, J), " Incorrect entry for two-point tensor at " + indexName, tol);
+          }
+        }
+
+  return t;
+}
+
+auto checkTwoPointMaterialTensorWithZeroStrains() {
+  using StrainTags::deformationGradient;
+
+  TestSuite t("Check Two-Point Material Tensor Implementation with Zero Strains");
+  spdlog::info("Testing " + t.name());
+
+  auto matPar = testMatPar();
+  auto nh     = Materials::NeoHooke(toLamesFirstParameterAndShearModulus(matPar));
+
+  constexpr double tol = 1e-15;
+
+  const Eigen::Matrix<double, 3, 3> F = Eigen::Matrix<double, 3, 3>::Identity();
+  const auto pk2Stress                = nh.template stresses<deformationGradient, false>(F);
+  const auto materialTensor           = nh.template tangentModuli<deformationGradient, false>(F);
+  constexpr int dim                   = 3;
+  const auto A =
+      transformTangentModuli<TangentModuliTags::Material, TangentModuliTags::TwoPoint>(materialTensor, pk2Stress, F);
+
+  Eigen::TensorFixedSize<double, Eigen::Sizes<dim, dim, dim, dim>> Aexp;
+  Aexp.setZero();
   for (const auto i : Dune::range(dim))
     for (const auto J : Dune::range(dim))
       for (const auto k : Dune::range(dim))
         for (const auto L : Dune::range(dim))
-          for (const auto I : Dune::range(dim))
-            for (const auto K : Dune::range(dim)) {
-              A_exp(i, J, k, L) += materialTensor(I, J, K, L) * F(i, I) * F(k, K) + Id(i, k) * pk2Stress(J, L);
-            }
-
-  const auto A =
-      transformTangentModuli<TangentModuliTags::Material, TangentModuliTags::TwoPoint>(materialTensor, pk2Stress, F);
+          Aexp(i, J, k, L) += materialTensor(i, J, k, L); // true when F = I
 
   for (const auto i : Dune::range(dim))
     for (const auto J : Dune::range(dim))
@@ -81,7 +167,7 @@ auto checkTwoPointMaterialTensor() {
         for (const auto L : Dune::range(dim)) {
           const std::string& indexName = "i = " + std::to_string(i) + ", J = " + std::to_string(J) +
                                          ", k = " + std::to_string(k) + ", L = " + std::to_string(L);
-          checkScalars(t, A(i, J, k, L), A_exp(i, J, k, L), " Incorrect entry for two-point tensor at " + indexName,
+          checkScalars(t, A(i, J, k, L), Aexp(i, J, k, L), " Incorrect entry for two-point tensor at " + indexName,
                        tol);
         }
 
@@ -92,7 +178,9 @@ int main(int argc, char** argv) {
   Ikarus::init(argc, argv);
   TestSuite t;
 
-  checkTwoPointMaterialTensor();
+  checkPK1AndPK2StressTensors();
+  checkTwoPointMaterialTensorSymmetry();
+  checkTwoPointMaterialTensorWithZeroStrains();
 
   return t.exit();
 }

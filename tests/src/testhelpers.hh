@@ -102,7 +102,8 @@ void checkScalars(TestSuiteType& t, const ScalarType val, const ScalarType expec
                   double tol                         = Dune::FloatCmp::DefaultEpsilon<ScalarType>::value()) {
   t.check(Dune::FloatCmp::eq(val, expectedVal, tol))
       << std::setprecision(16) << "Incorrect Scalar. Expected:\t" << expectedVal << " Actual:\t" << val
-      << ". The used tolerance was " << tol << messageIfFailed;
+      << ". The absolute difference:\t" << std::abs(expectedVal - val) << ". The used tolerance was " << tol
+      << messageIfFailed;
 }
 
 template <typename TestSuiteType, typename ControlInformation>
