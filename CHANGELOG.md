@@ -101,6 +101,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
   Broadcasters can now only emit messages with a single signature, i.e. `void(MessageType message, const State& state)` [#376](https://github.com/ikarus-project/ikarus/pull/376).
 - Add support to handle inhomogeneous Dirichlet boundary conditions (IDBC) [#362](https://github.com/ikarus-project/ikarus/pull/362).
 - Add displacement-pressure (u-p) element [#391](https://github.com/ikarus-project/ikarus/pull/391).
+- Add transformation from material to two-point tangent moduli tensor [#398](https://github.com/ikarus-project/ikarus/pull/398).
 
 ## Release v0.4 (Ganymede)
 
