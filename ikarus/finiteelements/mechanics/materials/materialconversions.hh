@@ -48,11 +48,12 @@ Eigen::TensorFixedSize<ST, Eigen::Sizes<3, 3, 3, 3>> createTwoPointMaterialTenso
     for (const auto i : Dune::range(dim))
       for (const auto J : Dune::range(dim))
         for (const auto k : Dune::range(dim))
-          for (const auto L : Dune::range(dim))
+          for (const auto L : Dune::range(dim)) {
+            A(i, J, k, L) += Id(i, k) * S(J, L);
             for (const auto I : Dune::range(dim))
-              for (const auto K : Dune::range(dim)) {
-                A(i, J, k, L) += C(I, J, K, L) * F(i, I) * F(k, K) + Id(i, k) * S(J, L);
-              }
+              for (const auto K : Dune::range(dim))
+                A(i, J, k, L) += C(I, J, K, L) * F(i, I) * F(k, K);
+          }
     return A;
   } else if constexpr (tag == TangentModuliTags::TwoPoint) {
     return C;

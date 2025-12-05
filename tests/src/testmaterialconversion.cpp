@@ -156,13 +156,9 @@ auto checkTwoPointMaterialTensorWithZeroStrains() {
   for (const auto i : Dune::range(dim))
     for (const auto J : Dune::range(dim))
       for (const auto k : Dune::range(dim))
-        for (const auto L : Dune::range(dim))
+        for (const auto L : Dune::range(dim)) {
           Aexp(i, J, k, L) += materialTensor(i, J, k, L); // true when F = I
 
-  for (const auto i : Dune::range(dim))
-    for (const auto J : Dune::range(dim))
-      for (const auto k : Dune::range(dim))
-        for (const auto L : Dune::range(dim)) {
           const std::string& indexName = "i = " + std::to_string(i) + ", J = " + std::to_string(J) +
                                          ", k = " + std::to_string(k) + ", L = " + std::to_string(L);
           checkScalars(t, A(i, J, k, L), Aexp(i, J, k, L), " Incorrect entry for two-point tensor at " + indexName,
@@ -172,19 +168,19 @@ auto checkTwoPointMaterialTensorWithZeroStrains() {
   return t;
 }
 
-auto checkTwoPointMaterialTensorForUniaxialTensile2D(double lambda1, double lambda2, double lambda3) {
+auto checkTwoPointMaterialTensorWithDiagonalF(double lambda1, double lambda2, double lambda3) {
   using StrainTags::deformationGradient;
 
   TestSuite t("Check Two-Point Material Tensor Implementation for uniaxial tensile test (2D)");
   spdlog::info("Testing " + t.name() + " with lambda1 = " + std::to_string(lambda1) +
-               " and lambda2 = " + std::to_string(lambda2));
+               " and lambda2 = " + std::to_string(lambda2) + " and lambda3 = " + std::to_string(lambda3));
 
   const auto matPar = toLamesFirstParameterAndShearModulus(testMatPar());
   const auto nh     = Materials::NeoHooke(matPar);
   const auto lambda = matPar.lambda;
   const auto mu     = matPar.mu;
 
-  // unaxial test for 2D case
+  // A diagonal matrix chosen for F
   Eigen::Matrix<double, 3, 3> F;
   F.setZero();
   F(0, 0) = lambda1;
@@ -236,6 +232,7 @@ auto checkTwoPointMaterialTensorForUniaxialTensile2D(double lambda1, double lamb
   expectedAs.push_back(mu);
   expectedAs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda2));
   expectedAs.push_back(mu);
+  expectedAs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda3));
   expectedAs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda2));
   expectedAs.push_back(mu);
   expectedAs.push_back((lambda) / (lambda1 * lambda2));
@@ -243,16 +240,15 @@ auto checkTwoPointMaterialTensorForUniaxialTensile2D(double lambda1, double lamb
                        (lambda2 * lambda2));
   expectedAs.push_back((lambda) / (lambda2 * lambda3));
   expectedAs.push_back(mu);
+  expectedAs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda2 * lambda3));
+  expectedAs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda1 * lambda3));
   expectedAs.push_back(mu);
+  expectedAs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu) / (lambda2 * lambda3));
   expectedAs.push_back(mu);
   expectedAs.push_back((lambda) / (lambda1 * lambda3));
   expectedAs.push_back((lambda) / (lambda2 * lambda3));
   expectedAs.push_back((-lambda * log(lambda1 * lambda2 * lambda3) + mu + lambda + mu * lambda3 * lambda3) /
                        (lambda3 * lambda3));
-  expectedAs.push_back(0.0);
-  expectedAs.push_back(0.0);
-  expectedAs.push_back(0.0);
-  expectedAs.push_back(0.0);
 
   expectedCs.push_back((-2.0 * lambda * log(lambda1 * lambda2 * lambda3) + 2.0 * mu + lambda) /
                        (lambda1 * lambda1 * lambda1 * lambda1));
@@ -312,8 +308,8 @@ int main(int argc, char** argv) {
   t.subTest(checkPK1AndPK2StressTensors());
   t.subTest(checkTwoPointMaterialTensorSymmetry());
   t.subTest(checkTwoPointMaterialTensorWithZeroStrains());
-  t.subTest(checkTwoPointMaterialTensorForUniaxialTensile2D(1.15, 0.75, 1.39));
-  // t.subTest(checkTwoPointMaterialTensorForUniaxialTensile2D(0.63, 1.95, 1.0));
+  t.subTest(checkTwoPointMaterialTensorWithDiagonalF(1.15, 0.75, 1.39));
+  t.subTest(checkTwoPointMaterialTensorWithDiagonalF(0.63, 1.95, 1.0));
 
   return t.exit();
 }
