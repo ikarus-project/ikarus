@@ -117,10 +117,15 @@ public:
   }
 
   /**
-   * \brief Convenient function to bind a certain integration rule to the element.
+   * \brief Convenient function to bind a certain integration rule to the element and to bind the local view to the
+   * element.
    * \param  rule The rule to be bounded
+   * \param  element The element to be bounded
    */
-  void bind(const IntegrationRule& rule) { rule_ = rule; }
+  void bind(const IntegrationRule& rule, const GridElement& element) {
+    rule_ = rule;
+    bind(element);
+  }
 
   /**
    * \brief Convenient function to get the bounded rule.
