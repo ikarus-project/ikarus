@@ -30,6 +30,7 @@
 #include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/listener/controlvtkwriter.hh>
+#include <ikarus/utils/quadraturerulehelper.hh>
 
 using Dune::TestSuite;
 
@@ -244,10 +245,10 @@ auto GreenLagrangeStrainTest(const Material& mat) {
   return t;
 }
 
-template <typename Material, int gridDim = 2>
-auto SingleElementTest(const Material& mat) {
-  static_assert(gridDim == 2, "Single element test is applicable only for the 2D case");
-  TestSuite t("Single element test for non-linear Q1 element");
+template <typename Material, typename IntegrationRule>
+void SingleElementTestImpl(TestSuite& t, const Material& mat, const IntegrationRule& rule,
+                           const Eigen::VectorXd& eigenValuesExpected, const std::string& messageIfFailed = "") {
+  constexpr int gridDim = 2;
   using namespace Ikarus;
 
   auto grid     = createUGGridFromCorners<gridDim>(CornerDistortionFlag::fixedDistorted);
@@ -262,7 +263,7 @@ auto SingleElementTest(const Material& mat) {
   const double tol = 1e-10;
 
   auto fe = makeFE(basis, skills(nonLinearElastic(mat)));
-  fe.bind(*element);
+  fe.bind(rule, *element);
 
   Eigen::VectorXd d;
   d.setZero(nDOF);
@@ -279,18 +280,60 @@ auto SingleElementTest(const Material& mat) {
   essaK.compute();
   auto eigenValuesComputed = essaK.eigenvalues();
 
-  /// The eigen values are applicable only if 2x2 Gauss integration points are used
-  Eigen::VectorXd eigenValuesExpected;
-  eigenValuesExpected.setZero(basis.flat().size());
-  eigenValuesExpected << 1e-16, 1e-16, 1845.6296388251504753, 14192.4707553121224317, 19964.32719133414782,
-      29973.7943273325380486, 46641.183728849332812, 95447.6156712376251918;
   for (size_t i = 0; i < basis.flat().size(); ++i) {
-    if (abs(eigenValuesComputed[i]) > tol) {
-      t.check(Dune::FloatCmp::eq(abs(eigenValuesComputed[i]), eigenValuesExpected[i], tol),
-              "Mismatch in the " + std::to_string(i + 1) +
-                  "-th eigen value in single element test for four node non-linear 2D element");
+    if ((abs(eigenValuesExpected[i]) > tol) or (abs(eigenValuesComputed[i]) > tol)) {
+      checkScalars(t, abs(eigenValuesComputed[i]), eigenValuesExpected[i],
+                   " Mismatch in the " + std::to_string(i + 1) +
+                       "-th eigen value in single element test for four node non-linear 2D element" + messageIfFailed,
+                   tol);
     }
   }
+}
+
+template <typename Material>
+auto SingleElementTest(const Material& mat) {
+  TestSuite t("Single element test for non-linear Q1 element");
+  using namespace Ikarus;
+
+  spdlog::info("Testing " + t.name() + " with 2 x 2 integration points");
+
+  int integrationPolynomialOrder1 = numberOfGaussPointsToOrder(2);
+  checkScalars(t, integrationPolynomialOrder1, 3, " Incorrect integrationPolynomialOrder11");
+  const auto rule1 =
+      Dune::QuadratureRules<double, 2>::rule(Dune::GeometryTypes::quadrilateral, integrationPolynomialOrder1);
+
+  const int nDOF = 8;
+
+  /// The eigen values are applicable only if 2x2 Gauss integration points are used
+  Eigen::VectorXd eigenValuesExpected1;
+  eigenValuesExpected1.setZero(nDOF);
+  eigenValuesExpected1 << 1e-16, 1e-16, 1845.6296388251504753, 14192.4707553121224317, 19964.32719133414782,
+      29973.7943273325380486, 46641.183728849332812, 95447.6156712376251918;
+
+  SingleElementTestImpl(t, mat, rule1, eigenValuesExpected1, " with 2 x 2 integration points");
+
+  spdlog::info("Testing " + t.name() + " with 2 x 2 tensor product integration points");
+
+  const auto& oneDRule = Dune::QuadratureRules<double, 1>::rule(Dune::GeometryTypes::line, integrationPolynomialOrder1);
+  const auto rule2     = Ikarus::tensorProductQuadrature(oneDRule, oneDRule);
+  SingleElementTestImpl(t, mat, rule2, eigenValuesExpected1, " with 2 x 2 tensor product integration points");
+
+  spdlog::info("Testing " + t.name() + " with 1 x 1 integration points");
+
+  int integrationPolynomialOrder2 = numberOfGaussPointsToOrder(1);
+  checkScalars(t, integrationPolynomialOrder2, 1, " Incorrect integrationPolynomialOrder2");
+
+  /// The eigen values are applicable only if 1x1 Gauss integration points are used
+  Eigen::VectorXd eigenValuesExpected2;
+  eigenValuesExpected2.setZero(nDOF);
+  eigenValuesExpected2 << 1e-16, 1e-16, 1e-16, 1e-16, 1476.2425432014910, 20458.563308258160, 33153.273934018240,
+      92733.379734804420;
+
+  const auto rule3 =
+      Dune::QuadratureRules<double, 2>::rule(Dune::GeometryTypes::quadrilateral, integrationPolynomialOrder2);
+
+  SingleElementTestImpl(t, mat, rule3, eigenValuesExpected2, " with 1 x 1 integration points");
+
   return t;
 }
 

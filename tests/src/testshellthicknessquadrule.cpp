@@ -8,7 +8,7 @@ using Dune::TestSuite;
 #include <dune/common/float_cmp.hh>
 
 #include <ikarus/utils/init.hh>
-#include <ikarus/utils/tensorproductquadrule.hh>
+#include <ikarus/utils/quadraturerulehelper.hh>
 
 int main(int argc, char** argv) {
   Ikarus::init(argc, argv);

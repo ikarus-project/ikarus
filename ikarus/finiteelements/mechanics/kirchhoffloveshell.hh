@@ -19,6 +19,7 @@
 #include <ikarus/finiteelements/mechanics/membranestrains.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
+#include <ikarus/utils/quadraturerulehelper.hh>
 
 namespace Ikarus {
 template <typename PreFE, typename FE>
@@ -113,17 +114,12 @@ protected:
     const auto& fe = firstChild.finiteElement();
     // geo_.emplace(element.geometry());
     numberOfNodes_ = fe.size();
-    order_         = 2 * (fe.localBasis().order());
+    order_         = fe.localBasis().order();
     localBasis_    = Dune::CachedLocalBasis(fe.localBasis());
-    if constexpr (requires { element.impl().getQuadratureRule(order_); })
-      if (element.impl().isTrimmed())
-        localBasis_.bind(element.impl().getQuadratureRule(order_), Dune::bindDerivatives(0, 1, 2));
-      else
-        localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(element.type(), order_),
-                         Dune::bindDerivatives(0, 1, 2));
+    if (underlying().quadratureRule())
+      localBasis_.bind(underlying().quadratureRule().value(), Dune::bindDerivatives(0, 1, 2));
     else
-      localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(element.type(), order_),
-                       Dune::bindDerivatives(0, 1, 2));
+      localBasis_.bind(defaultQuadratureRule<myDim>(element, 2 * order_), Dune::bindDerivatives(0, 1, 2));
   }
 
 public:

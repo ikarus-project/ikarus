@@ -30,6 +30,7 @@
   #include <ikarus/utils/defaultfunctions.hh>
   #include <ikarus/utils/eigendunetransformations.hh>
   #include <ikarus/utils/linearalgebrahelper.hh>
+  #include <ikarus/utils/quadraturerulehelper.hh>
 
 namespace Ikarus {
 
@@ -201,12 +202,17 @@ protected:
 
     geo_           = std::make_shared<const Geometry>(element.geometry());
     numberOfNodes_ = firstFE.size();
-    order_         = 2 * (firstFE.localBasis().order());
+    order_         = 2 * firstFE.localBasis().order();
     localBasisU_   = Dune::CachedLocalBasis(firstFE.localBasis());
     localBasisP_   = Dune::CachedLocalBasis(secondFE.localBasis());
 
-    localBasisU_.bind(Dune::QuadratureRules<double, myDim>::rule(element.type(), order_), Dune::bindDerivatives(0, 1));
-    localBasisP_.bind(Dune::QuadratureRules<double, myDim>::rule(element.type(), order_), Dune::bindDerivatives(0, 1));
+    if (underlying().quadratureRule()) {
+      localBasisU_.bind(underlying().quadratureRule().value(), Dune::bindDerivatives(0, 1));
+      localBasisP_.bind(underlying().quadratureRule().value(), Dune::bindDerivatives(0, 1));
+    } else {
+      localBasisU_.bind(defaultQuadratureRule<myDim>(element, order_), Dune::bindDerivatives(0, 1));
+      localBasisP_.bind(defaultQuadratureRule<myDim>(element, order_), Dune::bindDerivatives(0, 1));
+    }
   }
 
 public:

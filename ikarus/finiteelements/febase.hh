@@ -95,6 +95,7 @@ public:
   static constexpr int myDim    = Traits::mydim;
   static constexpr int worldDim = Traits::worlddim;
   using PreTuple                = std::tuple<typename Skills<PreFE, FE>::Pre...>;
+  using IntegrationRule         = Dune::QuadratureRule<double, myDim>;
 
   /**
    * \brief Constructor for the FE class.
@@ -114,6 +115,22 @@ public:
     this->localView_.bind(element);
     Mixin::bind();
   }
+
+  /**
+   * \brief Convenient function to bind a certain integration rule to the element and to bind the local view to the
+   * element.
+   * \param  rule The rule to be bounded
+   * \param  element The element to be bounded
+   */
+  void bind(const IntegrationRule& rule, const GridElement& element) {
+    rule_ = rule;
+    bind(element);
+  }
+
+  /**
+   * \brief Convenient function to get the bounded rule.
+   */
+  const auto& quadratureRule() { return rule_; }
 
   /**
    * \brief Get the size of the local view.
@@ -138,5 +155,8 @@ public:
    * \return The reference to the local view.
    */
   LocalView& localView() { return this->localView_; }
+
+private:
+  std::optional<IntegrationRule> rule_ = std::nullopt;
 };
 } // namespace Ikarus
