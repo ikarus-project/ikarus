@@ -202,7 +202,7 @@ protected:
 
     geo_           = std::make_shared<const Geometry>(element.geometry());
     numberOfNodes_ = firstFE.size();
-    order_         = firstFE.localBasis().order();
+    order_         = 2 * firstFE.localBasis().order();
     localBasisU_   = Dune::CachedLocalBasis(firstFE.localBasis());
     localBasisP_   = Dune::CachedLocalBasis(secondFE.localBasis());
 
@@ -210,8 +210,8 @@ protected:
       localBasisU_.bind(underlying().quadratureRule().value(), Dune::bindDerivatives(0, 1));
       localBasisP_.bind(underlying().quadratureRule().value(), Dune::bindDerivatives(0, 1));
     } else {
-      localBasisU_.bind(defaultQuadratureRule<myDim>(element, 2 * order_), Dune::bindDerivatives(0, 1));
-      localBasisP_.bind(defaultQuadratureRule<myDim>(element, 2 * order_), Dune::bindDerivatives(0, 1));
+      localBasisU_.bind(defaultQuadratureRule<myDim>(element, order_), Dune::bindDerivatives(0, 1));
+      localBasisP_.bind(defaultQuadratureRule<myDim>(element, order_), Dune::bindDerivatives(0, 1));
     }
   }
 
