@@ -27,6 +27,7 @@
   #include <ikarus/finiteelements/mechanics/materials/tags.hh>
   #include <ikarus/finiteelements/mechanics/strainenhancements/easfunctions.hh>
   #include <ikarus/finiteelements/physicshelper.hh>
+  #include <ikarus/finiteelements/quadraturerulehelper.hh>
   #include <ikarus/utils/defaultfunctions.hh>
   #include <ikarus/utils/eigendunetransformations.hh>
   #include <ikarus/utils/linearalgebrahelper.hh>
@@ -201,12 +202,12 @@ protected:
 
     geo_           = std::make_shared<const Geometry>(element.geometry());
     numberOfNodes_ = firstFE.size();
-    order_         = 2 * (firstFE.localBasis().order());
+    order_         = firstFE.localBasis().order();
     localBasisU_   = Dune::CachedLocalBasis(firstFE.localBasis());
     localBasisP_   = Dune::CachedLocalBasis(secondFE.localBasis());
 
-    localBasisU_.bind(Dune::QuadratureRules<double, myDim>::rule(element.type(), order_), Dune::bindDerivatives(0, 1));
-    localBasisP_.bind(Dune::QuadratureRules<double, myDim>::rule(element.type(), order_), Dune::bindDerivatives(0, 1));
+    localBasisU_.bind(defaultQuadratureRule<myDim>(element, 2 * order_), Dune::bindDerivatives(0, 1));
+    localBasisP_.bind(defaultQuadratureRule<myDim>(element, 2 * order_), Dune::bindDerivatives(0, 1));
   }
 
 public:

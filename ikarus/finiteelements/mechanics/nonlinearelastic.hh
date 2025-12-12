@@ -25,6 +25,7 @@
   #include <ikarus/finiteelements/mechanics/materials/tags.hh>
   #include <ikarus/finiteelements/mechanics/strainenhancements/easfunctions.hh>
   #include <ikarus/finiteelements/physicshelper.hh>
+  #include <ikarus/finiteelements/quadraturerulehelper.hh>
   #include <ikarus/utils/defaultfunctions.hh>
   #include <ikarus/utils/eigendunetransformations.hh>
   #include <ikarus/utils/linearalgebrahelper.hh>
@@ -112,16 +113,9 @@ protected:
     const auto& fe        = firstChild.finiteElement();
     geo_                  = std::make_shared<const Geometry>(element.geometry());
     numberOfNodes_        = fe.size();
-    order_                = 2 * (fe.localBasis().order());
+    order_                = fe.localBasis().order();
     localBasis_           = Dune::CachedLocalBasis(fe.localBasis());
-    if constexpr (requires { element.impl().getQuadratureRule(order_); })
-      if (element.impl().isTrimmed())
-        localBasis_.bind(element.impl().getQuadratureRule(order_), Dune::bindDerivatives(0, 1));
-      else
-        localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(element.type(), order_),
-                         Dune::bindDerivatives(0, 1));
-    else
-      localBasis_.bind(Dune::QuadratureRules<double, myDim>::rule(element.type(), order_), Dune::bindDerivatives(0, 1));
+    localBasis_.bind(defaultQuadratureRule<myDim>(element, 2 * order_), Dune::bindDerivatives(0, 1));
   }
 
 public:

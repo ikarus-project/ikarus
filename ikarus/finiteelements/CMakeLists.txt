@@ -12,6 +12,7 @@ install(
         feresulttypes.hh
         mixin.hh
         fefactory.hh
+        quadraturerulehelper.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/finiteelements
 )
 
