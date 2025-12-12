@@ -30,6 +30,7 @@
 #include <ikarus/utils/differentiablefunctionfactory.hh>
 #include <ikarus/utils/dirichletvalues.hh>
 #include <ikarus/utils/listener/controlvtkwriter.hh>
+#include <ikarus/utils/quadraturerulehelper.hh>
 
 using Dune::TestSuite;
 
@@ -264,6 +265,12 @@ auto SingleElementTest(const Material& mat) {
   auto fe = makeFE(basis, skills(nonLinearElastic(mat)));
   fe.bind(*element);
 
+  int integrationPolynomialOrder = numberOfGaussPointsToOrder(2);
+  checkScalars(t, integrationPolynomialOrder, 3, " Incorrect integrationPolynomialOrder");
+  const auto rule =
+      Dune::QuadratureRules<double, 2>::rule(Dune::GeometryTypes::quadrilateral, integrationPolynomialOrder);
+  fe.bind(rule);
+
   Eigen::VectorXd d;
   d.setZero(nDOF);
   double lambda = 0.0;
@@ -285,10 +292,12 @@ auto SingleElementTest(const Material& mat) {
   eigenValuesExpected << 1e-16, 1e-16, 1845.6296388251504753, 14192.4707553121224317, 19964.32719133414782,
       29973.7943273325380486, 46641.183728849332812, 95447.6156712376251918;
   for (size_t i = 0; i < basis.flat().size(); ++i) {
-    if (abs(eigenValuesComputed[i]) > tol) {
+    if ((abs(eigenValuesComputed[i]) > tol) and (abs(eigenValuesExpected[i]) > tol)) {
       t.check(Dune::FloatCmp::eq(abs(eigenValuesComputed[i]), eigenValuesExpected[i], tol),
               "Mismatch in the " + std::to_string(i + 1) +
                   "-th eigen value in single element test for four node non-linear 2D element");
+    } else {
+      t.check(false, std::to_string(i + 1) + "-th eigen value should be zero but is not");
     }
   }
   return t;

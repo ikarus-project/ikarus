@@ -27,10 +27,10 @@
   #include <ikarus/finiteelements/mechanics/materials/tags.hh>
   #include <ikarus/finiteelements/mechanics/strainenhancements/easfunctions.hh>
   #include <ikarus/finiteelements/physicshelper.hh>
-  #include <ikarus/finiteelements/quadraturerulehelper.hh>
   #include <ikarus/utils/defaultfunctions.hh>
   #include <ikarus/utils/eigendunetransformations.hh>
   #include <ikarus/utils/linearalgebrahelper.hh>
+  #include <ikarus/utils/quadraturerulehelper.hh>
 
 namespace Ikarus {
 
@@ -206,8 +206,13 @@ protected:
     localBasisU_   = Dune::CachedLocalBasis(firstFE.localBasis());
     localBasisP_   = Dune::CachedLocalBasis(secondFE.localBasis());
 
-    localBasisU_.bind(defaultQuadratureRule<myDim>(element, 2 * order_), Dune::bindDerivatives(0, 1));
-    localBasisP_.bind(defaultQuadratureRule<myDim>(element, 2 * order_), Dune::bindDerivatives(0, 1));
+    if (underlying().quadratureRule()) {
+      localBasisU_.bind(underlying().quadratureRule().value(), Dune::bindDerivatives(0, 1));
+      localBasisP_.bind(underlying().quadratureRule().value(), Dune::bindDerivatives(0, 1));
+    } else {
+      localBasisU_.bind(defaultQuadratureRule<myDim>(element, 2 * order_), Dune::bindDerivatives(0, 1));
+      localBasisP_.bind(defaultQuadratureRule<myDim>(element, 2 * order_), Dune::bindDerivatives(0, 1));
+    }
   }
 
 public:

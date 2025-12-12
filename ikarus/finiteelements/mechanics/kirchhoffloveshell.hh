@@ -18,8 +18,8 @@
 #include <ikarus/finiteelements/mechanics/loads.hh>
 #include <ikarus/finiteelements/mechanics/membranestrains.hh>
 #include <ikarus/finiteelements/physicshelper.hh>
-#include <ikarus/finiteelements/quadraturerulehelper.hh>
 #include <ikarus/utils/linearalgebrahelper.hh>
+#include <ikarus/utils/quadraturerulehelper.hh>
 
 namespace Ikarus {
 template <typename PreFE, typename FE>
@@ -116,7 +116,10 @@ protected:
     numberOfNodes_ = fe.size();
     order_         = fe.localBasis().order();
     localBasis_    = Dune::CachedLocalBasis(fe.localBasis());
-    localBasis_.bind(defaultQuadratureRule<myDim>(element, 2 * order_), Dune::bindDerivatives(0, 1, 2));
+    if (underlying().quadratureRule())
+      localBasis_.bind(underlying().quadratureRule().value(), Dune::bindDerivatives(0, 1, 2));
+    else
+      localBasis_.bind(defaultQuadratureRule<myDim>(element, 2 * order_), Dune::bindDerivatives(0, 1, 2));
   }
 
 public:
