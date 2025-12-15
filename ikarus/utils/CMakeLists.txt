@@ -27,7 +27,7 @@ install(
         polyfit.hh
         pythonautodiffdefinitions.hh
         tensorutils.hh
-        tensorproductquadrule.hh
+        quadraturerulehelper.hh
         traits.hh
         traversal.hh
   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/ikarus/utils
