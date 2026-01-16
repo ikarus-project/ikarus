@@ -49,6 +49,9 @@ void obtainLagrangeGlobalNodePositions(const LV& localView,
  * comparison styles do not work properly if one of the values being compared is zero. Hence, for this function,
  * absolute is being used as the default comparison style.
  *
+ * \note For a composite basis, indices only of the first child are returned and a composite basis within a composite
+ * basis cannot be used.
+ *
  * \param basis The grid basis.
  * \param pos Global position
  * \return Global index
