@@ -14,6 +14,7 @@
 #include <dune/grid/utility/hierarchicsearch.hh>
 
 #include <ikarus/utils/concepts.hh>
+#include <ikarus/utils/flatprebasis.hh>
 #include <ikarus/utils/traversal.hh>
 
 namespace Ikarus::utils {
@@ -41,12 +42,18 @@ void obtainLagrangeGlobalNodePositions(const LV& localView,
  * \ingroup utils
  * \tparam worldDim Dimension of the world space.
  * \tparam Basis Type of the basis.
+ * \tparam cmpStyle Comparison style being used to check if a node exists at a certain position.
+ *
+ * \details As per
+ * https://gitlab.mn.tu-dresden.de/spraetor/dune-common-extensions/-/blob/master/dune/common/float_cmp.hh#L58, relative
+ * comparison styles do not work properly if one of the values being compared is zero. Hence, for this function,
+ * absolute is being used as the default comparison style.
  *
  * \param basis The grid basis.
  * \param pos Global position
  * \return Global index
  */
-template <int worldDim, typename Basis>
+template <int worldDim, typename Basis, Dune::FloatCmp::CmpStyle cmpStyle = Dune::FloatCmp::CmpStyle::absolute>
 auto globalIndexFromGlobalPosition(const Basis& basis, const Dune::FieldVector<double, worldDim>& pos) {
   static_assert(Concepts::LagrangeNode<std::remove_cvref_t<decltype(basis.localView().tree().child(0))>>,
                 "globalIndexFromGlobalPosition is only supported for Lagrange basis");
@@ -54,19 +61,32 @@ auto globalIndexFromGlobalPosition(const Basis& basis, const Dune::FieldVector<d
   using LocalView      = std::remove_cvref_t<decltype(basis.localView())>;
   using MultiIndex     = typename LocalView::MultiIndex;
   using Element        = typename LocalView::Element;
-  constexpr int myDim  = Element::mydimension;
+  using Tree           = LocalView::Tree;
+
+  if constexpr (Tree::isComposite) {
+    Dune::Hybrid::forEach(
+        Dune::Hybrid::integralRange(Dune::index_constant<std::tuple_size_v<typename Basis::PreBasis::SubPreBases>>()),
+        [&](const auto i) {
+          static_assert(
+              not Tree::template Child<i>::Type::isComposite,
+              "globalIndexFromGlobalPosition is not implemented to handle a composite basis within a composite basis.");
+        });
+  }
+
+  static constexpr std::size_t numChildren = Impl::PreBasisInfo<Tree>::size;
+  constexpr int myDim                      = Element::mydimension;
   Dune::HierarchicSearch hSearch(basis.gridView().grid(), basis.gridView().indexSet());
   const auto& ele = hSearch.findEntity(pos);
   auto localView  = basis.localView();
   localView.bind(ele);
   const auto geo   = localView.element().geometry();
   const auto& node = localView.tree();
-  std::optional<std::array<MultiIndex, worldDim>> globalIndices;
+  std::optional<std::array<MultiIndex, numChildren>> globalIndices;
 
   auto fT = [&](int nodeNumber, Dune::FieldVector<double, myDim>&& localCoordinate) {
-    if (Dune::FloatCmp::eq(geo.global(localCoordinate), pos, tol)) {
+    if (Dune::FloatCmp::eq<Dune::FieldVector<double, worldDim>, cmpStyle>(geo.global(localCoordinate), pos, tol)) {
       globalIndices.emplace();
-      for (int j = 0; j < worldDim; j++)
+      for (int j = 0; j < numChildren; j++)
         globalIndices.value()[j] = localView.index(node.child(j).localIndex(nodeNumber));
       return true;
     }
