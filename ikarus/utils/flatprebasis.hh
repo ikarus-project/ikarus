@@ -20,6 +20,8 @@
 #include <dune/functions/functionspacebases/compositebasis.hh>
 #include <dune/functions/functionspacebases/powerbasis.hh>
 
+#include <Eigen/Core>
+
 namespace Ikarus {
 /**
  * \brief Transform a PreBasis into one with flat index-merging strategy
@@ -110,5 +112,41 @@ template <class PreBasis>
 decltype(auto) flatPreBasis(const PreBasis& preBasis) {
   return FlatPreBasis<PreBasis>::create(preBasis);
 }
+
+namespace utils {
+  namespace Impl {
+    template <typename Tree>
+    struct PreBasisInfo
+    {
+    };
+
+    template <typename Tree>
+    requires(Tree::isLeaf)
+    struct PreBasisInfo<Tree>
+    {
+      static constexpr std::size_t size = 0;
+      using NodalSolutionType           = double;
+    };
+
+    template <typename Tree>
+    requires(Tree::isPower)
+    struct PreBasisInfo<Tree>
+    {
+      static constexpr std::size_t size = Tree::degree();
+      using NodalSolutionType           = Eigen::Vector<double, size>;
+    };
+
+    template <typename Tree>
+    requires(Tree::isComposite)
+    struct PreBasisInfo<Tree>
+    {
+      using ChildTreeType = Tree::template Child<0>::Type;
+      static_assert(not ChildTreeType::isComposite, "Cannot handle a composite basis within a composite basis.");
+
+      static constexpr std::size_t size = PreBasisInfo<ChildTreeType>::size;
+      using NodalSolutionType           = PreBasisInfo<ChildTreeType>::NodalSolutionType;
+    };
+  } // namespace Impl
+} // namespace utils
 
 } // end namespace Ikarus

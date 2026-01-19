@@ -50,6 +50,18 @@ void forEachLeafOrPowerLeafNode(T&& tree, TreePath&& treePath, PowerFunc&& power
   }
 }
 
+namespace Impl {
+  template <bool isScalar, typename NT>
+  void checkLagrangeNode(const NT& node) {
+    if constexpr (isScalar) {
+      static_assert(Concepts::LagrangeNode<std::remove_cvref_t<decltype(node)>>, "Only supported for Lagrange basis");
+    } else {
+      static_assert(Concepts::LagrangeNode<std::remove_cvref_t<decltype(node.child(0))>>,
+                    "Only supported for Lagrange basis");
+    }
+  }
+} // namespace Impl
+
 /**
  * \brief A helper function that helps in traversing over the local coordinates of an element and
  * call a user-desired function
@@ -63,10 +75,24 @@ void forEachLeafOrPowerLeafNode(T&& tree, TreePath&& treePath, PowerFunc&& power
 template <typename LV, typename F, int myDim = LV::Element::mydimension>
 requires(std::convertible_to<F, std::function<bool(int, Dune::FieldVector<double, myDim> &&)>>)
 void forEachLagrangeNodePosition(const LV& localView, F&& f) {
-  static_assert(Concepts::LagrangeNode<std::remove_cvref_t<decltype(localView.tree().child(0))>>,
-                "forEachLagrangeNodePosition is only supported for Lagrange power basis");
+  using Tree                     = LV::Tree;
+  static constexpr bool isScalar = Tree::isLeaf;
+  static constexpr bool isPower  = Tree::isPower;
+  const auto& node               = [&]() {
+    if constexpr (isScalar or isPower)
+      return localView.tree();
+    else
+      return localView.tree().template child<0>();
+  }();
+
+  Impl::checkLagrangeNode<isScalar>(node);
   assert(localView.bound() && "The local view must be bound to an element");
-  const auto& localFE = localView.tree().child(0).finiteElement();
+  const auto& localFE = [&]() {
+    if constexpr (isScalar)
+      return node.finiteElement();
+    else
+      return node.child(0).finiteElement();
+  }();
   std::vector<Dune::FieldVector<double, myDim>> lagrangeNodeCoords;
   lagrangeNodeCoords.resize(localFE.size());
   std::vector<double> out;

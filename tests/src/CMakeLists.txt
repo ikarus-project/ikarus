@@ -54,6 +54,7 @@ set(programSourceFiles
     testdisplacementpressure.cpp
     testincompressibleblock.cpp
     testmaterialconversion.cpp
+    testglobalindicesfromglobalposition.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
