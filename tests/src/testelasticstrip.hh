@@ -22,6 +22,7 @@
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
+#include <ikarus/solver/eigenvaluesolver/generalizedeigensolverfactory.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphsonwithscalarsubsidiaryfunction.hh>
@@ -32,6 +33,7 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/listener/controllogger.hh>
 #include <ikarus/utils/listener/controlvtkwriter.hh>
+#include <ikarus/utils/listener/genericlistener.hh>
 #include <ikarus/utils/listener/nonlinearsolverlogger.hh>
 
 using namespace Ikarus;
@@ -145,7 +147,9 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
     }
   };
 
-  auto cr = controlRoutine();
+  auto cr               = controlRoutine();
+  const auto& rFunction = cr.nonLinearSolver().residual();
+  const auto& kFunction = cr.nonLinearSolver().jacobian();
 
   auto nonLinearSolverLogger = NonLinearSolverLogger();
   auto controlLogger         = ControlLogger();
@@ -160,6 +164,22 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
     vtkWriter.setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
     vtkWriter.subscribeTo(cr);
   }
+
+  auto residualAndJacobianChecker = GenericListener(cr, ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
+    const auto& req = state.domain;
+    const auto& R   = rFunction(req);
+    const auto& K   = kFunction(req);
+    t.check(Dune::FloatCmp::eq<double, Dune::FloatCmp::CmpStyle::absolute>(R.norm(), 0.0, tol))
+        << std::setprecision(16) << "Incorrect Scalar. Expected:\t" << 0.0 << " Actual:\t" << R.norm()
+        << ". The used tolerance was " << tol << " Norm of the residual is not zero";
+    auto essaK = makeIdentitySymEigenSolver<EigenValueSolverType::Spectra>(K);
+    essaK.compute();
+    auto eigenValuesComputed = essaK.eigenvalues();
+    for (int i = 0; i < eigenValuesComputed.size(); ++i)
+      t.check(Dune::FloatCmp::gt(eigenValuesComputed[i], 0.0, tol))
+          << "The " << std::to_string(i) << "-th eigenvalue is less than or equal to zero:\t"
+          << std::to_string(eigenValuesComputed[i]);
+  });
 
   const auto controlInfo = cr.run(req);
   d                      = req.globalSolution();
