@@ -81,8 +81,8 @@ public:
   static constexpr int worldDimension = Basis::GridView::dimensionworld;
   using LocalView                     = Basis::LocalView;
   using Tree                          = LocalView::Tree;
-  using NodalSolutionType             = typename Impl::PreBasisInfo<Tree>::NodalSolutionType;
-  static constexpr std::size_t numberOfChildrenAtNode = Impl::PreBasisInfo<Tree>::size;
+  using NodalSolutionType             = typename utils::Impl::PreBasisInfo<Tree>::NodalSolutionType;
+  static constexpr std::size_t numberOfChildrenAtNode = utils::Impl::PreBasisInfo<Tree>::size;
   explicit DirichletValues(const B& basis)
       : basis_{basis},
         dirichletFlagsBackend_{dirichletFlags_} {

@@ -58,13 +58,13 @@ void obtainLagrangeGlobalNodePositions(const LV& localView,
  */
 template <int worldDim, typename Basis, Dune::FloatCmp::CmpStyle cmpStyle = Dune::FloatCmp::CmpStyle::absolute>
 auto globalIndexFromGlobalPosition(const Basis& basis, const Dune::FieldVector<double, worldDim>& pos) {
-  static_assert(Concepts::LagrangeNode<std::remove_cvref_t<decltype(basis.localView().tree().child(0))>>,
-                "globalIndexFromGlobalPosition is only supported for Lagrange basis");
-  constexpr double tol = 1e-8;
-  using LocalView      = std::remove_cvref_t<decltype(basis.localView())>;
-  using MultiIndex     = typename LocalView::MultiIndex;
-  using Element        = typename LocalView::Element;
-  using Tree           = LocalView::Tree;
+  constexpr double tol           = 1e-8;
+  using LocalView                = std::remove_cvref_t<decltype(basis.localView())>;
+  using MultiIndex               = typename LocalView::MultiIndex;
+  using Element                  = typename LocalView::Element;
+  using Tree                     = LocalView::Tree;
+  static constexpr bool isScalar = Tree::isLeaf;
+  static constexpr bool isPower  = Tree::isPower;
 
   if constexpr (Tree::isComposite) {
     Dune::Hybrid::forEach(
@@ -79,18 +79,30 @@ auto globalIndexFromGlobalPosition(const Basis& basis, const Dune::FieldVector<d
   static constexpr std::size_t numChildren = Impl::PreBasisInfo<Tree>::size;
   constexpr int myDim                      = Element::mydimension;
   Dune::HierarchicSearch hSearch(basis.gridView().grid(), basis.gridView().indexSet());
+  std::conditional_t<isScalar, std::optional<MultiIndex>, std::optional<std::array<MultiIndex, numChildren>>>
+      globalIndices;
   const auto& ele = hSearch.findEntity(pos);
   auto localView  = basis.localView();
   localView.bind(ele);
   const auto geo   = localView.element().geometry();
-  const auto& node = localView.tree();
-  std::optional<std::array<MultiIndex, numChildren>> globalIndices;
+  const auto& node = [&]() {
+    if constexpr (isScalar or isPower)
+      return localView.tree();
+    else
+      return localView.tree().template child<0>();
+  }();
+
+  Impl::checkLagrangeNode<isScalar>(node);
 
   auto fT = [&](int nodeNumber, Dune::FieldVector<double, myDim>&& localCoordinate) {
     if (Dune::FloatCmp::eq<Dune::FieldVector<double, worldDim>, cmpStyle>(geo.global(localCoordinate), pos, tol)) {
       globalIndices.emplace();
-      for (int j = 0; j < numChildren; j++)
-        globalIndices.value()[j] = localView.index(node.child(j).localIndex(nodeNumber));
+      if constexpr (isScalar)
+        globalIndices.value() = localView.index(node.localIndex(nodeNumber));
+      else {
+        for (int j = 0; j < numChildren; j++)
+          globalIndices.value()[j] = localView.index(node.child(j).localIndex(nodeNumber));
+      }
       return true;
     }
     return false;

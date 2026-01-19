@@ -113,39 +113,40 @@ decltype(auto) flatPreBasis(const PreBasis& preBasis) {
   return FlatPreBasis<PreBasis>::create(preBasis);
 }
 
-namespace Impl {
-  template <typename Tree>
-  struct PreBasisInfo
-  {
-  };
+namespace utils {
+  namespace Impl {
+    template <typename Tree>
+    struct PreBasisInfo
+    {
+    };
 
-  template <typename Tree>
-  requires(Tree::isLeaf)
-  struct PreBasisInfo<Tree>
-  {
-    static constexpr std::size_t size = 0;
-    using NodalSolutionType           = double;
-  };
+    template <typename Tree>
+    requires(Tree::isLeaf)
+    struct PreBasisInfo<Tree>
+    {
+      static constexpr std::size_t size = 0;
+      using NodalSolutionType           = double;
+    };
 
-  template <typename Tree>
-  requires(Tree::isPower)
-  struct PreBasisInfo<Tree>
-  {
-    static constexpr std::size_t size = Tree::degree();
-    using NodalSolutionType           = Eigen::Vector<double, size>;
-  };
+    template <typename Tree>
+    requires(Tree::isPower)
+    struct PreBasisInfo<Tree>
+    {
+      static constexpr std::size_t size = Tree::degree();
+      using NodalSolutionType           = Eigen::Vector<double, size>;
+    };
 
-  template <typename Tree>
-  requires(Tree::isComposite)
-  struct PreBasisInfo<Tree>
-  {
-    using ChildTreeType = Tree::template Child<0>::Type;
-    static_assert(not ChildTreeType::isComposite,
-                  "DirichletValues is not implemented to handle a composite basis within a composite basis.");
+    template <typename Tree>
+    requires(Tree::isComposite)
+    struct PreBasisInfo<Tree>
+    {
+      using ChildTreeType = Tree::template Child<0>::Type;
+      static_assert(not ChildTreeType::isComposite, "Cannot handle a composite basis within a composite basis.");
 
-    static constexpr std::size_t size = PreBasisInfo<ChildTreeType>::size;
-    using NodalSolutionType           = PreBasisInfo<ChildTreeType>::NodalSolutionType;
-  };
-} // namespace Impl
+      static constexpr std::size_t size = PreBasisInfo<ChildTreeType>::size;
+      using NodalSolutionType           = PreBasisInfo<ChildTreeType>::NodalSolutionType;
+    };
+  } // namespace Impl
+} // namespace utils
 
 } // end namespace Ikarus
