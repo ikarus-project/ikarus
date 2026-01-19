@@ -29,7 +29,11 @@ auto testGlobalIndicesFromGlobalPosition() {
   Dune::FieldVector<double, gridDim> bottomLeft  = {0.0, 0.0};
   Dune::FieldVector<double, gridDim> bottomRight = {1.0, 0.0};
   Dune::FieldVector<double, gridDim> topLeft     = {3.3e-12, 0.99};
-  Dune::FieldVector<double, gridDim> topRight    = {1.0, 1.0};
+  Dune::FieldVector<double, gridDim> topRight    = {1.0, 1.0 + 1e-9};
+
+  // tolerance used by globalIndexFromGlobalPosition is 1e-8 and so the following round-offs should be fine
+  Dune::FieldVector<double, gridDim> topLeftRoudedOff1 = {1e-11, 0.99};
+  Dune::FieldVector<double, gridDim> topRightRoudedOff = {1.0, 1.0};
 
   gridFactory.insertVertex(bottomLeft);  // 0
   gridFactory.insertVertex(bottomRight); // 1
@@ -56,15 +60,23 @@ auto testGlobalIndicesFromGlobalPosition() {
   const auto bottomLeftIndices2 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis2, bottomLeft);
 
   const auto topLeftIndices0 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis0, topLeft);
-  const auto topLeftIndices1 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis1, topLeft);
-  const auto topLeftIndices2 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis2, topLeft);
+  const auto topLeftIndices1 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis1, topLeftRoudedOff1);
+  const auto topLeftIndices2 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis2, topLeftRoudedOff1);
+
+  // Because (0.0, 0.99) is outside the domain (3.3e-12, 0.99)
+  Dune::FieldVector<double, gridDim> topLeftRoudedOff2 = {0.0, 0.99};
+  t.checkThrow<Dune::GridError>(
+      [&]() {
+        const auto topLeftIndices1 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis1, topLeftRoudedOff2);
+      },
+      "Hierarchical search for topLeftRoudedOff2 should have failed here with Dune::GridError.");
 
   const auto bottomRightIndices0 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis0, bottomRight);
   const auto bottomRightIndices1 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis1, bottomRight);
   const auto bottomRightIndices2 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis2, bottomRight);
 
-  const auto topRightIndices0 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis0, topRight);
-  const auto topRightIndices1 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis1, topRight);
+  const auto topRightIndices0 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis0, topRightRoudedOff);
+  const auto topRightIndices1 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis1, topRightRoudedOff);
   const auto topRightIndices2 = Ikarus::utils::globalIndexFromGlobalPosition(flatBasis2, topRight);
 
   checkScalars(t, bottomLeftIndices0[0], std::size_t{0}, " Incorrect bottom left scalar index");
