@@ -179,6 +179,15 @@ auto elasticStripTest(DBCOption dbcOption, const MAT& material, Skills&& additio
       t.check(Dune::FloatCmp::gt(eigenValuesComputed[i], 0.0, tol))
           << "The " << std::to_string(i) << "-th eigenvalue is less than or equal to zero:\t"
           << std::to_string(eigenValuesComputed[i]);
+    if constexpr (useArcLength) {
+      const auto& subsidiaryArgs = cr.subsidiaryArgs();
+      if (state.loadStep >=
+          0) { // subsidiary condition is not updated for the undeformed configuration corresponding to a loadStep of -1
+        t.check(Dune::FloatCmp::eq<double, Dune::FloatCmp::CmpStyle::absolute>(subsidiaryArgs.f, 0.0, tol))
+            << std::setprecision(16) << "Incorrect Scalar. Expected:\t" << 0.0 << " Actual:\t" << subsidiaryArgs.f
+            << ". The used tolerance was " << tol << " Subsidiary condition is not satisfied";
+      }
+    }
   });
 
   const auto controlInfo = cr.run(req);

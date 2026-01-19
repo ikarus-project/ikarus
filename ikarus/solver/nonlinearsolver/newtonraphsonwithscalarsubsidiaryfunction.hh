@@ -323,7 +323,7 @@ public:
 
   /**
    * \brief Access the residual function.
-   * \return Reference to the residual function.
+   * \return Constant reference to the residual function.
    */
   const auto& residual() const { return residualFunction_; }
 
@@ -335,7 +335,7 @@ public:
 
   /**
    * \brief Access the jacobian function.
-   * \return Reference to the jacobian function.
+   * \return Constant reference to the jacobian function.
    */
   const auto& jacobian() const { return jacobianFunction_; }
 

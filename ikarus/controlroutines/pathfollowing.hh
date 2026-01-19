@@ -205,6 +205,18 @@ public:
   /* \brief returns the nonlinear solver */
   NLS& nonLinearSolver() { return *nonLinearSolver_; }
 
+  /**
+   * \brief Access the subsidiary arguments.
+   * \return Reference to the subsidiary arguments.
+   */
+  auto& subsidiaryArgs() { return subsidiaryArgs_; }
+
+  /**
+   * \brief Access the subsidiary arguments.
+   * \return Constant reference to the subsidiary arguments.
+   */
+  const auto& subsidiaryArgs() const { return subsidiaryArgs_; }
+
 private:
   std::shared_ptr<NLS> nonLinearSolver_;
 
