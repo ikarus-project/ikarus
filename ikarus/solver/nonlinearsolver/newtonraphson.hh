@@ -257,16 +257,28 @@ public:
   }
 
   /**
-   * \brief Access the function.
-   * \return Reference to the function.
+   * \brief Access the residual function.
+   * \return Reference to the residual function.
    */
   auto& residual() { return residualFunction_; }
 
   /**
-   * \brief Access the function.
-   * \return Reference to the function.
+   * \brief Access the residual function.
+   * \return Constant reference to the residual function.
    */
   const auto& residual() const { return residualFunction_; }
+
+  /**
+   * \brief Access the jacobian function.
+   * \return Reference to the jacobian function.
+   */
+  auto& jacobian() { return jacobianFunction_; }
+
+  /**
+   * \brief Access the jacobian function.
+   * \return Constant reference to the jacobian function.
+   */
+  const auto& jacobian() const { return jacobianFunction_; }
 
   /**
    * \brief Access the update function.
