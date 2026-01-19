@@ -21,6 +21,7 @@
 #include <ikarus/finiteelements/mechanics/enhancedassumedstrains.hh>
 #include <ikarus/finiteelements/mechanics/materials.hh>
 #include <ikarus/finiteelements/mechanics/nonlinearelastic.hh>
+#include <ikarus/solver/eigenvaluesolver/generalizedeigensolverfactory.hh>
 #include <ikarus/solver/linearsolver/linearsolver.hh>
 #include <ikarus/solver/nonlinearsolver/newtonraphson.hh>
 #include <ikarus/solver/nonlinearsolver/nonlinearsolverfactory.hh>
@@ -142,8 +143,8 @@ auto cantileverBeamTest(const MAT& material, Skills&& additionalSkills, std::pai
   NonlinearSolverFactory nrFactory(nrConfig);
   auto nr = nrFactory.create(sparseAssemblerAM);
 
-  const auto& rFunction = nr.residual();
-  const auto& KFunction = nr.jacobian();
+  const auto& rFunction = nr->residual();
+  const auto& kFunction = nr->jacobian();
 
   // Only when creating the control routine via the Factory, the elements get registered for correction update
   // automatically.
@@ -167,7 +168,16 @@ auto cantileverBeamTest(const MAT& material, Skills&& additionalSkills, std::pai
     const auto& req = state.domain;
     const auto& R   = rFunction(req);
     const auto& K   = kFunction(req);
-    checkScalars(t, R.norm(), 0.0, " Norm of the residual is not zero", tol);
+    t.check(Dune::FloatCmp::eq<double, Dune::FloatCmp::CmpStyle::absolute>(R.norm(), 0.0, tol))
+        << std::setprecision(16) << "Incorrect Scalar. Expected:\t" << 0.0 << " Actual:\t" << R.norm()
+        << ". The used tolerance was " << tol << " Norm of the residual is not zero";
+    auto essaK = makeIdentitySymEigenSolver<EigenValueSolverType::Spectra>(K);
+    essaK.compute();
+    auto eigenValuesComputed = essaK.eigenvalues();
+    for (int i = 0; i < eigenValuesComputed.size(); ++i)
+      t.check(Dune::FloatCmp::gt(eigenValuesComputed[i], 0.0, tol))
+          << "The " << std::to_string(i) << "-th eigenvalue is less than or equal to zero:\t"
+          << std::to_string(eigenValuesComputed[i]);
   });
 
   const auto controlInfo = lc.run(req);
