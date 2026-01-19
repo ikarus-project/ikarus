@@ -30,6 +30,7 @@
 #include <ikarus/utils/init.hh>
 #include <ikarus/utils/listener/controllogger.hh>
 #include <ikarus/utils/listener/controlvtkwriter.hh>
+#include <ikarus/utils/listener/genericlistener.hh>
 #include <ikarus/utils/listener/nonlinearsolverlogger.hh>
 
 using namespace Ikarus;
@@ -141,6 +142,9 @@ auto cantileverBeamTest(const MAT& material, Skills&& additionalSkills, std::pai
   NonlinearSolverFactory nrFactory(nrConfig);
   auto nr = nrFactory.create(sparseAssemblerAM);
 
+  const auto& rFunction = nr.residual();
+  const auto& KFunction = nr.jacobian();
+
   // Only when creating the control routine via the Factory, the elements get registered for correction update
   // automatically.
   auto lc = ControlRoutineFactory::create(LoadControlConfig{20, 0.0, 1.0}, nr, sparseFlatAssembler);
@@ -158,6 +162,13 @@ auto cantileverBeamTest(const MAT& material, Skills&& additionalSkills, std::pai
     vtkWriter.setFieldInfo("Displacement", Dune::VTK::FieldInfo::Type::vector, 2);
     vtkWriter.subscribeTo(lc);
   }
+
+  auto residualAndJacobianChecker = GenericListener(lc, ControlMessages::SOLUTION_CHANGED, [&](const auto& state) {
+    const auto& req = state.domain;
+    const auto& R   = rFunction(req);
+    const auto& K   = kFunction(req);
+    checkScalars(t, R.norm(), 0.0, " Norm of the residual is not zero", tol);
+  });
 
   const auto controlInfo = lc.run(req);
   d                      = req.globalSolution();
