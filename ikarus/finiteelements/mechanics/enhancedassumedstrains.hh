@@ -129,11 +129,13 @@ public:
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<2>) const {
     using namespace Dune::DerivativeDirections;
-    const auto ufunc = underlying().displacementFunction(req);
-    auto disp        = Dune::viewAsFlatEigenVector(ufunc.coefficientsRef());
-    const auto geo   = underlying().localView().element().geometry();
-    const auto H     = ufunc.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
-    const auto F = Ikarus::transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
+    using Ikarus::transformStrain;
+    using Ikarus::transformStress;
+    const auto ufunc   = underlying().displacementFunction(req);
+    auto disp          = Dune::viewAsFlatEigenVector(ufunc.coefficientsRef());
+    const auto geo     = underlying().localView().element().geometry();
+    const auto H       = ufunc.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
+    const auto F       = transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
     decltype(auto) mat = [&]() {
       if constexpr ((isSameResultType<RT, ResultTypes::PK2StressFull> or
                      isSameResultType<RT, ResultTypes::linearStressFull>) and

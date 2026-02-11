@@ -126,11 +126,13 @@ public:
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<2>) const {
     using namespace Dune::DerivativeDirections;
+    using Ikarus::transformStrain;
+    using Ikarus::transformStress;
     const auto geo   = underlying().localView().element().geometry();
     const auto ufunc = underlying().displacementFunction(req);
     auto disp        = Dune::viewAsFlatEigenVector(ufunc.coefficientsRef());
     const auto H     = ufunc.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
-    const auto F = Ikarus::transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
+    const auto F     = transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
 
     RTWrapperType<RT> resultWrapper{};
     auto calculateAtContribution = [&]<typename AssumedStressT>(const AssumedStressT& asFunction) {

@@ -316,10 +316,12 @@ public:
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<1>) const {
     using namespace Dune::DerivativeDirections;
+    using Ikarus::transformStrain;
+    using Ikarus::transformStress;
     const auto uFunction = displacementFunction(req);
     const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
-    const auto F = Ikarus::transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
-    const auto E = Ikarus::transformStrain<StrainTags::displacementGradient, StrainTags::greenLagrangian>(H).eval();
+    const auto F         = transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
+    const auto E         = transformStrain<StrainTags::displacementGradient, StrainTags::greenLagrangian>(H).eval();
     const auto pFunction = pressureFunction(req);
     const auto p         = pFunction.evaluate(local, Dune::on(gridElement)).eval();
 

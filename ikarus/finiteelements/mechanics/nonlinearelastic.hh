@@ -242,11 +242,13 @@ public:
       return RTWrapperType<RT>{};
 
     using namespace Dune::DerivativeDirections;
+    using Ikarus::transformStrain;
+    using Ikarus::transformStress;
     const auto uFunction = displacementFunction(req);
     const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
-    const auto F = Ikarus::transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
-    const auto E = Ikarus::transformStrain<StrainTags::displacementGradient, StrainTags::greenLagrangian>(H).eval();
-    decltype(auto) mat = [&]() {
+    const auto F         = transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
+    const auto E         = transformStrain<StrainTags::displacementGradient, StrainTags::greenLagrangian>(H).eval();
+    decltype(auto) mat   = [&]() {
       if constexpr (isSameResultType<RT, ResultTypes::PK2StressFull> and Material::isReduced)
         return mat_.underlying();
       else
