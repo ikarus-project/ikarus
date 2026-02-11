@@ -124,6 +124,7 @@ namespace ResultTypes {
 
   REGISTER_SIMPLE_SYMMETRIC_RESULTTYPE(linearStress, worldDim, worldDim, false);
   REGISTER_SIMPLE_SYMMETRIC_RESULTTYPE(PK2Stress, worldDim, worldDim, false);
+  REGISTER_SIMPLE_SYMMETRIC_RESULTTYPE(kirchhoffStress, worldDim, worldDim, false);
   REGISTER_SIMPLE_SYMMETRIC_RESULTTYPE(cauchyStress, worldDim, worldDim, false);
 
   // The following resulttypes are for reduced materials to obtain the full 3D stress state

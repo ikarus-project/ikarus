@@ -22,6 +22,8 @@
   #include <ikarus/finiteelements/fehelper.hh>
   #include <ikarus/finiteelements/ferequirements.hh>
   #include <ikarus/finiteelements/mechanics/loads.hh>
+  #include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
+  #include <ikarus/finiteelements/mechanics/materials/stressconversions.hh>
   #include <ikarus/finiteelements/mechanics/materials/tags.hh>
   #include <ikarus/finiteelements/mechanics/strainenhancements/easfunctions.hh>
   #include <ikarus/finiteelements/physicshelper.hh>
@@ -59,7 +61,8 @@ struct NonLinearElasticPre
  * \tparam PRE The type of the non-linear elastic pre finite element.
  */
 template <typename PreFE, typename FE, typename PRE>
-class NonLinearElastic : public ResultTypeBase<ResultTypes::PK2Stress, ResultTypes::PK2StressFull>
+class NonLinearElastic : public ResultTypeBase<ResultTypes::PK2Stress, ResultTypes::PK2StressFull,
+                                               ResultTypes::kirchhoffStress, ResultTypes::cauchyStress>
 {
 public:
   using Traits      = PreFE::Traits;
@@ -207,24 +210,19 @@ public:
 
 public:
   /**
-   * \brief Get a lambda function that evaluates the requested result type for a given strain (in Voigt notation).
-   * \tparam RT The type representing the requested result.
-   * \return A lambda function that evaluates the requested result type for a given strain (in Voigt notation).
+   * \brief Get the PK2 stress for a given strain (in Voigt notation).
+   *
+   * \note The material model passed here could be either the underlying material for the reduced case or the actual
+   * material type itself, depending on whether PK2Stress or PK2StressFull is needed for post-processing.
+   * \note It is assumed that the material model uses and returns PK2 stress as the stress measure.
+   * \tparam M Type of the material
+   * \param mat The material model.
+   * \param strainInVoigt The strain measure in Voigt notation.
+   * \return PK2 stresses.
    */
-  template <template <typename, int, int> class RT>
-  requires(supportsResultType<RT>())
-  auto resultFunction() const {
-    return [&](const Eigen::Vector<double, strainDim>& strainInVoigt) {
-      if constexpr (isSameResultType<RT, ResultTypes::PK2Stress> or isSameResultType<RT, ResultTypes::PK2StressFull>) {
-        decltype(auto) mat = [&]() {
-          if constexpr (isSameResultType<RT, ResultTypes::PK2StressFull> and Material::isReduced)
-            return mat_.underlying();
-          else
-            return mat_;
-        }();
-        return RTWrapperType<RT>{mat.template stresses<strainType>(enlargeIfReduced<Material>(strainInVoigt))};
-      }
-    };
+  template <typename M>
+  auto calculateStress(const M& mat, const Eigen::Vector<double, strainDim>& strainInVoigt) const {
+    return mat.template stresses<strainType>(enlargeIfReduced<Material>(strainInVoigt));
   }
 
   /**
@@ -240,18 +238,34 @@ public:
   requires(supportsResultType<RT>())
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<1>) const {
-    using namespace Dune::DerivativeDirections;
-
     if constexpr (FE::isMixed())
       return RTWrapperType<RT>{};
-    if constexpr (isSameResultType<RT, ResultTypes::PK2Stress> or isSameResultType<RT, ResultTypes::PK2StressFull>) {
-      const auto uFunction = displacementFunction(req);
-      const auto rFunction = resultFunction<RT>();
-      const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
-      const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
 
-      return rFunction(toVoigt(E));
+    using namespace Dune::DerivativeDirections;
+    const auto uFunction = displacementFunction(req);
+    const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
+    const auto F = Ikarus::transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
+    const auto E = Ikarus::transformStrain<StrainTags::displacementGradient, StrainTags::greenLagrangian>(H).eval();
+    decltype(auto) mat = [&]() {
+      if constexpr (isSameResultType<RT, ResultTypes::PK2StressFull> and Material::isReduced)
+        return mat_.underlying();
+      else
+        return mat_;
+    }();
+
+    const auto PK2Stress = calculateStress(mat, toVoigt(E)).eval();
+    RTWrapperType<RT> resultWrapper{};
+
+    if constexpr (isSameResultType<RT, ResultTypes::PK2Stress> or isSameResultType<RT, ResultTypes::PK2StressFull>)
+      resultWrapper = PK2Stress;
+    else if constexpr (isSameResultType<RT, ResultTypes::kirchhoffStress> or
+                       isSameResultType<RT, ResultTypes::cauchyStress>) {
+      const auto PK2StressMat = fromVoigt(PK2Stress, false).eval();
+      constexpr StressTags toStress =
+          isSameResultType<RT, ResultTypes::kirchhoffStress> ? StressTags::Kirchhoff : StressTags::Cauchy;
+      resultWrapper = toVoigt(transformStress<StressTags::PK2, toStress>(PK2StressMat, F), false);
     }
+    return resultWrapper;
   }
 
 private:

@@ -18,6 +18,8 @@
   #include <ikarus/finiteelements/ferequirements.hh>
   #include <ikarus/finiteelements/mechanics/assumedstress/asfunctions.hh>
   #include <ikarus/finiteelements/mechanics/assumedstress/asvariants.hh>
+  #include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
+  #include <ikarus/finiteelements/mechanics/materials/stressconversions.hh>
   #include <ikarus/finiteelements/mechanics/materials/tags.hh>
   #include <ikarus/utils/broadcaster/broadcastermessages.hh>
   #include <ikarus/utils/concepts.hh>
@@ -56,7 +58,8 @@ template <typename PreFE, typename FE, typename ASF>
 class AssumedStress
     : public std::conditional_t<std::same_as<ASF, PS::LinearStress>,
                                 ResultTypeBase<ResultTypes::linearStress, ResultTypes::linearStressFull>,
-                                ResultTypeBase<ResultTypes::PK2Stress, ResultTypes::PK2StressFull>>
+                                ResultTypeBase<ResultTypes::PK2Stress, ResultTypes::PK2StressFull,
+                                               ResultTypes::kirchhoffStress, ResultTypes::cauchyStress>>
 
 {
 public:
@@ -122,36 +125,41 @@ public:
   requires(AssumedStress::template supportsResultType<RT>())
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<2>) const {
-    if constexpr (isSameResultType<RT, ResultTypes::linearStress> or isSameResultType<RT, ResultTypes::PK2Stress> or
-                  isSameResultType<RT, ResultTypes::linearStressFull> or
-                  isSameResultType<RT, ResultTypes::PK2StressFull>) {
-      const auto geo   = underlying().localView().element().geometry();
-      const auto ufunc = underlying().displacementFunction(req);
-      auto disp        = Dune::viewAsFlatEigenVector(ufunc.coefficientsRef());
+    using namespace Dune::DerivativeDirections;
+    const auto geo   = underlying().localView().element().geometry();
+    const auto ufunc = underlying().displacementFunction(req);
+    auto disp        = Dune::viewAsFlatEigenVector(ufunc.coefficientsRef());
+    const auto H     = ufunc.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
+    const auto F = Ikarus::transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
 
-      RTWrapperType<RT> resultWrapper{};
-      auto calculateAtContribution = [&]<typename AssumedStressT>(const AssumedStressT& asFunction) {
-        Eigen::VectorXd beta;
-        beta.setZero(numberOfInternalVariables());
-        const auto& Rtilde = calculateRtilde<double>(req);
-        typename AssumedStressT::HType H;
-        calculateHAndGMatrix(asFunction, req, H, G_);
-        beta = H.inverse() * (G_ * disp);
+    RTWrapperType<RT> resultWrapper{};
+    auto calculateAtContribution = [&]<typename AssumedStressT>(const AssumedStressT& asFunction) {
+      Eigen::VectorXd beta;
+      beta.setZero(numberOfInternalVariables());
+      const auto& Rtilde = calculateRtilde<double>(req);
+      typename AssumedStressT::HType H;
+      calculateHAndGMatrix(asFunction, req, H, G_);
+      beta = H.inverse() * (G_ * disp);
 
-        const auto SVoigt = AssumedStressFunction::value(geo, local, asFunction, beta);
+      const auto SVoigt = AssumedStressFunction::value(geo, local, asFunction, beta);
 
-        if constexpr ((isSameResultType<RT, ResultTypes::PK2StressFull> or
-                       isSameResultType<RT, ResultTypes::linearStressFull>) and
-                      requires { underlying().material().underlying(); }) {
-          resultWrapper = enlargeStressAnsatz(SVoigt);
-        } else {
-          resultWrapper = SVoigt;
-        }
-      };
-      asVariant_(calculateAtContribution);
-      return resultWrapper;
-    }
-    DUNE_THROW(Dune::NotImplemented, "The requested result type is not supported");
+      if constexpr ((isSameResultType<RT, ResultTypes::PK2StressFull> or
+                     isSameResultType<RT, ResultTypes::linearStressFull>) and
+                    requires { underlying().material().underlying(); }) {
+        resultWrapper = enlargeStressAnsatz(SVoigt);
+      } else if constexpr (isSameResultType<RT, ResultTypes::PK2Stress> or
+                           isSameResultType<RT, ResultTypes::linearStress>)
+        resultWrapper = SVoigt;
+      else if constexpr (isSameResultType<RT, ResultTypes::kirchhoffStress> or
+                         isSameResultType<RT, ResultTypes::cauchyStress>) {
+        const auto PK2StressMat = fromVoigt(SVoigt, false).eval();
+        constexpr StressTags toStress =
+            isSameResultType<RT, ResultTypes::kirchhoffStress> ? StressTags::Kirchhoff : StressTags::Cauchy;
+        resultWrapper = toVoigt(transformStress<StressTags::PK2, toStress>(PK2StressMat, F), false);
+      }
+    };
+    asVariant_(calculateAtContribution);
+    return resultWrapper;
   }
 
   /**

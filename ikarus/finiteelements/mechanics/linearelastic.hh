@@ -207,25 +207,19 @@ public:
 
 public:
   /**
-   * \brief Get a lambda function that evaluates the requested result type for a given strain (in Voigt notation).
-   * \tparam RT The type representing the requested result.
-   * \return A lambda function that evaluates the requested result type for a given strain (in Voigt notation).
+   * \brief Get the linear stress for a given strain (in Voigt notation).
+   *
+   * \note The material model passed here could be either the underlying material for the reduced case or the actual
+   * material type itself, depending on whether linearStress or linearStressFull is needed for post-processing.
+   * \note It is assumed that the material model uses and returns linear stress as the stress measure.
+   * \tparam M Type of the material
+   * \param mat The material model.
+   * \param strainInVoigt The strain measure in Voigt notation.
+   * \return linear stresses.
    */
-  template <template <typename, int, int> class RT>
-  requires(LinearElastic::template supportsResultType<RT>())
-  auto resultFunction() const {
-    return [&](const Eigen::Vector<double, strainDim>& strainInVoigt) {
-      if constexpr (isSameResultType<RT, ResultTypes::linearStress> or
-                    isSameResultType<RT, ResultTypes::linearStressFull>) {
-        decltype(auto) mat = [&]() {
-          if constexpr (isSameResultType<RT, ResultTypes::linearStressFull> and requires { mat_.underlying(); })
-            return mat_.underlying();
-          else
-            return mat_;
-        }();
-        return RTWrapperType<RT>{mat.template stresses<StrainTags::linear>(enlargeIfReduced<Material>(strainInVoigt))};
-      }
-    };
+  template <typename M>
+  auto calculateStress(const M& mat, const Eigen::Vector<double, strainDim>& strainInVoigt) const {
+    return mat.template stresses<strainType>(enlargeIfReduced<Material>(strainInVoigt));
   }
 
   /**
@@ -242,13 +236,21 @@ public:
                        Dune::PriorityTag<1>) const {
     if constexpr (FE::isMixed())
       return RTWrapperType<RT>{};
+
+    const auto eps     = strainFunction(req);
+    auto epsVoigt      = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
+    decltype(auto) mat = [&]() {
+      if constexpr (isSameResultType<RT, ResultTypes::linearStressFull> and requires { mat_.underlying(); })
+        return mat_.underlying();
+      else
+        return mat_;
+    }();
+    const auto linearStress = calculateStress(mat, epsVoigt).eval();
+    RTWrapperType<RT> resultWrapper{};
     if constexpr (isSameResultType<RT, ResultTypes::linearStress> or
-                  isSameResultType<RT, ResultTypes::linearStressFull>) {
-      const auto rFunction = resultFunction<RT>();
-      const auto eps       = strainFunction(req);
-      auto epsVoigt        = eps.evaluate(local, Dune::on(Dune::DerivativeDirections::gridElement));
-      return rFunction(epsVoigt);
-    }
+                  isSameResultType<RT, ResultTypes::linearStressFull>)
+      resultWrapper = linearStress;
+    return resultWrapper;
   }
 
 private:

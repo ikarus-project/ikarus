@@ -24,6 +24,8 @@
   #include <ikarus/finiteelements/mechanics/loads.hh>
   #include <ikarus/finiteelements/mechanics/materials/decomposehyperelastic.hh>
   #include <ikarus/finiteelements/mechanics/materials/hyperelastic/interface.hh>
+  #include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
+  #include <ikarus/finiteelements/mechanics/materials/stressconversions.hh>
   #include <ikarus/finiteelements/mechanics/materials/tags.hh>
   #include <ikarus/finiteelements/mechanics/strainenhancements/easfunctions.hh>
   #include <ikarus/finiteelements/physicshelper.hh>
@@ -280,29 +282,24 @@ public:
 
 public:
   /**
-   * \brief Get a lambda function that evaluates the requested result type for a given strain (in Voigt notation)
-   * and pressure.
-   * \tparam RT The type representing the requested result.
-   * \return A lambda function that evaluates the requested result type for a given strain (in Voigt notation).
+   * \brief Get the PK2 stress for a given strain (in Voigt notation).
+   *
+   * \note The material model passed here could be either the underlying material for the reduced case or the actual
+   * material type itself, depending on whether PK2Stress or PK2StressFull is needed for post-processing.
+   * \note It is assumed that the material model uses and returns PK2 stress as the stress measure.
+   * \tparam D Type of the deviatoric part of the material
+   * \tparam V Type of the volumetric part of the material
+   * \param dev The deviatoric part of the material model.
+   * \param vol The volumetric part of the material model.
+   * \param strainInVoigt The strain measure in Voigt notation.
+   * \param p The value of the pressure.
+   * \return PK2 stresses.
    */
-  template <template <typename, int, int> class RT>
-  requires(supportsResultType<RT>())
-  auto resultFunction() const {
-    return [&](const Eigen::Vector<double, strainDim>& strainInVoigt, double p) {
-      if constexpr (isSameResultType<RT, ResultTypes::PK2Stress> or isSameResultType<RT, ResultTypes::PK2StressFull>) {
-        auto [dev, vol] = [&]() {
-          if constexpr (isSameResultType<RT, ResultTypes::PK2StressFull> and PRE::Material::isReduced)
-            return std::make_pair(constitutiveDriver_.deviatoricMaterial().underlying(),
-                                  constitutiveDriver_.volumetricMaterial().underlying());
-          else
-            return std::make_pair(constitutiveDriver_.deviatoricMaterial(), constitutiveDriver_.volumetricMaterial());
-        }();
-
-        return RTWrapperType<RT>{
-            dev.template stresses<strainType>(enlargeIfReduced<typename PRE::Material>(strainInVoigt)) +
-            p * vol.template stresses<strainType>(enlargeIfReduced<typename PRE::Material>(strainInVoigt))};
-      }
-    };
+  template <typename D, typename V>
+  auto calculateStress(const D& dev, const V& vol, const Eigen::Vector<double, strainDim>& strainInVoigt,
+                       double p) const {
+    return dev.template stresses<strainType>(enlargeIfReduced<typename PRE::Material>(strainInVoigt)) +
+           p * vol.template stresses<strainType>(enlargeIfReduced<typename PRE::Material>(strainInVoigt));
   }
 
   /**
@@ -319,18 +316,34 @@ public:
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<1>) const {
     using namespace Dune::DerivativeDirections;
+    const auto uFunction = displacementFunction(req);
+    const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
+    const auto F = Ikarus::transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
+    const auto E = Ikarus::transformStrain<StrainTags::displacementGradient, StrainTags::greenLagrangian>(H).eval();
+    const auto pFunction = pressureFunction(req);
+    const auto p         = pFunction.evaluate(local, Dune::on(gridElement)).eval();
 
-    if constexpr (isSameResultType<RT, ResultTypes::PK2Stress> or isSameResultType<RT, ResultTypes::PK2StressFull>) {
-      const auto uFunction = displacementFunction(req);
-      const auto pFunction = pressureFunction(req);
+    auto [dev, vol] = [&]() {
+      if constexpr (isSameResultType<RT, ResultTypes::PK2StressFull> and PRE::Material::isReduced)
+        return std::make_pair(constitutiveDriver_.deviatoricMaterial().underlying(),
+                              constitutiveDriver_.volumetricMaterial().underlying());
+      else
+        return std::make_pair(constitutiveDriver_.deviatoricMaterial(), constitutiveDriver_.volumetricMaterial());
+    }();
 
-      const auto rFunction = resultFunction<RT>();
-      const auto H         = uFunction.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
-      const auto p         = pFunction.evaluate(local, Dune::on(gridElement)).eval();
-      const auto E         = (0.5 * (H.transpose() + H + H.transpose() * H)).eval();
+    const auto PK2Stress = calculateStress(dev, vol, toVoigt(E), p[0]).eval();
+    RTWrapperType<RT> resultWrapper{};
 
-      return rFunction(toVoigt(E), p[0]);
+    if constexpr (isSameResultType<RT, ResultTypes::PK2Stress> or isSameResultType<RT, ResultTypes::PK2StressFull>)
+      resultWrapper = PK2Stress;
+    else if constexpr (isSameResultType<RT, ResultTypes::kirchhoffStress> or
+                       isSameResultType<RT, ResultTypes::cauchyStress>) {
+      const auto PK2StressMat = fromVoigt(PK2Stress, false).eval();
+      constexpr StressTags toStress =
+          isSameResultType<RT, ResultTypes::kirchhoffStress> ? StressTags::Kirchhoff : StressTags::Cauchy;
+      resultWrapper = toVoigt(transformStress<StressTags::PK2, toStress>(PK2StressMat, F), false);
     }
+    return resultWrapper;
   }
 
 private:
