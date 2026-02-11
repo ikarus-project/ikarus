@@ -298,8 +298,9 @@ public:
   template <typename D, typename V>
   auto calculateStress(const D& dev, const V& vol, const Eigen::Vector<double, strainDim>& strainInVoigt,
                        double p) const {
-    return dev.template stresses<strainType>(enlargeIfReduced<typename PRE::Material>(strainInVoigt)) +
-           p * vol.template stresses<strainType>(enlargeIfReduced<typename PRE::Material>(strainInVoigt));
+    return (dev.template stresses<strainType>(enlargeIfReduced<typename PRE::Material>(strainInVoigt)) +
+            p * vol.template stresses<strainType>(enlargeIfReduced<typename PRE::Material>(strainInVoigt)))
+        .eval();
   }
 
   /**

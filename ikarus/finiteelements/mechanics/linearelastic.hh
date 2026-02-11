@@ -219,7 +219,7 @@ public:
    */
   template <typename M>
   auto calculateStress(const M& mat, const Eigen::Vector<double, strainDim>& strainInVoigt) const {
-    return mat.template stresses<strainType>(enlargeIfReduced<Material>(strainInVoigt));
+    return mat.template stresses<strainType>(enlargeIfReduced<Material>(strainInVoigt)).eval();
   }
 
   /**
