@@ -30,7 +30,34 @@ namespace Ikarus::EAS {
 struct DisplacementGradientTransposed
 {
   /**
-   * \brief Compute the strain vector at a given integration point or its index.
+   * \brief Compute the displacement gradient at a given integration point.
+   *
+   * \param geo The geometry object providing the transposed Jacobian.
+   * \param uFunction The function representing the displacement field.
+   * \param gpPos The position of the integration point.
+   * \param easFunction The EAS function.
+   * \param alpha The coefficients of the EAS function.
+   *
+   * \tparam GEO The type of the geometry object.
+   * \tparam EAST The type of the EAS function.
+   *
+   * \return The displacement gradient at the given integration point.
+   */
+  template <typename GEO, typename EAST>
+  static auto computeDisplacementGradient(const GEO& geo, const auto& uFunction,
+                                          const Dune::FieldVector<double, GEO::mydimension>& gpPos,
+                                          const EAST& easFunction, const auto& alpha) {
+    using ST                = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
+    constexpr int myDim     = GEO::mydimension;
+    using MatrixType        = Eigen::Matrix<ST, myDim, myDim>;
+    const MatrixType Hc     = compatibleDisplacementGradient<GEO>(uFunction, gpPos);
+    const MatrixType Htilde = enhancedDisplacementGradient(geo, uFunction, gpPos, easFunction, alpha);
+    const MatrixType H      = Hc + Htilde;
+    return H;
+  }
+
+  /**
+   * \brief Compute the strain vector at a given integration point.
    *
    * \param geo The geometry object providing the transposed Jacobian.
    * \param uFunction The function representing the displacement field.
@@ -340,19 +367,6 @@ private:
       Htilde += Harray[p] * alpha[p];
     const MatrixType Henhanced = (Fc0 * Htilde.transpose()).eval();
     return Henhanced;
-  }
-
-  template <typename GEO, typename EAST>
-  static auto computeDisplacementGradient(const GEO& geo, const auto& uFunction,
-                                          const Dune::FieldVector<double, GEO::mydimension>& gpPos,
-                                          const EAST& easFunction, const auto& alpha) {
-    using ST                = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
-    constexpr int myDim     = GEO::mydimension;
-    using MatrixType        = Eigen::Matrix<ST, myDim, myDim>;
-    const MatrixType Hc     = compatibleDisplacementGradient<GEO>(uFunction, gpPos);
-    const MatrixType Htilde = enhancedDisplacementGradient(geo, uFunction, gpPos, easFunction, alpha);
-    const MatrixType H      = Hc + Htilde;
-    return H;
   }
 
   template <typename GEO, typename EAST>

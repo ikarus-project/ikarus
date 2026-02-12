@@ -28,7 +28,43 @@ namespace Ikarus::EAS {
 struct DisplacementGradient
 {
   /**
-   * \brief Compute the strain vector at a given integration point or its index.
+   * \brief Compute the displacement gradient at a given integration point.
+   *
+   * \param geo The geometry object providing the transposed Jacobian.
+   * \param uFunction The function representing the displacement field.
+   * \param gpPos The position of the integration point.
+   * \param easFunction The EAS function.
+   * \param alpha The coefficients of the EAS function.
+   *
+   * \tparam GEO The type of the geometry object.
+   * \tparam EAST The type of the EAS function.
+   *
+   * \return The displacement gradient at the given integration point.
+   */
+  template <typename GEO, typename EAST>
+  static auto computeDisplacementGradient(const GEO& geo, const auto& uFunction,
+                                          const Dune::FieldVector<double, GEO::mydimension>& gpPos,
+                                          const EAST& easFunction, const auto& alpha) {
+    using ST            = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
+    constexpr int myDim = GEO::mydimension;
+    using MatrixType    = Eigen::Matrix<ST, myDim, myDim>;
+
+    using namespace Dune::DerivativeDirections;
+    using namespace Dune;
+
+    const MatrixType Hc = toEigen(uFunction.evaluateDerivative(gpPos, wrt(spatialAll), on(gridElement))).eval();
+    const typename EAST::HType Harray = easFunction(gpPos);
+    constexpr int enhancedStrainSize  = EAST::enhancedStrainSize;
+    typename EAST::AnsatzType Htilde;
+    Htilde.setZero(); // zeros returned if Harray is empty
+    for (const auto p : Dune::range(enhancedStrainSize))
+      Htilde += Harray[p] * alpha[p];
+    const MatrixType H = Hc + Htilde;
+    return H;
+  }
+
+  /**
+   * \brief Compute the strain vector at a given integration point.
    *
    * \param geo The geometry object providing the transposed Jacobian.
    * \param uFunction The function representing the displacement field.
@@ -229,28 +265,6 @@ struct DisplacementGradient
 
 private:
   static constexpr int sNaN = std::numeric_limits<int>::signaling_NaN();
-
-  template <typename GEO, typename EAST>
-  static auto computeDisplacementGradient(const GEO& geo, const auto& uFunction,
-                                          const Dune::FieldVector<double, GEO::mydimension>& gpPos,
-                                          const EAST& easFunction, const auto& alpha) {
-    using ST            = typename std::remove_cvref_t<decltype(uFunction)>::ctype;
-    constexpr int myDim = GEO::mydimension;
-    using MatrixType    = Eigen::Matrix<ST, myDim, myDim>;
-
-    using namespace Dune::DerivativeDirections;
-    using namespace Dune;
-
-    const MatrixType Hc = toEigen(uFunction.evaluateDerivative(gpPos, wrt(spatialAll), on(gridElement))).eval();
-    const typename EAST::HType Harray = easFunction(gpPos);
-    constexpr int enhancedStrainSize  = EAST::enhancedStrainSize;
-    typename EAST::AnsatzType Htilde;
-    Htilde.setZero(); // zeros returned if Harray is empty
-    for (const auto p : Dune::range(enhancedStrainSize))
-      Htilde += Harray[p] * alpha[p];
-    const MatrixType H = Hc + Htilde;
-    return H;
-  }
 
   template <typename GEO, typename EAST>
   static auto computeDeformationGradient(const GEO& geo, const auto& uFunction,

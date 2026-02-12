@@ -254,9 +254,9 @@ auto testSingleElement() {
   const auto skill6 = skills(displacementPressure(reducedMat2));
 
   t.subTest(testSingleElementImpl(basis1, skill1, gridView, "Q1"));
-  // t.subTest(testSingleElementImpl(basis1, skill2, gridView, "Q1E4"));
-  // t.subTest(testSingleElementImpl(basis1, skill3, gridView, "Q1H4"));
-  // t.subTest(testSingleElementImpl(basis1, skill4, gridView, "Q1HT4"));
+  t.subTest(testSingleElementImpl(basis1, skill2, gridView, "Q1E4"));
+  t.subTest(testSingleElementImpl(basis1, skill3, gridView, "Q1H4"));
+  t.subTest(testSingleElementImpl(basis1, skill4, gridView, "Q1HT4"));
   t.subTest(testSingleElementImpl(basis1, skill5, gridView, "Q1S5"));
   t.subTest(testSingleElementImpl(basis2, skill6, gridView, "Q1P0"));
   return t;

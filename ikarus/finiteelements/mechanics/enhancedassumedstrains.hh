@@ -131,11 +131,10 @@ public:
     using namespace Dune::DerivativeDirections;
     using Ikarus::transformStrain;
     using Ikarus::transformStress;
-    const auto ufunc   = underlying().displacementFunction(req);
-    auto disp          = Dune::viewAsFlatEigenVector(ufunc.coefficientsRef());
-    const auto geo     = underlying().localView().element().geometry();
-    const auto H       = ufunc.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement));
-    const auto F       = transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
+    const auto ufunc = underlying().displacementFunction(req);
+    auto disp        = Dune::viewAsFlatEigenVector(ufunc.coefficientsRef());
+    const auto geo   = underlying().localView().element().geometry();
+
     decltype(auto) mat = [&]() {
       if constexpr ((isSameResultType<RT, ResultTypes::PK2StressFull> or
                      isSameResultType<RT, ResultTypes::linearStressFull>) and
@@ -150,10 +149,25 @@ public:
       Eigen::VectorXd alpha;
       alpha.setZero(numberOfInternalVariables());
       if constexpr (EAST::enhancedStrainSize != 0) {
-        typename EAST::DType D;
-        calculateDAndLMatrix(easFunction, req, D, L_);
-        alpha = -D.inverse() * L_ * disp;
+        if constexpr (isSameResultType<RT, ResultTypes::linearStressFull> or
+                      isSameResultType<RT, ResultTypes::linearStress>) {
+          typename EAST::DType D;
+          calculateDAndLMatrix(easFunction, req, D, L_);
+          alpha = -D.inverse() * L_ * disp;
+        } else
+          alpha = this->alpha_;
       }
+
+      const auto H = [&]() {
+        if constexpr (std::same_as<EnhancedStrainFunction, EAS::LinearStrain> or
+                      std::same_as<EnhancedStrainFunction, EAS::GreenLagrangeStrain>) {
+          return (ufunc.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement))).eval();
+        } else {
+          return EnhancedStrainFunction::computeDisplacementGradient(geo, ufunc, local, easFunction, alpha).eval();
+        }
+      }();
+
+      const auto F = transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
       const auto enhancedStrain = EnhancedStrainFunction::value(geo, ufunc, local, easFunction, alpha);
       const auto stress         = underlying().calculateStress(mat, enhancedStrain).eval();
 
