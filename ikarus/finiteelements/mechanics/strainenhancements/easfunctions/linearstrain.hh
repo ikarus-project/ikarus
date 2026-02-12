@@ -24,7 +24,7 @@ namespace Ikarus::EAS {
 struct LinearStrain
 {
   /**
-   * \brief Compute the strain vector at a given integration point or its index.
+   * \brief Compute the strain vector at a given integration point.
    *
    * \param geo The geometry object providing the transposed Jacobian.
    * \param uFunction The function representing the displacement field.

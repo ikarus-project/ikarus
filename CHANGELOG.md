@@ -103,6 +103,7 @@ SPDX-License-Identifier: LGPL-3.0-or-later
 - Add displacement-pressure (u-p) element [#391](https://github.com/ikarus-project/ikarus/pull/391).
 - Add transformation from material to two-point tangent moduli tensor [#398](https://github.com/ikarus-project/ikarus/pull/398).
 - Add functionality to pass quadrature rules to various finite elements [#399](https://github.com/ikarus-project/ikarus/pull/399).
+- Add stress transformations for various finite elements to post-process [#402](https://github.com/ikarus-project/ikarus/pull/402).
 
 ## Release v0.4 (Ganymede)
 

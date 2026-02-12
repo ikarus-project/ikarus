@@ -16,6 +16,8 @@
 
   #include <ikarus/finiteelements/fehelper.hh>
   #include <ikarus/finiteelements/ferequirements.hh>
+  #include <ikarus/finiteelements/mechanics/materials/strainconversions.hh>
+  #include <ikarus/finiteelements/mechanics/materials/stressconversions.hh>
   #include <ikarus/finiteelements/mechanics/materials/tags.hh>
   #include <ikarus/finiteelements/mechanics/strainenhancements/easvariants.hh>
   #include <ikarus/utils/broadcaster/broadcastermessages.hh>
@@ -54,7 +56,8 @@ template <typename PreFE, typename FE, typename ESF>
 class EnhancedAssumedStrains
     : public std::conditional_t<std::same_as<ESF, EAS::LinearStrain>,
                                 ResultTypeBase<ResultTypes::linearStress, ResultTypes::linearStressFull>,
-                                ResultTypeBase<ResultTypes::PK2Stress, ResultTypes::PK2StressFull>>
+                                ResultTypeBase<ResultTypes::PK2Stress, ResultTypes::PK2StressFull,
+                                               ResultTypes::kirchhoffStress, ResultTypes::cauchyStress>>
 {
 public:
   using Traits                 = PreFE::Traits;
@@ -125,30 +128,63 @@ public:
   requires(EnhancedAssumedStrains::template supportsResultType<RT>())
   auto calculateAtImpl(const Requirement& req, const Dune::FieldVector<double, Traits::mydim>& local,
                        Dune::PriorityTag<2>) const {
-    if constexpr (isSameResultType<RT, ResultTypes::linearStress> or isSameResultType<RT, ResultTypes::PK2Stress> or
-                  isSameResultType<RT, ResultTypes::linearStressFull> or
-                  isSameResultType<RT, ResultTypes::PK2StressFull>) {
-      const auto ufunc     = underlying().displacementFunction(req);
-      const auto rFunction = underlying().template resultFunction<RT>();
-      auto disp            = Dune::viewAsFlatEigenVector(ufunc.coefficientsRef());
-      const auto geo       = underlying().localView().element().geometry();
+    using namespace Dune::DerivativeDirections;
+    using Ikarus::transformStrain;
+    using Ikarus::transformStress;
+    const auto ufunc = underlying().displacementFunction(req);
+    auto disp        = Dune::viewAsFlatEigenVector(ufunc.coefficientsRef());
+    const auto geo   = underlying().localView().element().geometry();
 
-      RTWrapperType<RT> resultWrapper{};
-      auto calculateAtContribution = [&]<typename EAST>(const EAST& easFunction) {
-        Eigen::VectorXd alpha;
-        alpha.setZero(numberOfInternalVariables());
-        if constexpr (EAST::enhancedStrainSize != 0) {
+    decltype(auto) mat = [&]() {
+      if constexpr ((isSameResultType<RT, ResultTypes::PK2StressFull> or
+                     isSameResultType<RT, ResultTypes::linearStressFull>) and
+                    requires { underlying().material().underlying(); })
+        return underlying().material().underlying();
+      else
+        return underlying().material();
+    }();
+
+    RTWrapperType<RT> resultWrapper{};
+    auto calculateAtContribution = [&]<typename EAST>(const EAST& easFunction) {
+      Eigen::VectorXd alpha;
+      alpha.setZero(numberOfInternalVariables());
+      if constexpr (EAST::enhancedStrainSize != 0) {
+        if constexpr (isSameResultType<RT, ResultTypes::linearStressFull> or
+                      isSameResultType<RT, ResultTypes::linearStress>) {
           typename EAST::DType D;
           calculateDAndLMatrix(easFunction, req, D, L_);
           alpha = -D.inverse() * L_ * disp;
+        } else
+          alpha = this->alpha_;
+      }
+
+      const auto H = [&]() {
+        if constexpr (std::same_as<EnhancedStrainFunction, EAS::LinearStrain> or
+                      std::same_as<EnhancedStrainFunction, EAS::GreenLagrangeStrain>) {
+          return (ufunc.evaluateDerivative(local, Dune::wrt(spatialAll), Dune::on(gridElement))).eval();
+        } else {
+          return EnhancedStrainFunction::computeDisplacementGradient(geo, ufunc, local, easFunction, alpha).eval();
         }
-        const auto enhancedStrain = EnhancedStrainFunction::value(geo, ufunc, local, easFunction, alpha);
-        resultWrapper             = rFunction(enhancedStrain);
-      };
-      easVariant_(calculateAtContribution);
-      return resultWrapper;
-    }
-    DUNE_THROW(Dune::NotImplemented, "The requested result type is not supported");
+      }();
+
+      const auto F = transformStrain<StrainTags::displacementGradient, StrainTags::deformationGradient>(H).eval();
+      const auto enhancedStrain = EnhancedStrainFunction::value(geo, ufunc, local, easFunction, alpha);
+      const auto stress         = underlying().calculateStress(mat, enhancedStrain).eval();
+
+      if constexpr (isSameResultType<RT, ResultTypes::linearStress> or isSameResultType<RT, ResultTypes::PK2Stress> or
+                    isSameResultType<RT, ResultTypes::linearStressFull> or
+                    isSameResultType<RT, ResultTypes::PK2StressFull>)
+        resultWrapper = stress;
+      else if constexpr (isSameResultType<RT, ResultTypes::kirchhoffStress> or
+                         isSameResultType<RT, ResultTypes::cauchyStress>) {
+        const auto PK2StressMat = fromVoigt(stress, false).eval();
+        constexpr StressTags toStress =
+            isSameResultType<RT, ResultTypes::kirchhoffStress> ? StressTags::Kirchhoff : StressTags::Cauchy;
+        resultWrapper = toVoigt(transformStress<StressTags::PK2, toStress>(PK2StressMat, F), false);
+      }
+    };
+    easVariant_(calculateAtContribution);
+    return resultWrapper;
   }
 
   /**

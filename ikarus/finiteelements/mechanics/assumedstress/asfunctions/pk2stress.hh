@@ -23,7 +23,7 @@ namespace Ikarus::PS {
 struct PK2Stress
 {
   /**
-   * \brief Compute the stress vector at a given integration point or its index.
+   * \brief Compute the stress vector at a given integration point.
    *
    * \param geo The geometry object providing the transposed Jacobian.
    * \param gpPos The position of the integration point.
