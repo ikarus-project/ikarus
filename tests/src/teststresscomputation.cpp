@@ -47,56 +47,56 @@ auto expectedResults(const std::string& elementType) {
     return std::make_tuple(expectedPK2Stress, expectedKirchhoffStress, expectedCauchyStress, expectedCauchyPolarStress);
   } else if (elementType == "Q1E4") {
     auto expectedPK2Stress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {2459.4185878148280, 33.717666151508930},
+        {33.717666151508930, 2330.6070442053450}
     };
     auto expectedKirchhoffStress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {3803.1333927247130, 481.47660347194490},
+        {481.47660347194490, 1993.1685770347850}
     };
     auto expectedCauchyStress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {3358.5427879707210, 425.19144273527950},
+        {425.19144273527950, 1760.1649109693990}
     };
     auto expectedCauchyPolarStress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {2984.545292205340,  -799.188938500660},
+        {-799.188938500660, 2134.1624067347810}
     };
     return std::make_tuple(expectedPK2Stress, expectedKirchhoffStress, expectedCauchyStress, expectedCauchyPolarStress);
   } else if (elementType == "Q1H4") {
     auto expectedPK2Stress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {2224.9459345219530, 28.642048556433880},
+        {28.642048556433880, 2103.5342737414690}
     };
     auto expectedKirchhoffStress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {2854.2193079324460, 317.56422143773710},
+        {317.56422143773710, 2059.4391456898660}
     };
     auto expectedCauchyStress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {2568.7595202221920, 285.80358728322450},
+        {285.80358728322450, 1853.4679157647650}
     };
     auto expectedCauchyPolarStress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {2496.9173052767020, -357.6458022287140},
+        {-357.6458022287140, 1925.3101307102540}
     };
     return std::make_tuple(expectedPK2Stress, expectedKirchhoffStress, expectedCauchyStress, expectedCauchyPolarStress);
   } else if (elementType == "Q1HT4") {
     auto expectedPK2Stress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {1025.9728749031440, 52.235427016679270},
+        {52.235427016679270, 943.89253892459240}
     };
     auto expectedKirchhoffStress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {1239.3242592131660, 191.68312308243020},
+        {191.68312308243020, 872.47667105894170}
     };
     auto expectedCauchyStress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        { 1191.623700329150, 184.30539926907520},
+        {184.30539926907520, 838.89577040813070}
     };
     auto expectedCauchyPolarStress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        { 1199.5651346377150, -176.36396496050960},
+        {-176.36396496050960,  830.95433609956520}
     };
     return std::make_tuple(expectedPK2Stress, expectedKirchhoffStress, expectedCauchyStress, expectedCauchyPolarStress);
   } else if (elementType == "Q1S5") {
@@ -113,8 +113,8 @@ auto expectedResults(const std::string& elementType) {
         {314.80892175692160, 1257.1848050785050}
     };
     auto expectedCauchyPolarStress = MatrixType{
-        {2152.1305752402840000, -580.1368484048580},
-        {   -580.1368484048580, 1522.5127317264410}
+        {2152.1305752402840, -580.1368484048580},
+        {-580.1368484048580, 1522.5127317264410}
     };
     return std::make_tuple(expectedPK2Stress, expectedKirchhoffStress, expectedCauchyStress, expectedCauchyPolarStress);
   } else if (elementType == "Q1P0") {
