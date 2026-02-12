@@ -138,10 +138,14 @@ public:
     auto calculateAtContribution = [&]<typename AssumedStressT>(const AssumedStressT& asFunction) {
       Eigen::VectorXd beta;
       beta.setZero(numberOfInternalVariables());
-      const auto& Rtilde = calculateRtilde<double>(req);
-      typename AssumedStressT::HType H;
-      calculateHAndGMatrix(asFunction, req, H, G_);
-      beta = H.inverse() * (G_ * disp);
+      if constexpr (isSameResultType<RT, ResultTypes::linearStressFull> or
+                    isSameResultType<RT, ResultTypes::linearStress>) {
+        const auto& Rtilde = calculateRtilde<double>(req);
+        typename AssumedStressT::HType H;
+        calculateHAndGMatrix(asFunction, req, H, G_);
+        beta = H.inverse() * (G_ * disp);
+      } else
+        beta = this->beta_;
 
       const auto SVoigt = AssumedStressFunction::value(geo, local, asFunction, beta);
 

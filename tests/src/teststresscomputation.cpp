@@ -101,20 +101,20 @@ auto expectedResults(const std::string& elementType) {
     return std::make_tuple(expectedPK2Stress, expectedKirchhoffStress, expectedCauchyStress, expectedCauchyPolarStress);
   } else if (elementType == "Q1S5") {
     auto expectedPK2Stress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {1769.6604462179770, 33.557046979865760},
+        {33.557046979865760, 1662.0213894432550}
     };
     auto expectedKirchhoffStress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {2737.4720926549360, 356.48208114234320},
+        {356.48208114234320, 1423.6059549829540}
     };
     auto expectedCauchyStress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {2417.4585018882210, 314.80892175692160},
+        {314.80892175692160, 1257.1848050785050}
     };
     auto expectedCauchyPolarStress = MatrixType{
-        {0.0, 0.0},
-        {0.0, 0.0}
+        {2152.1305752402840000, -580.1368484048580},
+        {   -580.1368484048580, 1522.5127317264410}
     };
     return std::make_tuple(expectedPK2Stress, expectedKirchhoffStress, expectedCauchyStress, expectedCauchyPolarStress);
   } else if (elementType == "Q1P0") {
@@ -141,7 +141,7 @@ auto expectedResults(const std::string& elementType) {
 }
 
 template <typename FEType>
-auto testStressComputation(const FEType& fe, const auto& expectedStresses) {
+auto testStressComputation(FEType& fe, const auto& expectedStresses) {
   TestSuite t;
 
   auto n = fe.size();
@@ -153,10 +153,17 @@ auto testStressComputation(const FEType& fe, const auto& expectedStresses) {
   auto zeroStressState  = Eigen::Matrix<double, 2, 2>::Zero().eval();
   auto zeroStressStates = std::make_tuple(zeroStressState, zeroStressState, zeroStressState, zeroStressState);
 
-  auto testStress = [&](const auto& d, const auto& expectedStresses) {
+  auto testStress = [&](const auto& disp, const auto& expectedStresses) {
     const auto [expectedPK2Stress, expectedKirchhoffStress, expectedCauchyStress, expectedCauchyPolarStress] =
         expectedStresses;
-    req.insertGlobalSolution(d);
+
+    // In a nonlinear analysis, the solver takes care of updating the state when CORRECTION_UPDATED is broadcasted. In
+    // other words, Rtilde at current iteration with old displacements is used to update internal variables (alpha/beta)
+    // and only after that the displacements are updated. But here, it has to be done manually and this goal is
+    // acheieved by manually updating the requirements later.
+
+    fe.updateState(req, disp); // here disp = correction vector (DeltaD) as original displacements are zero
+    req.insertGlobalSolution(disp);
 
     Dune::FieldVector<double, 2> pos{0.21132486540518711, 0.21132486540518711};
     const auto S                              = fe.template calculateAt<ResultTypes::PK2Stress>(req, pos);
@@ -250,7 +257,7 @@ auto testSingleElement() {
   // t.subTest(testSingleElementImpl(basis1, skill2, gridView, "Q1E4"));
   // t.subTest(testSingleElementImpl(basis1, skill3, gridView, "Q1H4"));
   // t.subTest(testSingleElementImpl(basis1, skill4, gridView, "Q1HT4"));
-  // t.subTest(testSingleElementImpl(basis1, skill5, gridView, "Q1S5"));
+  t.subTest(testSingleElementImpl(basis1, skill5, gridView, "Q1S5"));
   t.subTest(testSingleElementImpl(basis2, skill6, gridView, "Q1P0"));
   return t;
 }
