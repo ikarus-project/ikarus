@@ -216,8 +216,7 @@ auto testSingleElementImpl(const B& basis, const S& skill, const GV& gridView, c
     fes.back().bind(ge);
   }
 
-  auto& fe = fes.front();
-
+  auto& fe  = fes.front();
   auto nDOF = basis.flat().size();
   auto n    = fe.size();
 
