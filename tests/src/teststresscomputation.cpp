@@ -158,9 +158,9 @@ auto testStressComputation(FEType& fe, const auto& expectedStresses) {
         expectedStresses;
 
     // In a nonlinear analysis, the solver takes care of updating the state when CORRECTION_UPDATED is broadcasted. In
-    // other words, Rtilde at current iteration with old displacements is used to update internal variables (alpha/beta)
-    // and only after that the displacements are updated. But here, it has to be done manually and this goal is
-    // acheieved by manually updating the requirements later.
+    // other words, Rtilde at the current iteration with old displacements is used to update internal variables
+    // (alpha/beta), and only after that are the displacements updated. But here, it has to be done manually, and this
+    // goal is achieved by manually updating the requirements later.
 
     fe.updateState(req, disp); // here disp = correction vector (DeltaD) as original displacements are zero
     req.insertGlobalSolution(disp);
