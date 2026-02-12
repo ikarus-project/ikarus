@@ -128,7 +128,8 @@ struct DisplacementPressurePre
  * \tparam PRE The type of the displacement-pressure pre finite element.
  */
 template <typename PreFE, typename FE, typename PRE>
-class DisplacementPressure : public ResultTypeBase<ResultTypes::PK2Stress, ResultTypes::PK2StressFull>
+class DisplacementPressure : public ResultTypeBase<ResultTypes::PK2Stress, ResultTypes::PK2StressFull,
+                                                   ResultTypes::kirchhoffStress, ResultTypes::cauchyStress>
 {
 public:
   using Traits      = PreFE::Traits;

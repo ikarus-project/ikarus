@@ -243,15 +243,10 @@ auto testSingleElement() {
     fes.back().bind(ge);
   }
 
-  auto& fe = fes.front();
-
+  auto& fe  = fes.front();
   auto nDOF = basis.flat().size();
   auto n    = fe.size();
-
   t.check(n == nDOF);
-
-  Eigen::VectorXd d;
-  d.setZero(n);
 
   // TESTS
   if (pD == 1) {

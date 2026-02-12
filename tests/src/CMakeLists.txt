@@ -55,6 +55,7 @@ set(programSourceFiles
     testincompressibleblock.cpp
     testmaterialconversion.cpp
     testglobalindicesfromglobalposition.cpp
+    teststresscomputation.cpp
 )
 
 set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
@@ -74,6 +75,7 @@ set(TEST_DEPENDING_ON_LOCALFEFUNCTIONS
     testnonlinearas
     testnonlineareas
     testinhomogeneousdbc
+    teststresscomputation
 )
 # Compile only tests
 dune_add_test(
