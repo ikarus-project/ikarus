@@ -21,16 +21,17 @@ namespace Ikarus::utils {
 /**
  * \brief A function to obtain the global positions of the nodes of an element with Lagrangian basis
  * \ingroup utils
- * \tparam size Size of the global nodal coordinate vector
  * \tparam LV Type of the local view
  *
  * \param localView Local view bounded to an element
  * \param lagrangeNodeGlobalCoords A vector of global nodal coordinates to be updated
  */
-template <int size, typename LV>
-void obtainLagrangeGlobalNodePositions(const LV& localView,
-                                       std::vector<Dune::FieldVector<double, size>>& lagrangeNodeGlobalCoords) {
-  auto fT = [&]([[maybe_unused]] int nodeNumber, Dune::FieldVector<double, size>&& localCoordinate) {
+template <typename LV>
+void obtainLagrangeGlobalNodePositions(
+    const LV& localView,
+    std::vector<Dune::FieldVector<double, LV::Element::Geometry::coorddimension>>& lagrangeNodeGlobalCoords) {
+  auto fT = [&]([[maybe_unused]] int nodeNumber,
+                Dune::FieldVector<double, LV::Element::mydimension>&& localCoordinate) {
     lagrangeNodeGlobalCoords.emplace_back(localView.element().geometry().global(localCoordinate));
     return false;
   };
