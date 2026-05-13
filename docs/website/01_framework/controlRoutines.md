@@ -1,7 +1,3 @@
----
-status: new
----
-
 # Control routines
 
 ## Load control
