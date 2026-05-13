@@ -48,8 +48,7 @@ jobs:
           python-version: 3.x
       - name: Setup Mkdocs
         run: |
-          pip install mkdocs mkdocs-macros-plugin mkdocs-drawio-exporter mkdocs-bibtex mike mkdocs-glightbox pillow cairosvg
-          pip install git+https://${{ secrets.MKDOCS_TOKEN }}@github.com/squidfunk/mkdocs-material-insiders.git
+          pip install mkdocs mkdocs-macros-plugin mkdocs-drawio-exporter mkdocs-bibtex mike mkdocs-glightbox pillow cairosvg mkdocs-material
           apt-get update && apt-get install -y libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
 
       - name: Build Doxygen
@@ -76,8 +75,8 @@ jobs:
           git config --local user.name "IkarusBot"
           cd build_docs/docs
           export MKDOCSOFFLINE=false
-          mike deploy v$NEWVERSION  --config-file mkdocs.insiders.yml
-          mike deploy dev  --config-file mkdocs.insiders.yml
+          mike deploy v$NEWVERSION  --config-file mkdocs.yml
+          mike deploy dev  --config-file mkdocs.yml
           git remote set-url origin https://${{ secrets.ORGANIZATION_TOKEN }}@github.com/ikarus-project/ikarus-project.github.io.git
           git push origin gh-pages 
           export MKDOCSOFFLINE=true

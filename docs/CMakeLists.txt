@@ -11,7 +11,7 @@ add_subdirectory(website/doxygen)
 
 add_custom_target(
   site
-  COMMAND mkdocs build --config-file mkdocs.insiders.yml
+  COMMAND mkdocs build --config-file mkdocs.yml
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
 
@@ -29,7 +29,6 @@ add_custom_target(
 add_dependencies(localSite doxygen_ikarus)
 
 file(COPY mkdocs.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-file(COPY mkdocs.insiders.yml DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY overrides DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY website DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 file(COPY literature.bib DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

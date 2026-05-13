@@ -28,7 +28,7 @@ jobs:
       - name: Setup Mkdocs
         run: |
           pip install mkdocs
-          pip install git+https://${{ secrets.MKDOCS_TOKEN }}@github.com/squidfunk/mkdocs-material-insiders.git
+          pip install mkdocs-material
           pip install mkdocs-macros-plugin
           pip install mkdocs-drawio-exporter
           pip install mkdocs-glightbox
@@ -68,4 +68,4 @@ jobs:
           git config --local user.email "${{ github.event.head_commit.author.email }}"
           git config --local user.name "${{ github.event.head_commit.author.name }}"
           cd build_docs/docs
-          mike deploy dev --config-file mkdocs.insiders.yml
+          mike deploy dev --config-file mkdocs.yml
