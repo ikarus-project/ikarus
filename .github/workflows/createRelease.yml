@@ -48,7 +48,7 @@ jobs:
           python-version: 3.x
       - name: Setup Mkdocs
         run: |
-          pip install mkdocs mkdocs-macros-plugin mkdocs-drawio-exporter mkdocs-bibtex mike mkdocs-glightbox pillow cairosvg
+          pip install mkdocs mkdocs-macros-plugin mkdocs-drawio-exporter mkdocs-bibtex mike mkdocs-glightbox pillow cairosvg mkdocs-material
           apt-get update && apt-get install -y libcairo2-dev libfreetype6-dev libffi-dev libjpeg-dev libpng-dev libz-dev
 
       - name: Build Doxygen
